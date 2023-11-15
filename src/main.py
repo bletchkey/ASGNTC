@@ -1,31 +1,39 @@
 import sys
 import numpy as np
+import matplotlib.pyplot as plt
 
-from games.GameOfLife import GameOfLife
+from games.gol.simulation import Simulation
+from games.gol.patterns.oscillators import Blinker, Toad, Beacon, Pulsar, Pentadecathlon
+from games.gol.patterns.spaceships import Glider, LightWeightSpaceship, MiddleWeightSpaceship, HeavyWeightSpaceship
+from games.gol.patterns.still_lifes import Beehive, Block, Boat, Loaf, Tub
+
+from utils.display import Image
 from utils.types import Grid
+
 
 def main():
 
-    # Create a grid
-    initial_grid = [[0, 0, 0, 0, 0, 0, 0, 0],
-                   [0, 0, 0, 0, 0, 0, 0, 0],
-                   [0, 0, 0, 0, 0, 0, 0, 0],
-                   [0, 0, 0, 0, 0, 0, 0, 0],
-                   [0, 0, 0, 0, 0, 0, 0, 0],
-                   [0, 0, 0, 0, 0, 0, 0, 1],
-                   [0, 0, 0, 0, 0, 1, 0, 1],
-                   [0, 0, 0, 0, 0, 0, 1, 1]]
+    # Initialize the grid
+    initial_grid = Grid(np.zeros((32, 32), dtype=int))
+    initial_grid = Glider().load(initial_grid, (0, 0))
+    initial_grid = LightWeightSpaceship().load(initial_grid, (20, 10))
+    initial_grid = Beacon().load(initial_grid, (10, 10))
+    initial_grid = Pulsar().load(initial_grid, (0, 20))
 
-    initial_grid = Grid(np.array(initial_grid, dtype=int))
+    # Create a new simulation
+    simulation = Simulation(initial_grid, simulation_type="toroidal")
 
-    # Initialize the game
-    simulation = GameOfLife.Simulation(initial_grid, simulation_type="toroidal")
+    simulation.print_statistics()
 
-    for i in range(33):
-        print(f"Step {i+1}:", end="\n")
-        simulation.draw_grid()
+    for _ in range(500):
         simulation.update_grid()
-        print()
+
+    print()
+    simulation.draw_grid()
+    print()
+
+    # image = Image(simulation.grid)
+    # image.show()
 
     # Print statistics
     simulation.print_statistics()
