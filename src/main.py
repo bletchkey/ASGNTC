@@ -7,7 +7,7 @@ from utils.types import Grid
 def main():
 
     # Create a grid
-    random_grid = [[0, 0, 0, 0, 0, 0, 0, 0],
+    initial_grid = [[0, 0, 0, 0, 0, 0, 0, 0],
                    [0, 0, 0, 0, 0, 0, 0, 0],
                    [0, 0, 0, 0, 0, 0, 0, 0],
                    [0, 0, 0, 0, 0, 0, 0, 0],
@@ -16,20 +16,19 @@ def main():
                    [0, 0, 0, 0, 0, 1, 0, 1],
                    [0, 0, 0, 0, 0, 0, 1, 1]]
 
-    random_grid = Grid(np.array(random_grid, dtype=int))
+    initial_grid = Grid(np.array(initial_grid, dtype=int))
 
     # Initialize the game
-    game = GameOfLife(random_grid, simulation_type="toroidal")
-
+    simulation = GameOfLife.Simulation(initial_grid, simulation_type="toroidal")
 
     for i in range(33):
         print(f"Step {i+1}:", end="\n")
-        game.draw_grid()
-        game.update_grid()
+        simulation.draw_grid()
+        simulation.update_grid()
         print()
 
     # Print statistics
-    game.print_statistics()
+    simulation.print_statistics()
 
     return 0
 
