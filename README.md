@@ -1,0 +1,1 @@
+ASGNTC: Adversarial System for Generating Non-Trivial Configurations
