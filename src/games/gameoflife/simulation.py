@@ -110,7 +110,6 @@ class Simulation:
             "weights": self.__calculate_weights()
         })
 
-
         self.__step += 1
 
         if any(grid["hash"] == self.__current_grid_hash for grid in self.__grids[:-1]):

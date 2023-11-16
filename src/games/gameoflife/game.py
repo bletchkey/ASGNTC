@@ -9,11 +9,13 @@ from utils.graphics import Drawable
 class GameOfLifeGame(Game):
     def __init__(self, data : Grid = Grid(np.zeros((10, 10), dtype=int)), simulation_type :int = simulation_types["toroidal"]):
         try:
-            assert isinstance(data, Grid)
-            self.__simulation = Simulation(data, simulation_type)
+            if data.all() in [0, 1]:
+                self.__simulation = Simulation(data, simulation_type)
+            else:
+                raise ValueError("The grid must contain only 0s and 1s.")
 
-        except AssertionError:
-            print("The data must be of type Grid.")
+        except Exception as e:
+            raise e
 
 
     def __iter__(self):
@@ -48,14 +50,16 @@ class GameOfLifeGame(Game):
 
     def update(self, steps=1) -> Grid:
         try:
-            assert steps > 0 and isinstance(steps, int)
+            if steps <= 0:
+                raise ValueError("The number of steps must be greater than 0.")
+
             for _ in range(steps):
                self.__simulation.step()
 
             return self.grid
 
-        except AssertionError:
-            print("The number of steps must be a positive integer.")
+        except Exception as e:
+            raise e
 
 
     def statistics(self) -> dict:
