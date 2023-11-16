@@ -41,6 +41,14 @@ class GameOfLifeGame(Game):
 
 
     @property
+    def all_grids(self) -> list:
+        return self.__simulation.getAllGrids()
+
+    @property
+    def all_weights(self) -> list:
+        return self.__simulation.getAllWeights()
+
+    @property
     def reached_stability(self) -> int:
         for i in range(len(self.__simulation.stability)):
             if self.__simulation.stability[i]["stable"]:

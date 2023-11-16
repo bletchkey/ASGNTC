@@ -59,6 +59,19 @@ class Simulation:
         return self.__step
 
 
+    def getAllGrids(self) -> list:
+        grids = []
+        for grid in self.__grids:
+            grids.append(grid["grid"])
+        return grids
+
+    def getAllWeights(self) -> list:
+        weights = []
+        for grid in self.__grids:
+            weights.append(grid["weights"])
+        return weights
+
+
     def step(self) -> Grid:
         new_grid = self.__current_grid.copy()
 

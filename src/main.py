@@ -7,6 +7,7 @@ from games.gameoflife.patterns.spaceships import Glider, LightWeightSpaceship, M
 from games.gameoflife.patterns.still_lifes import Beehive, Block, Boat, Loaf, Tub
 
 from utils.types import Grid, simulation_types
+from utils.graphics import Image, AnimatedImage, ImageSlider
 
 def main():
 
@@ -32,6 +33,26 @@ def main():
     game.draw()
     print()
     print(game.statistics())
+
+    # gif = AnimatedImage(game.all_grids)
+    # gif.save("gameoflife.gif")
+
+
+    grids, weights = game.all_grids, game.all_weights
+
+    image_slider = ImageSlider(grids, weights)
+    image_slider.show()
+
+    game.update(steps=100)
+
+    grids, weights = game.all_grids, game.all_weights
+
+    image_slider = ImageSlider(grids, weights)
+    image_slider.show()
+
+    return 0
+
+
 
 if __name__ == '__main__':
     RETCODE = main()
