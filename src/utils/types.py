@@ -10,3 +10,8 @@ class Grid(np.ndarray):
 
         obj.grid_property = grid_property
         return obj
+
+    @property
+    def size(self) -> int:
+        return self.shape[0]
+
