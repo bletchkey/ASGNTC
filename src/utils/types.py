@@ -2,27 +2,43 @@ import numpy as np
 import hashlib
 
 class Grid(np.ndarray):
-    def __new__(cls, input_array) -> np.ndarray:
-        obj = np.asarray(input_array).view(cls)
+    def __new__(cls, data) -> np.ndarray:
+        grid = np.asarray(data).view(cls)
 
-        if (obj.shape[0] != obj.shape[1]) or not(obj.ndim == 2):
+        if (grid.shape[0] != grid.shape[1]) or not(grid.ndim == 2):
             raise ValueError("Grid must be a square matrix.")
 
-        return obj
+        return grid
+
+    def __array_finalize__(self, obj) -> None:
+        if obj is None: return
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.hash = self.__hash__()
+        self.size = self.shape[0]
 
     @property
     def size(self) -> int:
-        return self.shape[0]
+        return self._size
 
-    def toNumpy(self) -> np.ndarray:
-        return np.asarray(self)
+    @size.setter
+    def size(self, size: int) -> None:
+        self._size = size
+
+    @property
+    def hash(self) -> int:
+        return self._hash
+
+    @hash.setter
+    def hash(self, hash: int) -> None:
+        self._hash = hash
+
+    def isBinary(self) -> bool:
+        return np.all(np.isin(self, [0, 1]))
 
     def __hash__(self) -> int:
         sha256_hash = hashlib.sha256(self.tobytes()).hexdigest()
-        return int(sha256_hash, 16)
+        return int(sha256_hash, base=16)
 
 
-simulation_types = {
-    "toroidal" : 0,
-    "block" : 1
-}

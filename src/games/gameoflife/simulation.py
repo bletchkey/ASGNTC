@@ -1,14 +1,14 @@
 import numpy as np
 
-from utils.types import Grid, simulation_types
-
+from .utils.types import GameOfLifeGrid
+import utils.constants as constants
 
 class Simulation:
-    def __init__(self, grid: Grid, simulation_type: simulation_types):
+    def __init__(self, grid: GameOfLifeGrid):
 
         self.__grids = [{
             "grid"   : grid,
-            "hash"   : hash(grid),
+            "hash"   : grid.hash,
             "weights": np.zeros((grid.size, grid.size), dtype=float)
         }]
 
@@ -16,48 +16,38 @@ class Simulation:
         self.__step = 0
         self.__stability = [{"stable": False, "step": None}]
 
-        if simulation_type in simulation_types.values():
-            self.__type = simulation_type
-        else:
-            raise ValueError(f"Simulation type must be either: {simulation_types.values()}")
+        self.__type = grid.topology
 
 
     @property
-    def __current_grid(self) -> Grid:
+    def __current_grid(self) -> GameOfLifeGrid:
         return self.__grids[self.__step]["grid"]
-
 
     @property
     def __current_grid_hash(self) -> int:
         return self.__grids[self.__step]["hash"]
 
-
     @property
     def __current_weights(self) -> np.ndarray:
         return self.__grids[self.__step]["weights"]
 
-
     @property
     def stability(self) -> list:
         return self.__stability
-
 
     @property
     def gridsize(self) -> int:
         return self.__gridsize
 
 
-    def getGrid(self) -> Grid:
+    def getGrid(self) -> GameOfLifeGrid:
         return self.__current_grid
-
 
     def getWeights(self) -> np.ndarray:
         return self.__current_weights
 
-
     def getSteps(self) -> int:
         return self.__step
-
 
     def getAllGrids(self) -> list:
         grids = []
@@ -72,11 +62,11 @@ class Simulation:
         return weights
 
 
-    def step(self) -> Grid:
+    def step(self) -> GameOfLifeGrid:
         new_grid = self.__current_grid.copy()
 
         for r, c in np.ndindex(self.__gridsize, self.__gridsize):
-            if self.__type == simulation_types["toroidal"]:
+            if self.__type == constants.TOPOLOGY["toroidal"]:
                 neighbors = self.__get_toroidal_neighbors(r, c)
             else:
                 neighbors = self.__current_grid[r-1:r+2, c-1:c+2]
@@ -116,7 +106,7 @@ class Simulation:
         return new_weights
 
 
-    def __update_params(self, new_grid :Grid) -> None:
+    def __update_params(self, new_grid :GameOfLifeGrid) -> None:
         self.__grids.append({
             "grid"   : new_grid,
             "hash"   : hash(new_grid),

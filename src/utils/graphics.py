@@ -1,8 +1,6 @@
-import matplotlib.pyplot as plt
-import matplotlib.animation as animation
-import imageio
-
 import numpy as np
+import matplotlib.pyplot as plt
+from matplotlib.widgets import Slider
 
 class Drawable:
     def __init__(self) -> None:
@@ -43,25 +41,7 @@ class Image:
         self.fig.savefig(filename)
 
 
-class AnimatedImage():
-    def __init__(self, grid_list):
-        self.grid_list = grid_list
-
-    def __grid_to_image(self, grid):
-        return Image(grid).im
-
-    def save(self, output_filename):
-        with imageio.get_writer(output_filename, duration=0.2) as writer:
-            for grid in self.grid_list:
-                image = self.__grid_to_image(grid)
-                writer.append_data(image)
-
-
-import numpy as np
-import matplotlib.pyplot as plt
-from matplotlib.widgets import Slider
-
-class ImageSlider:
+class GUI:
     def __init__(self, grid_list1, grid_list2):
         self.grid_list1 = grid_list1
         self.grid_list2 = grid_list2
@@ -89,10 +69,10 @@ class ImageSlider:
         image2 = self.grid_list2[self.current_step]
 
         self.ax[0].imshow(image1, cmap='gray')
-        self.ax[0].set_title('Image 1')
+        self.ax[0].set_title('Grid at step {}'.format(self.current_step))
 
         self.ax[1].imshow(image2, cmap='gray')
-        self.ax[1].set_title('Image 2')
+        self.ax[1].set_title('Weights at step {}'.format(self.current_step))
 
         self.fig.canvas.draw()
 

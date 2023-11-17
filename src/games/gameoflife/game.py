@@ -2,17 +2,14 @@ import numpy as np
 
 from games.game import Game
 from .simulation import Simulation
-
-from utils.types import Grid, simulation_types
-from utils.graphics import Drawable
+from .utils.types import GameOfLifeGrid
+import utils.constants as constants
 
 class GameOfLifeGame(Game):
-    def __init__(self, data : Grid = Grid(np.zeros((10, 10), dtype=int)), simulation_type :int = simulation_types["toroidal"]):
+    def __init__(self, data: GameOfLifeGrid = GameOfLifeGrid(np.zeros((constants.DEFAULT_GRID_SIZE, constants.DEFAULT_GRID_SIZE), dtype=int), constants.TOPOLOGY["toroidal"])) -> None:
         try:
-            if data.all() in [0, 1]:
-                self.__simulation = Simulation(data, simulation_type)
-            else:
-                raise ValueError("The grid must contain only 0s and 1s.")
+            if data.__class__ == GameOfLifeGrid:
+                self.__simulation = Simulation(data)
 
         except Exception as e:
             raise e
@@ -21,15 +18,13 @@ class GameOfLifeGame(Game):
     def __iter__(self):
         return self.grid.__iter__()
 
-
     def __next__(self):
         return self.grid.__next__()
 
 
     @property
-    def grid(self) -> Grid:
+    def grid(self) -> GameOfLifeGrid:
         return self.__simulation.getGrid()
-
 
     @property
     def weights(self) -> np.ndarray:
@@ -38,7 +33,6 @@ class GameOfLifeGame(Game):
     @property
     def step(self) -> int:
         return self.__simulation.getSteps()
-
 
     @property
     def all_grids(self) -> list:
@@ -56,7 +50,7 @@ class GameOfLifeGame(Game):
         return -1
 
 
-    def update(self, steps=1) -> Grid:
+    def update(self, steps=1) -> GameOfLifeGrid:
         try:
             if steps <= 0:
                 raise ValueError("The number of steps must be greater than 0.")
