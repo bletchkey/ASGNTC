@@ -5,7 +5,7 @@ from .simulation import Simulation
 from .utils.types import GameOfLifeGrid
 import utils.constants as constants
 
-class GameOfLifeGame(Game):
+class GameOfLife(Game):
     def __init__(self, data: GameOfLifeGrid = GameOfLifeGrid(np.zeros((constants.DEFAULT_GRID_SIZE, constants.DEFAULT_GRID_SIZE), dtype=int), constants.TOPOLOGY["toroidal"])) -> None:
         try:
             if data.__class__ == GameOfLifeGrid:
