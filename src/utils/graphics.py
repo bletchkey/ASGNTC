@@ -41,20 +41,16 @@ class Image:
         self.fig.savefig(filename)
 
 
-class GUI:
+class UI:
     def __init__(self, grid_list1, grid_list2):
         self.grid_list1 = grid_list1
         self.grid_list2 = grid_list2
         self.current_step = 0
-
         self.fig, self.ax = plt.subplots(1, 2, figsize=(10, 5))
         plt.subplots_adjust(bottom=0.25)
-
         self.slider_ax = plt.axes([0.25, 0.1, 0.65, 0.03], facecolor='lightgoldenrodyellow')
         self.slider = Slider(self.slider_ax, 'Step', 0, len(grid_list1) - 1, valinit=0, valstep=1)
-
         self.slider.on_changed(self.update)
-
         self.update(0)  # Initial update
 
     def update(self, val):

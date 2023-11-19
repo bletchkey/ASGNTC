@@ -13,7 +13,7 @@ class GameOfLifeGrid(Grid):
             raise ValueError("The Game of Life grid must be binary.")
 
         if topology not in constants.TOPOLOGY:
-            raise ValueError("The topology must be: {}.", constants.TOPOLOGY)
+            raise ValueError(f"The topology must be one of the following: {', '.join(map(str, constants.TOPOLOGY))}")
 
         self.__topology = topology
 
@@ -26,15 +26,16 @@ class GameOfLifeGrid(Grid):
     """
     def load(self, grid, position=(0, 0)):
         try:
-            assert isinstance(grid, self.__class__)
+            if not isinstance(grid, self.__class__):
+                raise ValueError("The grid to be loaded must be of type GameOfLifeGrid")
 
-            if (self.shape[0] - (position[0]+grid.shape[0]) >= grid.shape[0] and self.shape[1] - (position[1]+grid.shape[1]) >= grid.shape[1]):
+            if (position[0]+grid.shape[0] <= self.shape[0]) and (position[1]+grid.shape[1] <= self.shape[1]):
                 self[position[0]:position[0]+grid.shape[0], position[1]:position[1]+grid.shape[1]] = grid
             else:
                 raise ValueError("The grid can't be loaded in the specified position.")
 
             return self
 
-        except AssertionError:
-            print("The grid to be loaded must be a GameOfLifeGrid")
+        except Exception as e:
+            raise e
 

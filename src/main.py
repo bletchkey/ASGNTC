@@ -5,7 +5,7 @@ from games import GameOfLife
 from games.gameoflife.utils.types import GameOfLifeGrid
 from games.gameoflife.utils.patterns import spaceships, oscillators, still_lifes
 
-from utils.graphics import Image, GUI
+from utils.graphics import Image, UI
 import utils.constants as constants
 
 def main():
@@ -13,11 +13,10 @@ def main():
     # Initialize the grid
     initial_grid = GameOfLifeGrid(np.zeros((constants.DEFAULT_GRID_SIZE, constants.DEFAULT_GRID_SIZE), dtype=int), constants.TOPOLOGY["toroidal"])
     initial_grid.load(spaceships["glider"], (2, 2))
-    initial_grid.load(spaceships["lightweight_spaceship"], (20, 20))
-    initial_grid.load(oscillators["blinker"], (5, 5))
-    initial_grid.load(oscillators["beacon"], (10, 10))
-    initial_grid.load(still_lifes["beehive"], (20, 20))
-
+    initial_grid.load(spaceships["glider"], (2, 10))
+    initial_grid.load(spaceships["glider"], (2, 18))
+    initial_grid.load(spaceships["glider"], (10, 2))
+    initial_grid.load(oscillators["pulsar"], (10, 10))
 
     # Create a new simulation
     game = GameOfLife(initial_grid)
@@ -28,7 +27,7 @@ def main():
     # Print the statistics
     print(game.statistics())
 
-    image_slider = GUI(game.all_grids, game.all_weights)
+    image_slider = UI(game.all_grids, game.all_weights)
     image_slider.show()
 
     return 0
