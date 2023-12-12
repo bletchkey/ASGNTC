@@ -99,12 +99,10 @@ class Simulation:
             neighbors.append(neighbors_row)
         return neighbors
 
-
     def __calculate_weights(self) -> np.ndarray:
-        parameter = np.power(0.9, self.__step) * 0.1
+        parameter = np.power(0.999, self.__step) * 0.1
         new_weights = np.add(self.__current_weights, np.multiply(self.__current_grid, parameter))
         return new_weights
-
 
     def __update_params(self, new_grid :GameOfLifeGrid) -> None:
         self.__grids.append({

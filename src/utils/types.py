@@ -5,7 +5,8 @@ class Grid(np.ndarray):
     def __new__(cls, data) -> np.ndarray:
         grid = np.asarray(data).view(cls)
 
-        if (grid.shape[0] != grid.shape[1]) or not(grid.ndim == 2):
+        if (grid.shape[0] != grid.shape[1]) or not(grid.ndim == 2) and \
+           (grid.shape[0] != 1 and grid.ndim != 3):
             raise ValueError("Grid must be a square matrix.")
 
         return grid
@@ -20,7 +21,8 @@ class Grid(np.ndarray):
 
     @property
     def size(self) -> int:
-        return self._size
+        # return self._size
+        return self.shape[0]
 
     @size.setter
     def size(self, size: int) -> None:
