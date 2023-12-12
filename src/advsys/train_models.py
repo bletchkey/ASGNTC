@@ -19,7 +19,7 @@ from games.gameoflife.utils.types import GameOfLifeGrid
 def simulate_grid(grid):
 
     grid = np.squeeze(grid)
-    gol_grid = GameOfLifeGrid(grid, TOPOLOGY["flat"])
+    gol_grid = GameOfLifeGrid(grid, TOPOLOGY["toroidal"])
     game = GameOfLife(gol_grid)
     game.update(steps=constants.n_simulation_steps)
 
@@ -46,18 +46,14 @@ def fit(num_epochs, model_g, model_p, optimizer_g, optimizer_p, criterion, fixed
 
     for epoch in range(num_epochs):
 
-        for i in range(10):
+        for i in range(constants.nun_steps):
 
             model_p.train()
             model_g.train()
 
-            ###############################################################
-
-            noise = torch.randn(constants.bs, constants.nz, 1, 1, device=device) # Generate batch of latent vectors
-            generated_grid = model_g(noise) # Generate fake image batch with G
-
-
-            #---------------------------------------------------------------
+            optimizer_g.zero_grad()
+            noise = torch.randn(constants.bs, constants.nz, 1, 1, device=device)
+            generated_grid = model_g(noise)
 
             # Create a grid of the highest values
             np_generated_grid = generated_grid.cpu().detach().numpy()
@@ -76,7 +72,7 @@ def fit(num_epochs, model_g, model_p, optimizer_g, optimizer_p, criterion, fixed
             The generator needs to be updated based on the response of the predictor, we can implement a custom loss that reflects this objective. One way to achieve this is to create a custom loss that encourages the generator to produce an initial configuration that once it is simulated, the predictor finds it difficult to predict the simulated metric.
             """
 
-            model_p.zero_grad()
+            optimizer_p.zero_grad()
             generated_grid = torch.from_numpy(np_generated_grid).to(device)
 
             guessed_metric = model_p(generated_grid).to(device)
@@ -84,26 +80,28 @@ def fit(num_epochs, model_g, model_p, optimizer_g, optimizer_p, criterion, fixed
 
             errP = criterion(guessed_metric, simulated_metric)
 
-            print(errP)
             errP.backward()
+            optimizer_p.step()
+
 
 
             model_g.eval()
             model_p.eval()
 
 
-            #---------------------------------------------------------------
+            # ---------------------------------------------------------------
             # Output training stats
-            # if i % 50 == 0 or i == len(train_dl)-1:
-            #     current_epoch = epoch+1
 
-            #     print('[%d/%d][%d/%d]\tLoss_D: %.4f\tLoss_G: %.4f\tD(x): %.4f\tD(G(z)): %.4f / %.4f'
-            #           % (current_epoch, num_epochs, i, len(train_dl),
-            #              errD.item(), errG.item(), D_x, D_G_z1, D_G_z2))
+            current_epoch = epoch+1
+            current_step = i+1
 
-            # # Append Losses
+            print('[%d/%d][%d/%d]\tLoss_P: %.4f'
+                  % (current_epoch, num_epochs, current_step, constants.nun_steps,
+                     errP.item()))
+
+            # Append Losses
             # G_losses.append(errG.item())
-            # D_losses.append(errD.item())
+            P_losses.append(errP.item())
 
             iters += 1
 

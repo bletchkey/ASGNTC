@@ -4,6 +4,9 @@ bs = 64
 # Number of training epochs
 num_epochs = 20
 
+# Number of steps in each epoch
+nun_steps = 10
+
 # Spatial size of training images. All images will be resized to this size using a transformer.
 image_size = 32
 

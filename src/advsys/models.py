@@ -11,16 +11,15 @@ class Generator(nn.Module):
 
             nn.ConvTranspose2d(constants.nz, constants.ngf * 8, 4, 1, 0, bias=False),
             nn.BatchNorm2d(constants.ngf * 8),
-            nn.ReLU(True),
-
+            nn.ReLU(inplace=True),
 
             nn.ConvTranspose2d(constants.ngf * 8, constants.ngf * 4, 4, 2, 1, bias=False),
             nn.BatchNorm2d(constants.ngf * 4),
-            nn.ReLU(True),
+            nn.ReLU(inplace=True),
 
             nn.ConvTranspose2d(constants.ngf * 4, constants.ngf * 2, 4, 2, 1, bias=False),
             nn.BatchNorm2d(constants.ngf * 2),
-            nn.ReLU(True),
+            nn.ReLU(inplace=True),
 
             nn.ConvTranspose2d(constants.ngf * 2, constants.nc, 4, 2, 1, bias=False),
             nn.Sigmoid()
@@ -39,23 +38,23 @@ class Predictor(nn.Module):
 
             nn.Conv2d(constants.nc,constants.ndf * 2, 4, 2, 1, bias=False),
             nn.BatchNorm2d(constants.ndf * 2),
-            nn.LeakyReLU(0.2, inplace=True),
+            nn.ReLU(inplace=True),
 
             nn.Conv2d(constants.ndf * 2, constants.ndf * 4, 4, 2, 1, bias=False),
             nn.BatchNorm2d(constants.ndf * 4),
-            nn.LeakyReLU(0.2, inplace=True),
+            nn.ReLU(inplace=True),
 
             nn.Conv2d(constants.ndf * 4, constants.ndf * 8, 4, 2, 1, bias=False),
             nn.BatchNorm2d(constants.ndf * 8),
-            nn.LeakyReLU(0.2, inplace=True),
+            nn.ReLU(inplace=True),
 
             nn.ConvTranspose2d(constants.ngf * 8, constants.ngf * 4, 4, 2, 1, bias=False),
             nn.BatchNorm2d(constants.ngf * 4),
-            nn.ReLU(True),
+            nn.ReLU(inplace=True),
 
             nn.ConvTranspose2d(constants.ngf * 4, constants.ngf * 2, 4, 2, 1, bias=False),
             nn.BatchNorm2d(constants.ngf * 2),
-            nn.ReLU(True),
+            nn.ReLU(inplace=True),
 
             nn.ConvTranspose2d(constants.ngf * 2, constants.nc, 4, 2, 1, bias=False),
             nn.Sigmoid()
