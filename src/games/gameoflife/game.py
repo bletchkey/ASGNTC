@@ -43,6 +43,10 @@ class GameOfLife(Game):
         return self.__simulation.getAllWeights()
 
     @property
+    def metric(self) -> np.ndarray:
+        return self.__simulation.getMetric()
+
+    @property
     def reached_stability(self) -> int:
         for i in range(len(self.__simulation.stability)):
             if self.__simulation.stability[i]["stable"]:

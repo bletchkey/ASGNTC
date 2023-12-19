@@ -8,9 +8,11 @@ class Drawable:
 
     def draw(self):
         for row in self:
+            row = ["0" if x == 0 else " " for x in row]
             print(" ".join(map(str, row)))
 
 class Image:
+
     def __init__(self, grid):
         self.grid = grid
         self.gridsize = grid.shape[0]

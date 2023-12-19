@@ -6,9 +6,11 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 
-from . import constants as constants
+from .utils import constants as constants
 
-from .models import Generator, Predictor
+from .model_p import Predictor
+from .model_g import Generator
+
 from .train_models import fit
 
 class Training():
@@ -19,11 +21,12 @@ class Training():
 
         self.device = ("cuda:0" if torch.cuda.is_available() else "cpu")
         self.fixed_noise = torch.randn(constants.bs, constants.nz, 1, 1, device=self.device)
-        self.criterion = nn.MSELoss()
+
+        self.criterion_p = nn.MSELoss()
+        self.criterion_g = lambda x, y: -1 * nn.MSELoss()(x, y)
 
         self.model_g = Generator().to(self.device)
         self.model_p = Predictor().to(self.device)
-
 
         self.optimizer_g = optim.AdamW(self.model_g.parameters(),
                                        lr=constants.g_adamw_lr,
@@ -44,10 +47,9 @@ class Training():
             "device": self.device,
             "batch size": constants.bs,
             "epochs": constants.num_epochs,
-            "image size": constants.image_size,
+            "grid size": constants.grid_size,
             "nz": constants.nz,
         }
-
 
     def get_device(self):
         return self.device
@@ -55,11 +57,11 @@ class Training():
     def run(self):
         random.seed(self.seed)
         torch.manual_seed(self.seed)
-        torch.use_deterministic_algorithms(True) # Needed for reproducible results
+        # torch.use_deterministic_algorithms(True) # Needed for reproducible results
 
         # Fit
-        G_losses, P_losses = fit(constants.num_epochs, self.model_g, self.model_p, self.optimizer_g, self.optimizer_p,
-                                 self.criterion, self.fixed_noise, self.device)
+        G_losses, P_losses = fit(self.model_g, self.model_p, self.optimizer_g, self.optimizer_p,
+                                 self.criterion_g, self.criterion_p, self.fixed_noise, self.device)
 
         self.result = {
             "G_losses": G_losses,

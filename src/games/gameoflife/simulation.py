@@ -39,12 +39,14 @@ class Simulation:
     def gridsize(self) -> int:
         return self.__gridsize
 
-
     def getGrid(self) -> GameOfLifeGrid:
         return self.__current_grid
 
     def getWeights(self) -> np.ndarray:
         return self.__current_weights
+
+    def getMetric(self) -> np.ndarray:
+        return self.__grids[-1]["weights"]
 
     def getSteps(self) -> int:
         return self.__step

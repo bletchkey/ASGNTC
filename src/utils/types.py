@@ -1,9 +1,17 @@
 import numpy as np
 import hashlib
 
+import torch
+
 class Grid(np.ndarray):
     def __new__(cls, data) -> np.ndarray:
-        grid = np.asarray(data).view(cls)
+
+        if isinstance(data, torch.Tensor):
+            grid = data.cpu().detach().numpy().view(cls)
+        else:
+            grid = np.asarray(data).view(cls)
+
+        grid = np.squeeze(grid) # Remove dimensions of size 1
 
         if (grid.shape[0] != grid.shape[1]) or not(grid.ndim == 2) and \
            (grid.shape[0] != 1 and grid.ndim != 3):
@@ -42,5 +50,4 @@ class Grid(np.ndarray):
     def __hash__(self) -> int:
         sha256_hash = hashlib.sha256(self.tobytes()).hexdigest()
         return int(sha256_hash, base=16)
-
 
