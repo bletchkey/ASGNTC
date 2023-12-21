@@ -1,46 +1,46 @@
 import sys
-import numpy as np
 
-from games import GameOfLife
-from games.gameoflife.utils.types import GameOfLifeGrid
-from games.gameoflife.utils.patterns import spaceships, oscillators, still_lifes
+import torch
+from gol_adv_sys.utils import constants as constants
+from gol_adv_sys.training import Training
+from gol_adv_sys.utils import helper_functions as hf
 
-from utils.graphics import Image, UI
-import utils.constants as constants
+def test():
+    plot_data = {
+        "initial_conf": None,
+        "simulated_conf": None,
+        "predicted_metric": None,
+        "simulated_metric": None,
+    }
 
-from advsys.training import Training
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    steps = 300
+    grid = torch.zeros((1, 1, 32, 32), dtype=torch.float32, device=device)
+
+    # create glider at position (1, 1)
+    grid[0, 0, 1, 1] = 1.
+    grid[0, 0, 2, 2] = 1.
+    grid[0, 0, 2, 3] = 1.
+    grid[0, 0, 3, 1] = 1.
+    grid[0, 0, 3, 2] = 1.
+
+    # create glider at position (25, 1)
+
+    grid[0, 0, 25, 1] = 1.
+    grid[0, 0, 26, 2] = 1.
+    grid[0, 0, 26, 3] = 1.
+    grid[0, 0, 27, 1] = 1.
+    grid[0, 0, 27, 2] = 1.
 
 
-def test_game_of_life():
+    plot_data["initial_conf"] = grid[0]
+    grid, metric = hf.simulate_grid(grid, constants.TOPOLOGY["toroidal"], steps, device)
+    plot_data["simulated_conf"] = grid[0]
+    plot_data["predicted_metric"] = torch.ones_like(metric[0])
+    plot_data["simulated_metric"] = metric[0]
 
-    # Initialize the grid
-    initial_grid = GameOfLifeGrid(np.zeros((constants.DEFAULT_GRID_SIZE, constants.DEFAULT_GRID_SIZE), dtype=int), constants.TOPOLOGY["toroidal"])
-    initial_grid.load(spaceships["glider"], (2, 2))
-    initial_grid.load(spaceships["glider"], (2, 10))
-    initial_grid.load(spaceships["glider"], (2, 18))
-    initial_grid.load(spaceships["glider"], (10, 2))
-    initial_grid.load(oscillators["pulsar"], (10, 10))
 
-    # Initialize random grid
-    random_grid = GameOfLifeGrid(np.random.randint(2, size=(constants.DEFAULT_GRID_SIZE, constants.DEFAULT_GRID_SIZE)),
-                                 constants.TOPOLOGY["toroidal"])
-
-    random_grid_flat = GameOfLifeGrid(np.random.randint(2, size=(constants.DEFAULT_GRID_SIZE, constants.DEFAULT_GRID_SIZE)),
-                                 constants.TOPOLOGY["flat"])
-
-    # Create a new simulation
-    # game = GameOfLife(initial_grid)
-    game = GameOfLife(random_grid_flat)
-
-    # Run the simulation
-    game.update(steps=1000)
-
-    # Print the statistics
-    print(game.statistics())
-
-    image_slider = UI(game.all_grids, game.all_weights)
-    image_slider.show()
-
+    hf.save_progress_plot(plot_data, 0)
 
 def main():
 

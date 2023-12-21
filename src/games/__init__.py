@@ -1,1 +1,0 @@
-from games.gameoflife.game import GameOfLife
