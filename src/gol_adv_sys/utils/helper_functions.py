@@ -1,6 +1,5 @@
 import os
 import matplotlib.pyplot as plt
-import datetime
 
 import numpy as np
 import re
@@ -84,35 +83,7 @@ def set_grid_ncells(grid, ncells, device):
     return _g
 
 
-class results_folder:
-    _instance = None
-
-    @staticmethod
-    def get_instance(base_path):
-        if results_folder._instance is None:
-            results_folder(base_path)
-        return results_folder._instance.folder_path
-
-    def __init__(self, base_path):
-        if results_folder._instance is not None:
-            raise Exception("This class is a singleton!")
-        else:
-            self.folder_path = self._create_unique_date_folder(base_path)
-            results_folder._instance = self
-
-    def _create_unique_date_folder(self, base_path):
-        #check base path exists
-        if not os.path.exists(base_path):
-            raise ValueError(f"Base path {base_path} does not exist")
-
-        current_datetime = datetime.datetime.now()
-        folder_name = current_datetime.strftime("%Y-%m-%d_%H-%M-%S")
-        new_folder_path = os.path.join(base_path, folder_name)
-        os.makedirs(new_folder_path, exist_ok=True)
-        return new_folder_path
-
-
-def save_progress_plot(plot_data, epoch):
+def save_progress_plot(results_path, plot_data, epoch):
 
     current_epoch = epoch+1
     i = 0
@@ -122,10 +93,6 @@ def save_progress_plot(plot_data, epoch):
     plot_data["simulated_conf"] = plot_data["simulated_conf"][i].detach().cpu().numpy().squeeze()
     plot_data["predicted_metric"] = plot_data["predicted_metric"][i].detach().cpu().numpy().squeeze()
     plot_data["simulated_metric"] = plot_data["simulated_metric"][i].detach().cpu().numpy().squeeze()
-
-    # Create the results directory if it doesn't exist
-
-    results_dir = results_folder.get_instance(constants.results_folder_path)
 
     fig, axs = plt.subplots(2, 2)
     fig.suptitle(f"Epoch {current_epoch}")
@@ -142,7 +109,7 @@ def save_progress_plot(plot_data, epoch):
     plt.tight_layout()
 
     # Save image
-    plt.savefig(os.path.join(results_dir, f"epoch_{current_epoch}.png"))
+    plt.savefig(os.path.join(results_path, f"epoch_{current_epoch}.png"))
 
     # Close the figure
     plt.close(fig)

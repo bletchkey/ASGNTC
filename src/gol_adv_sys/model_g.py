@@ -10,19 +10,19 @@ class Generator(nn.Module):
 
         self.main = nn.Sequential(
 
-            nn.ConvTranspose2d(constants.nz, constants.ngf * 8, 4, 1, 0, bias=False),
+            nn.ConvTranspose2d(constants.nz, constants.ngf * 8, 4, 1, 0, bias=True),
             nn.BatchNorm2d(constants.ngf * 8),
             nn.ReLU(inplace=True),
 
-            nn.ConvTranspose2d(constants.ngf * 8, constants.ngf * 4, 4, 2, 1, bias=False),
+            nn.ConvTranspose2d(constants.ngf * 8, constants.ngf * 4, 4, 2, 1, bias=True),
             nn.BatchNorm2d(constants.ngf * 4),
             nn.ReLU(inplace=True),
 
-            nn.ConvTranspose2d(constants.ngf * 4, constants.ngf * 2, 4, 2, 1, bias=False),
+            nn.ConvTranspose2d(constants.ngf * 4, constants.ngf * 2, 4, 2, 1, bias=True),
             nn.BatchNorm2d(constants.ngf * 2),
             nn.ReLU(inplace=True),
 
-            nn.ConvTranspose2d(constants.ngf * 2, constants.nc, 4, 2, 1, bias=False),
+            nn.ConvTranspose2d(constants.ngf * 2, constants.nc, 4, 2, 1, bias=True),
             nn.Sigmoid()
 
         )

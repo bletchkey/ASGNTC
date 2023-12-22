@@ -18,6 +18,9 @@ num_training_steps = 20
 # Path to the folder where the results will be saved
 results_folder_path = "results"
 
+# Path to the folder where the models will be saved
+models_folder_path = "models"
+
 
 ### SIMULATION PARAMETERS #########################################################
 
@@ -53,6 +56,19 @@ ndf = 32
 
 # Size of z latent vector (i.e. size of generator input)
 nz = 256
+
+
+# Hyperparameters for Adam optimizer
+p_adam_lr=0.001
+p_adam_b1=0.9
+p_adam_b2=0.999
+p_adam_eps=1e-08
+
+g_adam_lr=0.001
+g_adam_b1=0.9
+g_adam_b2=0.999
+g_adam_eps=1e-08
+
 
 # Hyperparameters for AdamW optimizer
 p_adamw_lr=0.001

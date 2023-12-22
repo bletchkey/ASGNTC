@@ -6,6 +6,8 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 
+import datetime
+
 from .utils import constants as constants
 
 from .model_p import Predictor
@@ -13,8 +15,12 @@ from .model_g import Generator
 
 from .train_models import fit
 
+from .utils.folders import training_folders
+
 class Training():
     def __init__(self):
+        self.__date = datetime.datetime.now()
+        self.folders = training_folders(self.__date)
 
         self.__seed_type = {"fixed": 54, "random": random.randint(1, 10000), "is_random": True}
         self.seed = self.__seed_type["random"] if self.__seed_type["is_random"] else self.__seed_type["fixed"]
@@ -28,11 +34,10 @@ class Training():
         self.model_g = Generator().to(self.device)
         self.model_p = Predictor().to(self.device)
 
-        self.optimizer_g = optim.AdamW(self.model_g.parameters(),
-                                       lr=constants.g_adamw_lr,
-                                       betas=(constants.g_adamw_b1, constants.g_adamw_b2),
-                                       eps=constants.g_adamw_eps,
-                                       weight_decay=constants.g_adamw_wd)
+        self.optimizer_g = optim.Adam(self.model_g.parameters(),
+                                      lr=constants.g_adam_lr,
+                                      betas=(constants.g_adam_b1, constants.g_adam_b2),
+                                      eps=constants.g_adam_eps)
 
         self.optimizer_p = optim.AdamW(self.model_p.parameters(),
                                         lr=constants.p_adamw_lr,
@@ -61,7 +66,7 @@ class Training():
 
         # Fit
         G_losses, P_losses = fit(self.model_g, self.model_p, self.optimizer_g, self.optimizer_p,
-                                 self.criterion_g, self.criterion_p, self.fixed_noise, self.device)
+                                 self.criterion_g, self.criterion_p, self.fixed_noise, self.folders, self.device)
 
         self.result = {
             "G_losses": G_losses,
