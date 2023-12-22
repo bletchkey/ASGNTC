@@ -5,6 +5,7 @@ from gol_adv_sys.utils import constants as constants
 from gol_adv_sys.training import Training
 from gol_adv_sys.utils import helper_functions as hf
 
+
 def test():
     plot_data = {
         "initial_conf": None,
@@ -41,6 +42,7 @@ def test():
 
 
     hf.save_progress_plot(plot_data, 0)
+
 
 def main():
 

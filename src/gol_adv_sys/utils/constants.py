@@ -15,6 +15,9 @@ n_max_configs = 15*n_configs
 # Number of steps for training with a certain data set in an epoch
 num_training_steps = 20
 
+# Average loss of P threshold before training G
+threshold_errP_avg = 5e-06 # 0.000005
+
 # Path to the folder where the results will be saved
 results_folder_path = "results"
 
@@ -49,13 +52,13 @@ TOPOLOGY = {
 nc = 1
 
 # Size of feature maps in generator
-ngf = 64
+ngf = 32
 
 # Size of feature maps in discriminator
 ndf = 32
 
 # Size of z latent vector (i.e. size of generator input)
-nz = 256
+nz = 128
 
 
 # Hyperparameters for Adam optimizer

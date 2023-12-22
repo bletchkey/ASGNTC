@@ -13,7 +13,8 @@ import torch.nn.functional as F
 import torch.optim as optim
 
 from .utils import constants as constants
-from .utils.helper_functions import simulate_grid, set_grid_ncells, save_progress_plot
+from .utils.helper_functions import set_grid_ncells, save_progress_plot, get_epoch_elapsed_time_str
+from .utils.simulation_functions import simulate_grid
 
 def generate_new_configs(model_g, n_configs, device):
 
@@ -65,18 +66,16 @@ def fit(model_g, model_p, optimizer_g, optimizer_p, criterion_g, criterion_p, fi
     torch.autograd.set_detect_anomaly(True)
 
     plot_data = {
+        "generated_data": None,
         "initial_conf": None,
         "simulated_conf": None,
-        "predicted_metric": None,
         "simulated_metric": None,
+        "predicted_metric": None,
     }
 
     G_losses = []
     P_losses = []
     dataloader = []
-
-    # Set the threshold errP, if the value is below then i can start training G
-    threshold_errP_avg = 5e-06 # 0.000005
 
     properties_G= {"enabled": True, "can_train": False}
 
@@ -90,7 +89,7 @@ def fit(model_g, model_p, optimizer_g, optimizer_p, criterion_g, criterion_p, fi
         shuffled_dl = dataloader.copy()
         random.shuffle(shuffled_dl)
 
-        print(f"\n\n---Epoch: {epoch+1}/{constants.num_epochs}---")
+        print(f"\n\nEpoch: {epoch+1}/{constants.num_epochs}")
         print(f"Number of generated configurations in data set: {len(dataloader)*constants.bs}\n")
 
         steps_times = [0] * constants.num_training_steps
@@ -148,21 +147,19 @@ def fit(model_g, model_p, optimizer_g, optimizer_p, criterion_g, criterion_p, fi
             G_losses.append(errG.item() if (properties_G["enabled"] and properties_G["can_train"]) else 0)
             P_losses.append(errP.item())
 
-        # Check if the errP is below the threshold
+
+        # Start training the generator if the errP_avg is below the threshold
         errP_avg = sum(errs_P)/len(errs_P)
 
-        if properties_G["enabled"] and not properties_G["can_train"] and errP_avg < threshold_errP_avg:
+        if properties_G["enabled"] and not properties_G["can_train"] and errP_avg < constants.threshold_errP_avg:
             properties_G["can_train"] = True
 
-        # Get elapsed time for the epoch in minutes
-        epoch_elapsed_time_m = sum(steps_times)/60
-
         # Print the total time elapsed for the epoch and the average time per step
-        print(f"\nEPOCH {epoch+1} elapsed time: {epoch_elapsed_time_m:.2f} minutes")
-        print(f"EPOCH {epoch+1} average time per step: {epoch_elapsed_time_m/constants.num_training_steps:.2f} minutes\n")
+        print(f"\nEpoch {epoch+1} elapsed time: {get_epoch_elapsed_time_str(steps_times)}")
 
         # Test the model on the fixed noise after each epoch
         generated_grid_fixed = model_g(fixed_noise)
+        plot_data["generated_data"] = generated_grid_fixed
         plot_data["initial_conf"] = set_grid_ncells(generated_grid_fixed, constants.n_max_living_cells, device)
         plot_data["simulated_conf"], plot_data["simulated_metric"] = simulate_grid(plot_data["initial_conf"],
                                                                                    constants.TOPOLOGY["toroidal"],
@@ -185,6 +182,7 @@ def fit(model_g, model_p, optimizer_g, optimizer_p, criterion_g, criterion_p, fi
                     "state_dict": model_p.state_dict(),
                     "optimizer": optimizer_p.state_dict(),
                    }, path_p)
+
 
     return G_losses, P_losses
 
