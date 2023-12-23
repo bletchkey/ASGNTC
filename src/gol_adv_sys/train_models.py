@@ -107,6 +107,7 @@ def fit(model_g, model_p, optimizer_g, optimizer_p, criterion_g, criterion_p, fi
                 for i in range(len(new_configs)):
                     model_g.train()
                     optimizer_g.zero_grad()
+                    model_p.eval()
                     predicted_metric = model_p(new_configs[i]["generated"])
                     errG = criterion_g(predicted_metric, new_configs[i]["simulated"]["metric"])
                     errG.backward()
@@ -126,10 +127,6 @@ def fit(model_g, model_p, optimizer_g, optimizer_p, criterion_g, criterion_p, fi
             step_end_time = time.time()
             steps_times[step] = step_end_time - step_start_time
 
-            # Set the models to eval mode
-            model_p.eval()
-            model_g.eval()
-
             # Output training stats
             current_step = step+1
 
@@ -147,6 +144,10 @@ def fit(model_g, model_p, optimizer_g, optimizer_p, criterion_g, criterion_p, fi
             G_losses.append(errG.item() if (properties_G["enabled"] and properties_G["can_train"]) else 0)
             P_losses.append(errP.item())
 
+        # TEST
+        for name, param in model_g.named_parameters():
+            if param.grad is not None:
+                print(f"{name}, Gradient Norm: {param.grad.norm()}")
 
         # Start training the generator if the errP_avg is below the threshold
         errP_avg = sum(errs_P)/len(errs_P)
@@ -155,17 +156,19 @@ def fit(model_g, model_p, optimizer_g, optimizer_p, criterion_g, criterion_p, fi
             properties_G["can_train"] = True
 
         # Print the total time elapsed for the epoch and the average time per step
-        print(f"\nEpoch {epoch+1} elapsed time: {get_epoch_elapsed_time_str(steps_times)}")
+        print(f"Elapsed time: {get_epoch_elapsed_time_str(steps_times)}")
 
         # Test the model on the fixed noise after each epoch
-        generated_grid_fixed = model_g(fixed_noise)
-        plot_data["generated_data"] = generated_grid_fixed
-        plot_data["initial_conf"] = set_grid_ncells(generated_grid_fixed, constants.n_max_living_cells, device)
-        plot_data["simulated_conf"], plot_data["simulated_metric"] = simulate_grid(plot_data["initial_conf"],
-                                                                                   constants.TOPOLOGY["toroidal"],
-                                                                                   constants.n_simulation_steps,
-                                                                                   device)
-        plot_data["predicted_metric"] = model_p(plot_data["initial_conf"])
+        with torch.no_grad():
+            model_g.eval()
+            generated_grid_fixed = model_g(fixed_noise)
+            plot_data["generated_data"] = generated_grid_fixed
+            plot_data["initial_conf"] = set_grid_ncells(generated_grid_fixed, constants.n_max_living_cells, device)
+            plot_data["simulated_conf"], plot_data["simulated_metric"] = simulate_grid(plot_data["initial_conf"],
+                                                                                       constants.TOPOLOGY["toroidal"],
+                                                                                       constants.n_simulation_steps,
+                                                                                       device)
+            plot_data["predicted_metric"] = model_p(plot_data["initial_conf"])
 
         # Save the progress plot
         save_progress_plot(folders.results_path, plot_data, epoch)

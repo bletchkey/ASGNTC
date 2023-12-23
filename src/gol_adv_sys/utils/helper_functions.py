@@ -56,9 +56,10 @@ def get_epoch_elapsed_time_str(times):
 
     seconds = sum(times)
     minutes = int(seconds // 60)
+    hours = int(minutes // 60)
     remaining_seconds = int(math.floor(seconds % 60))
 
-    # Format as mm:ss
-    time_format = f"{minutes:02d}:{remaining_seconds:02d}"
+    # Format time
+    time_format = f"{hours}h {minutes}m {remaining_seconds}s"
 
     return time_format

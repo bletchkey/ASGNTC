@@ -18,11 +18,17 @@ num_training_steps = 20
 # Average loss of P threshold before training G
 threshold_errP_avg = 5e-06 # 0.000005
 
+# Base path to the folder where the trainings will be saved
+trainings_folder_path = "trainings"
+
 # Path to the folder where the results will be saved
 results_folder_path = "results"
 
 # Path to the folder where the models will be saved
 models_folder_path = "models"
+
+# Path to the folder where the logs will be saved
+logs_folder_path = "logs"
 
 
 ### SIMULATION PARAMETERS #########################################################
