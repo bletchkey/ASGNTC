@@ -7,16 +7,16 @@ bs = 64
 num_epochs = 100
 
 # Number of new configurations to generate at each epoch
-n_configs = 64*bs
+n_configs = 128*bs
 
 # Max number of configurations in data set
-n_max_configs = 15*n_configs
+n_max_configs = 5*n_configs
 
 # Number of steps for training with a certain data set in an epoch
 num_training_steps = 20
 
 # Average loss of P threshold before training G
-threshold_errP_avg = 5e-06 # 0.000005
+threshold_avg_loss_p = 5e-5  #0.00005
 
 # Base path to the folder where the trainings will be saved
 trainings_folder_path = "trainings"
@@ -43,13 +43,16 @@ n_max_living_cells = grid_size * 2
 n_simulation_steps = 1
 
 # Max number of steps to run the simulation
-n_max_simulation_steps = 1000
+n_max_simulation_steps = 100
+
+# Threshold for the value of the cells in the generated grids
+threshold_cell_value = 0.95
+
 
 TOPOLOGY = {
     "toroidal": "toroidal",
     "flat": "flat"
 }
-
 
 
 ### MODELS PARAMETERS ##############################################################

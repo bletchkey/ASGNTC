@@ -23,7 +23,7 @@ class Generator(nn.Module):
             nn.ReLU(inplace=True),
 
             nn.ConvTranspose2d(constants.ngf * 2, constants.nc, 4, 2, 1, bias=True),
-            nn.Sigmoid()
+            nn.Tanh()
 
         )
 

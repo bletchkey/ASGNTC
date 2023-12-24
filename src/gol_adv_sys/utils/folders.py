@@ -19,6 +19,7 @@ class training_folders:
     def results_path(self):
         if self.__results_path is None:
             self.__results_path = self.__create_folder(constants.results_folder_path)
+
         return self.__results_path
 
     @property

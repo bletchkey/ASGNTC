@@ -41,6 +41,9 @@ def simulate_grid(grid, topology, steps, device):
     metric = torch.zeros_like(grid)
     _simulation_function = None
 
+    # for every value in grid, if value is < 0.5, set to 0, else set to 1
+    grid = torch.where(grid < constants.threshold_cell_value, torch.zeros_like(grid), torch.ones_like(grid))
+
     # Define the simulation function
     if topology == constants.TOPOLOGY["toroidal"]:
         _simulation_function = _simulate_grid_toroidal
@@ -61,3 +64,4 @@ def simulate_grid(grid, topology, steps, device):
         metric = metric + (grid * parameter)
 
     return grid, metric
+

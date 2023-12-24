@@ -13,178 +13,122 @@ import torch.nn.functional as F
 import torch.optim as optim
 
 from .utils import constants as constants
-from .utils.helper_functions import set_grid_ncells, save_progress_plot, get_epoch_elapsed_time_str
-from .utils.simulation_functions import simulate_grid
-
-def generate_new_configs(model_g, n_configs, device):
-
-    iters = n_configs // constants.bs
-    configs = []
-
-    for _ in range(iters):
-        noise = torch.randn(constants.bs, constants.nz, 1, 1, device=device)
-
-        # Generate a grid
-        generated_grid = model_g(noise)
-
-        # We need to set the number of living cells in the initial configuration.
-        # We do this by setting the n cells with the highest values to 1 and the rest to 0
-        generated_grid = set_grid_ncells(generated_grid, constants.n_max_living_cells, device)
-
-        # Simulate the generated grid
-        simulated_grid, simulated_metric = simulate_grid(generated_grid, constants.TOPOLOGY["toroidal"], constants.n_simulation_steps, device)
-
-        configs.append({
-            "generated": generated_grid,
-            "simulated": {"grid": simulated_grid, "metric": simulated_metric}
-        })
-
-    # return the generated grid, the simulated grid and the simulated metric for the grid
-    return configs
+from .utils.helper_functions import test_models, save_progress_plot, get_epoch_elapsed_time_str, generate_new_configs, get_dataloader
 
 
-def get_dataloader(dataloader, model_g, device):
-
-    # Add configurations to the dataloader until it reaches the maximum number of configurations
-    # If max number of configurations is reached, remove the oldest configurations to make room for the new ones
-
-    new_configs = generate_new_configs(model_g, constants.n_configs, device)
-    n_to_remove = constants.n_configs // constants.bs
-
-    # Sliding window approach
-    if len(dataloader) + len(new_configs) > constants.n_max_configs // constants.bs:
-        dataloader = dataloader[n_to_remove:]
-
-    # Add the new configurations
-    dataloader += new_configs
-
-    return dataloader
-
-
-def fit(model_g, model_p, optimizer_g, optimizer_p, criterion_g, criterion_p, fixed_noise, folders, device) -> list:
+def fit(model_g, model_p, optimizer_g, optimizer_p, criterion_g, criterion_p, fixed_noise, folders, log_file, device) -> list:
 
     torch.autograd.set_detect_anomaly(True)
-
-    plot_data = {
-        "generated_data": None,
-        "initial_conf": None,
-        "simulated_conf": None,
-        "simulated_metric": None,
-        "predicted_metric": None,
-    }
 
     G_losses = []
     P_losses = []
     dataloader = []
 
+    path_g = os.path.join(folders.models_path, "generator.pth.tar")
+    path_p = os.path.join(folders.models_path, "predictor.pth.tar")
+
     properties_G= {"enabled": True, "can_train": False}
 
-    # Total number of epochs = num_epochs * num_training_steps
-    for epoch in range(constants.num_epochs):
+    with open(log_file, "a") as log:
 
-        # Get data loader for the current step of training
-        dataloader = get_dataloader(dataloader, model_g, device)
+        # Total number of epochs = num_epochs * num_training_steps
+        for epoch in range(constants.num_epochs):
 
-        # Create a new dataloader with the configurations in a random order
-        shuffled_dl = dataloader.copy()
-        random.shuffle(shuffled_dl)
+            # Get data loader for the current step of training
+            dataloader = get_dataloader(dataloader, model_g, device)
 
-        print(f"\n\nEpoch: {epoch+1}/{constants.num_epochs}")
-        print(f"Number of generated configurations in data set: {len(dataloader)*constants.bs}\n")
+            # Create a new dataloader with the configurations in a random order
+            shuffled_dl = dataloader.copy()
+            random.shuffle(shuffled_dl)
 
-        steps_times = [0] * constants.num_training_steps
-        errs_P      = [0] * constants.num_training_steps
+            log.write(f"\n\nEpoch: {epoch+1}/{constants.num_epochs}")
+            log.write(f"Number of generated configurations in data set: {len(dataloader)*constants.bs}\n")
+            log.flush()
 
-        # Train on the new configurations
-        for step in range(constants.num_training_steps):
+            steps_times = [0] * constants.num_training_steps
+            errs_P      = [0] * constants.num_training_steps
 
-            step_start_time = time.time()
+            # Train on the new configurations
+            for step in range(constants.num_training_steps):
 
-            # Train the generator (only if the errP is below the threshold)
-            if properties_G["enabled"] and properties_G["can_train"]:
-                new_configs = generate_new_configs(model_g, 4*constants.n_configs, device)
+                step_start_time = time.time()
 
-                for i in range(len(new_configs)):
-                    model_g.train()
-                    optimizer_g.zero_grad()
-                    model_p.eval()
-                    predicted_metric = model_p(new_configs[i]["generated"])
-                    errG = criterion_g(predicted_metric, new_configs[i]["simulated"]["metric"])
-                    errG.backward()
-                    optimizer_g.step()
+                # Train the predictor
+                for i in range(len(shuffled_dl)):
+                    model_p.train()
+                    optimizer_p.zero_grad()
+                    predicted_metric = model_p(shuffled_dl[i]["generated"].detach())
+                    errP = criterion_p(predicted_metric, shuffled_dl[i]["simulated"]["metric"])
+                    errs_P[step] = errP.item()
+                    errP.backward()
+                    optimizer_p.step()
+
+                # Train the generator (when errP_avg is below the threshold and the generator is enabled)
+                if properties_G["enabled"] and properties_G["can_train"]:
+                    new_configs = generate_new_configs(model_g, constants.n_configs, device)
+                    for config in new_configs:
+                        optimizer_g.zero_grad()
+                        predicted_metric = model_p(config["generated"])
+                        errG = criterion_g(predicted_metric, config["simulated"]["metric"])
+                        errG.backward()
+                        optimizer_g.step()
 
 
-            # Train the predictor
-            for i in range(len(shuffled_dl)):
-                model_p.train()
-                optimizer_p.zero_grad()
-                predicted_metric = model_p(shuffled_dl[i]["generated"])
-                errP = criterion_p(predicted_metric, shuffled_dl[i]["simulated"]["metric"])
-                errs_P[step] = errP.item()
-                errP.backward()
-                optimizer_p.step()
+                step_end_time = time.time()
+                steps_times[step] = step_end_time - step_start_time
 
-            step_end_time = time.time()
-            steps_times[step] = step_end_time - step_start_time
+                # Output training stats
+                current_step = step+1
 
-            # Output training stats
-            current_step = step+1
+                str_step  = f"{current_step}/{constants.num_training_steps}"
+                str_err_p = f"{errP.item()}"
 
-            str_step   = f"{current_step}/{constants.num_training_steps}"
-            str_err_p = f"{errP.item()}"
+                if (properties_G["enabled"] and properties_G["can_train"]):
+                    str_err_g = f"{errG.item()}"
+                    log.write(f"{steps_times[step]:.2f}s | Step: {str_step}, Loss P: {str_err_p}, Loss G: {str_err_g}")
+                    log.flush()
+                else:
+                    log.write(f"{steps_times[step]:.2f}s | Step: {str_step}, Loss P: {str_err_p}")
+                    log.flush()
 
-            if (properties_G["enabled"] and properties_G["can_train"]):
-                str_err_g = f"{errG.item()}"
-                print(f"{steps_times[step]:.2f}s | Step: {str_step}, Loss P: {str_err_p}, Loss G: {str_err_g}")
-            else:
-                print(f"{steps_times[step]:.2f}s | Step: {str_step}, Loss P: {str_err_p}")
+                # Append Losses
+                if properties_G["enabled"] and properties_G["can_train"]:
+                    G_losses.append(errG.item())
 
-            # Append Losses
-            # TODO: The way G_losses is managed is temporary
-            G_losses.append(errG.item() if (properties_G["enabled"] and properties_G["can_train"]) else 0)
-            P_losses.append(errP.item())
+                P_losses.append(errP.item())
 
-        # TEST
-        for name, param in model_g.named_parameters():
-            if param.grad is not None:
-                print(f"{name}, Gradient Norm: {param.grad.norm()}")
+            # Start training the generator if the errP_avg is below the threshold
+            errP_avg = sum(errs_P)/len(errs_P)
+            if properties_G["enabled"] and not properties_G["can_train"] and errP_avg < constants.threshold_avg_loss_p:
+                properties_G["can_train"] = True
 
-        # Start training the generator if the errP_avg is below the threshold
-        errP_avg = sum(errs_P)/len(errs_P)
 
-        if properties_G["enabled"] and not properties_G["can_train"] and errP_avg < constants.threshold_errP_avg:
-            properties_G["can_train"] = True
+            # Print the total time elapsed for the epoch and the average time per step
+            log.write(f"Elapsed time: {get_epoch_elapsed_time_str(steps_times)}")
+            log.flush()
 
-        # Print the total time elapsed for the epoch and the average time per step
-        print(f"Elapsed time: {get_epoch_elapsed_time_str(steps_times)}")
+            # Test the models on the fixed noise
+            data = test_models(model_g, model_p, fixed_noise, device)
 
-        # Test the model on the fixed noise after each epoch
-        with torch.no_grad():
-            model_g.eval()
-            generated_grid_fixed = model_g(fixed_noise)
-            plot_data["generated_data"] = generated_grid_fixed
-            plot_data["initial_conf"] = set_grid_ncells(generated_grid_fixed, constants.n_max_living_cells, device)
-            plot_data["simulated_conf"], plot_data["simulated_metric"] = simulate_grid(plot_data["initial_conf"],
-                                                                                       constants.TOPOLOGY["toroidal"],
-                                                                                       constants.n_simulation_steps,
-                                                                                       device)
-            plot_data["predicted_metric"] = model_p(plot_data["initial_conf"])
+            # Save the progress plot
+            save_progress_plot(data, epoch, folders.results_path)
 
-        # Save the progress plot
-        save_progress_plot(folders.results_path, plot_data, epoch)
 
-        # Save the models
-        path_g = os.path.join(folders.models_path, "generator.pth.tar")
-        torch.save({
-                    "state_dict": model_g.state_dict(),
-                    "optimizer": optimizer_g.state_dict(),
-                   }, path_g)
+            # Save the models
+            torch.save({
+                        "state_dict": model_g.state_dict(),
+                        "optimizer": optimizer_g.state_dict(),
+                       }, path_g)
 
-        path_p = os.path.join(folders.models_path, "predictor.pth.tar")
-        torch.save({
-                    "state_dict": model_p.state_dict(),
-                    "optimizer": optimizer_p.state_dict(),
-                   }, path_p)
+            torch.save({
+                        "state_dict": model_p.state_dict(),
+                        "optimizer": optimizer_p.state_dict(),
+                       }, path_p)
+
+
+            # Clear CUDA cache
+            if device == torch.device("cuda"):
+                torch.cuda.empty_cache()
 
 
     return G_losses, P_losses

@@ -29,14 +29,15 @@ class block(nn.Module):
 class ResNet(nn.Module):
     def __init__(self, block, layers):
         super(ResNet, self).__init__()
-        self.channels = constants.ndf
+        self.channels = 2* constants.ndf
         self.conv1 = nn.Conv2d(constants.nc, self.channels, kernel_size = 3, stride = 1, padding = 1)
         self.bn1 = nn.BatchNorm2d(self.channels)
         self.relu = nn.ReLU()
 
-        self.layer1 = self._make_layer(block, layers[0], self.channels)
-        self.layer2 = self._make_layer(block, layers[1], self.channels)
-        self.layer3 = self._make_layer(block, layers[2], self.channels)
+        self.n_layers = len(layers)
+
+        for i in range(self.n_layers):
+            setattr(self, f"layer{i}", self._make_layer(block, layers[i], self.channels))
 
         self.conv2 = nn.Conv2d(self.channels, constants.nc, kernel_size = 1, stride = 1, padding = 0)
 
@@ -45,9 +46,8 @@ class ResNet(nn.Module):
         x = self.bn1(x)
         x = self.relu(x)
 
-        x = self.layer1(x)
-        x = self.layer2(x)
-        x = self.layer3(x)
+        for i in range(self.n_layers):
+            x = getattr(self, f"layer{i}")(x)
 
         x = self.conv2(x)
 
@@ -65,8 +65,10 @@ class ResNet(nn.Module):
 
 
 def Predictor():
+    return ResNet(block, [3, 3, 3, 3])
+
+
+def Predictor_18():
     return ResNet(block, [3, 3, 3])
-
-
 
 
