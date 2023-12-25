@@ -1,0 +1,52 @@
+nohup: ignoring input
+/home/bletchkey/.local/lib/python3.8/site-packages/torch/autograd/__init__.py:251: UserWarning: Error detected in ConvolutionBackward0. Traceback of forward call that caused the error:
+  File "main.py", line 56, in <module>
+    RETCODE = main()
+  File "main.py", line 50, in main
+    train.run()
+  File "/home/bletchkey/ASGNTC/src/gol_adv_sys/training.py", line 116, in run
+    self.__fit()
+  File "/home/bletchkey/ASGNTC/src/gol_adv_sys/training.py", line 149, in __fit
+    self.__train_generator()
+  File "/home/bletchkey/ASGNTC/src/gol_adv_sys/training.py", line 320, in __train_generator
+    loss = 0
+  File "/home/bletchkey/ASGNTC/src/gol_adv_sys/training.py", line 279, in __get_n_new_configs
+    """
+  File "/home/bletchkey/ASGNTC/src/gol_adv_sys/utils/helper_functions.py", line 19, in generate_new_configs
+    iters = n_configs // constants.bs
+  File "/home/bletchkey/.local/lib/python3.8/site-packages/torch/nn/modules/module.py", line 1518, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+  File "/home/bletchkey/.local/lib/python3.8/site-packages/torch/nn/modules/module.py", line 1527, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/home/bletchkey/ASGNTC/src/gol_adv_sys/model_g.py", line 31, in forward
+    return self.main(input)
+  File "/home/bletchkey/.local/lib/python3.8/site-packages/torch/nn/modules/module.py", line 1518, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+  File "/home/bletchkey/.local/lib/python3.8/site-packages/torch/nn/modules/module.py", line 1527, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/home/bletchkey/.local/lib/python3.8/site-packages/torch/nn/modules/container.py", line 215, in forward
+    input = module(input)
+  File "/home/bletchkey/.local/lib/python3.8/site-packages/torch/nn/modules/module.py", line 1518, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+  File "/home/bletchkey/.local/lib/python3.8/site-packages/torch/nn/modules/module.py", line 1527, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/home/bletchkey/.local/lib/python3.8/site-packages/torch/nn/modules/conv.py", line 952, in forward
+    return F.conv_transpose2d(
+ (Triggered internally at ../torch/csrc/autograd/python_anomaly_mode.cpp:114.)
+  Variable._execution_engine.run_backward(  # Calls into the C++ engine to run the backward pass
+Traceback (most recent call last):
+  File "main.py", line 56, in <module>
+    RETCODE = main()
+  File "main.py", line 50, in main
+    train.run()
+  File "/home/bletchkey/ASGNTC/src/gol_adv_sys/training.py", line 116, in run
+    self.__fit()
+  File "/home/bletchkey/ASGNTC/src/gol_adv_sys/training.py", line 149, in __fit
+    self.__train_generator()
+  File "/home/bletchkey/ASGNTC/src/gol_adv_sys/training.py", line 325, in __train_generator
+    predicted_metric = self.model_p(config["generated"])
+  File "/home/bletchkey/.local/lib/python3.8/site-packages/torch/_tensor.py", line 492, in backward
+    torch.autograd.backward(
+  File "/home/bletchkey/.local/lib/python3.8/site-packages/torch/autograd/__init__.py", line 251, in backward
+    Variable._execution_engine.run_backward(  # Calls into the C++ engine to run the backward pass
+RuntimeError: one of the variables needed for gradient computation has been modified by an inplace operation: [torch.cuda.FloatTensor [64, 1, 4, 4]] is at version 2; expected version 1 instead. Hint: the backtrace further above shows the operation that failed to compute its gradient. The variable in question was changed in there or anywhere later. Good luck!

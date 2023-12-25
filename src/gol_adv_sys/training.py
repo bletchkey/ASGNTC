@@ -270,13 +270,15 @@ class Training():
 
     """
     Generate new configurations using the generator model.
-    The amount of configurations generated is set by the constant n_configs.
+
+    Args:
+        n_configs (int): The number of configurations to generate.
 
     Returns:
         new_configs (list): The new configurations generated.
     """
-    def __get_n_new_configs(self):
-        return  generate_new_configs(self.model_g, constants.n_configs, self.device)
+    def __get_new_configs(self, n_configs):
+        return  generate_new_configs(self.model_g, n_configs, self.device)
 
 
     """
@@ -317,7 +319,7 @@ class Training():
 
             loss = 0
             self.model_g.train()
-            new_configs = self.__get_n_new_configs()
+            new_configs = self.__get_new_configs(constants.n_configs)
             for config in new_configs:
                 self.optimizer_g.zero_grad()
                 predicted_metric = self.model_p(config["generated"])
