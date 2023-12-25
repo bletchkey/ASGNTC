@@ -1,3 +1,10 @@
+"""
+This module contains the class Training.
+This class is used to train the generator and predictor models.
+
+The training is done using the adversarial training approach.
+"""
+
 import numpy as np
 
 import os
@@ -14,8 +21,6 @@ from .utils import constants as constants
 
 from .model_p import Predictor, Predictor_18
 from .model_g import Generator
-
-from .train_models import fit
 
 from .utils.folders import training_folders
 from .utils.helper_functions import test_models, save_progress_plot, get_epoch_elapsed_time_str, generate_new_configs, get_dataloader
@@ -34,7 +39,6 @@ class Training():
         self.fixed_noise = torch.randn(constants.bs, constants.nz, 1, 1, device=self.device)
 
         self.dataloader = []
-        self.n_new_configs = []
         self.current_epoch = 0
         self.step_times_secs = []
         self.properties_g= {"enabled": True, "can_train": False}
@@ -42,33 +46,32 @@ class Training():
         self.results = {"losses_g": [],
                         "losses_p": []}
 
-        self.n_times_trained_p = self.__get__n_times_trained_p()
-        self.n_times_trained_g = self.__get__n_times_trained_g()
+        self.n_times_trained_p = 0
+        self.n_times_trained_g = 0
 
         self.criterion_p = nn.MSELoss()
         self.criterion_g = lambda x, y: -1 * nn.MSELoss()(x, y)
 
-        self.model_g = Generator().to(self.device)
         self.model_p = Predictor_18().to(self.device)
+        self.model_g = Generator().to(self.device)
+
+        self.optimizer_p = optim.AdamW(self.model_p.parameters(),
+                                       lr=constants.p_adamw_lr,
+                                       betas=(constants.p_adamw_b1, constants.p_adamw_b2),
+                                       eps=constants.p_adamw_eps,
+                                       weight_decay=constants.p_adamw_wd)
 
         self.optimizer_g = optim.Adam(self.model_g.parameters(),
                                       lr=constants.g_adam_lr,
                                       betas=(constants.g_adam_b1, constants.g_adam_b2),
                                       eps=constants.g_adam_eps)
 
-        self.optimizer_p = optim.AdamW(self.model_p.parameters(),
-                                        lr=constants.p_adamw_lr,
-                                        betas=(constants.p_adamw_b1, constants.p_adamw_b2),
-                                        eps=constants.p_adamw_eps,
-                                        weight_decay=constants.p_adamw_wd)
+        self.path_log_file = self.__init_log_file()
 
-
-        self.log_file = self.__create_log_file()
         self.path_p = None
         self.path_g = None
 
 
-    # TODO: get_training_specs()
     """
     Get the specifications of the training session.
 
@@ -80,18 +83,28 @@ class Training():
         return {
             "seed": self.seed,
             "device": self.device,
-            "batch size": constants.bs,
+            "batch_size": constants.bs,
             "epochs": constants.num_epochs,
-            "grid size": constants.grid_size,
+            "training_steps": constants.num_training_steps,
+            "n_configs": constants.n_configs,
+            "max_n_configs": constants.n_max_configs,
+            "grid_size": constants.grid_size,
+            "simulation_steps": constants.n_simulation_steps,
+            "threshold_cell_value": constants.threshold_cell_value,
+            "nc": constants.nc,
+            "ngf": constants.ngf,
+            "ndf": constants.ndf,
             "nz": constants.nz,
+            "optimizer_p": self.optimizer_p.__class__.__name__,
+            "optimizer_g": self.optimizer_g.__class__.__name__,
+            "criterion_p": self.criterion_p.__class__.__name__,
+            "criterion_g": "-MSELoss",
+            "avg_loss_p_before_training_g": constants.threshold_avg_loss_p
         }
 
 
     """
     Function to run the training.
-
-    Returns:
-        result (dict): The results of the training session.
 
     """
     def run(self):
@@ -100,20 +113,21 @@ class Training():
         # torch.use_deterministic_algorithms(True) # Needed for reproducible results
         torch.autograd.set_detect_anomaly(True)
 
-        # Fit
-        # G_losses, P_losses = fit(self.model_g, self.model_p, self.optimizer_g, self.optimizer_p,
-        #                          self.criterion_g, self.criterion_p, self.fixed_noise, self.folders,
-        #                          self.log_file, self.device)
-
-        # FIT
         self.__fit()
 
+        with open(self.path_log_file, "a") as log:
+            log.write(f"\n\nTraining ended at {datetime.datetime.now().strftime('%d/%m/%Y %H:%M:%S')}\n")
+            log.write(f"Number of times P was trained: {self.n_times_trained_p}\n")
+            log.write(f"Number of times G was trained: {self.n_times_trained_g}\n")
+            log.flush()
 
-    # PRIVATE METHODS
 
+    """
+    Adversarial training loop.
 
+    """
     def __fit(self):
-        with open(self.log_file, "a") as log:
+        with open(self.path_log_file, "a") as log:
             for epoch in range(constants.num_epochs):
 
                 self.step_times_secs.append([])
@@ -161,38 +175,48 @@ class Training():
     When creating the log file, the training specifications are also written to the file.
 
     Returns:
-        log_file_path (str): The path to the log file.
+        path (str): The path to the log file.
 
     """
-    def __create_log_file(self):
-        log_file_path = os.path.join(self.folders.logs_path, "asgntc.txt")
+    def __init_log_file(self):
 
-        log_file = open(log_file_path, "w")
-        log_file.write(f"Date: {self.__date}\n")
-        log_file.write(f"Seed: {self.seed}\n")
-        log_file.write(f"Device: {self.device}\n")
-        log_file.write(f"Epochs: {constants.num_epochs}\n")
-        log_file.write(f"Batch size: {constants.bs}\n")
-        log_file.write(f"Grid size: {constants.grid_size}x{constants.grid_size}\n")
-        log_file.write(f"Simulation steps: {constants.n_simulation_steps}\n")
-        log_file.write(f"Threshold cell value: {constants.threshold_cell_value}\n")
-        log_file.write("Models specs:\n")
-        log_file.write(f"nc: {constants.nc}\n")
-        log_file.write(f"ngf: {constants.ngf}\n")
-        log_file.write(f"ndf: {constants.ndf}\n")
-        log_file.write(f"nz: {constants.nz}\n")
-        log_file.write(f"Optimizer P: AdamW\n")
-        log_file.write(f"Optimizer G: Adam\n")
-        log_file.write(f"Criterion P: MSELoss\n")
-        log_file.write(f"Criterion G: -1 * MSELoss\n")
-        log_file.write(f"Threshold avg loss P before training G: {constants.threshold_avg_loss_p}\n")
-        log_file.flush()
+        path = os.path.join(self.folders.logs_path, "asgntc.txt")
 
-        log_file.close()
+        with open(path, "w") as log_file:
+            log_file.write(f"Training session started at {self.__date.strftime('%d/%m/%Y %H:%M:%S')}\n\n")
 
-        return log_file_path
+            log_file.write(f"Seed: {self.seed}\n")
+            log_file.write(f"Device: {self.device}\n")
+            log_file.write(f"Batch size: {constants.bs}\n")
+            log_file.write(f"Epochs: {constants.num_epochs}\n")
+            log_file.write(f"Number of training steps in each epoch: {constants.num_training_steps}\n")
+            log_file.write(f"Number of configurations generated in each epoch: {constants.n_configs}\n")
+            log_file.write(f"Max number of generated configurations in data set: {constants.n_max_configs}\n\n")
+
+            log_file.write(f"Game of Life specs:\n")
+            log_file.write(f"Grid size: {constants.grid_size}\n")
+            log_file.write(f"Simulation steps: {constants.n_simulation_steps}\n")
+            log_file.write(f"Threshold cell value: {constants.threshold_cell_value}\n\n")
+
+            log_file.write(f"Models specs:\n")
+            log_file.write(f"Latent space size: {constants.nz}\n")
+            log_file.write(f"Optimizer P: {self.optimizer_p.__class__.__name__}\n")
+            log_file.write(f"Optimizer G: {self.optimizer_g.__class__.__name__}\n")
+            log_file.write(f"Criterion P: {self.criterion_p.__class__.__name__}\n")
+            log_file.write(f"Criterion G: -MSELoss\n")
+            log_file.write(f"Average loss of P before training G: {constants.threshold_avg_loss_p}\n\n")
+            log_file.flush()
+
+        return path
 
 
+    """
+    Function for choosing the device to use for training.
+    If a GPU is available, the GPU with the most free memory is selected.
+
+    Returns:
+        device (torch.device): The device to use for training.
+    """
     def __choose_device(self):
         if not torch.cuda.is_available():
             return torch.device("cpu")
@@ -211,30 +235,56 @@ class Training():
         return torch.device(f"cuda:{selected_device}")
 
 
-    def __log_training_step(self, step):
-        with open(self.log_file, "a") as log:
+    """
+    Log the progress of the training session inside each epoch.
 
-            str_step = f"{step+1}/{constants.num_training_steps}"
+    """
+    def __log_training_step(self, step):
+        with open(self.path_log_file, "a") as log:
+
+            str_step      = f"{step+1}/{constants.num_training_steps}"
             str_step_time = f"{self.step_times_secs[self.current_epoch][step]:.2f} s"
-            str_err_p = f"{self.results['losses_p'][-1]}"
-            str_err_g = f"{self.results['losses_g'][-1]}" if len(self.results['losses_g']) > 0 else "N/A"
+            str_err_p     = f"{self.results['losses_p'][-1]}"
+            str_err_g     = f"{self.results['losses_g'][-1]}" if len(self.results['losses_g']) > 0 else "N/A"
 
             log.write(f"{str_step_time} | Step: {str_step}, Loss P: {str_err_p}, Loss G: {str_err_g}\n")
             log.flush()
 
+    """
+    Get the dataloader for the current epoch.
 
+    Each epoch, a new dataloader is created by adding n_configs new configurations.
+    The maximum number of configurations in the dataloader is set by the constant n_max_configs.
+    The older configurations are removed from the dataloader if the number of configurations
+    exceeds n_max_configs, and new configurations are added.
+
+    The configurations are generated by the generator model.
+
+    Returns:
+        dataloader (torch.utils.data.DataLoader): The dataloader for the current epoch.
+    """
     def __get_dataloader(self):
         self.dataloader = get_dataloader(self.dataloader, self.model_g, self.device)
 
         return self.dataloader
 
+    """
+    Generate new configurations using the generator model.
+    The amount of configurations generated is set by the constant n_configs.
 
+    Returns:
+        new_configs (list): The new configurations generated.
+    """
     def __get_n_new_configs(self):
-        self.n_new_configs = generate_new_configs(self.model_g, constants.n_configs, self.device)
-
-        return self.n_new_configs
+        return  generate_new_configs(self.model_g, constants.n_configs, self.device)
 
 
+    """
+    Function for training the predictor model.
+
+    Returns:
+        loss (float): The loss of the predictor model.
+    """
     def __train_predictor(self):
 
         loss = 0
@@ -255,14 +305,20 @@ class Training():
         return loss
 
 
+    """
+    Function for training the generator model.
+
+    Returns:
+        loss (float): The loss of the generator model.
+    """
     def __train_generator(self):
 
         if self.properties_g["can_train"]:
 
             loss = 0
             self.model_g.train()
-            self.__get_n_new_configs()
-            for config in self.n_new_configs:
+            new_configs = self.__get_n_new_configs()
+            for config in new_configs:
                 self.optimizer_g.zero_grad()
                 predicted_metric = self.model_p(config["generated"])
                 errG = self.criterion_g(predicted_metric, config["simulated"]["metric"])
@@ -272,8 +328,13 @@ class Training():
 
             self.n_times_trained_g += 1
 
-            loss /= len(self.n_new_configs)
+            loss /= len(new_configs)
             self.results["losses_g"].append(loss)
+
+            #check if parameters of G are None
+            for name, param in self.model_g.named_parameters():
+                if param.grad is None:
+                    print(name)
 
             return loss
 
@@ -281,6 +342,19 @@ class Training():
             return None
 
 
+    """
+    Function for getting the average loss of the predictor model.
+    The average loss is calculated on the last n losses.
+
+    If the number of losses is less than n, the average is calculated on all the losses.
+    To get the average loss of the last epoch, n should be set to num_training_steps (steps per epoch).
+
+    Args:
+        on_last_n_losses (int): The number of losses to calculate the average on starting from the last loss.
+
+    Returns:
+        avg_loss_p (float): The average loss of the predictor model on the last n losses.
+    """
     def __get_loss_avg_p(self, on_last_n_losses):
 
         len_losses_p = len(self.results["losses_p"])
@@ -295,6 +369,19 @@ class Training():
         return avg_loss_p
 
 
+    """
+    Function for getting the average loss of the generator model.
+    The average loss is calculated on the last n losses.
+
+    If the number of losses is less than n, the average is calculated on all the losses.
+    To get the average loss of the last epoch, n should be set to num_training_steps (steps per epoch).
+
+    Args:
+        on_last_n_losses (int): The number of losses to calculate the average on starting from the last loss.
+
+    Returns:
+        avg_loss_g (float): The average loss of the generator model on the last n losses.
+    """
     def __get_loss_avg_g(self, on_last_n_losses):
 
         len_losses_g = len(self.results["losses_g"])
@@ -309,14 +396,56 @@ class Training():
         return avg_loss_g
 
 
+    """
+    Special case of __get_loss_avg_p() where the average is calculated for the last epoch.
+
+    Returns:
+        avg_loss_p_last_epoch (float): The average loss of the predictor model on the last epoch.
+    """
+    def __get_loss_avg_p_last_epoch(self):
+        return self.__get_loss_avg_p(constants.num_training_steps)
+
+
+    """
+    Special case of __get_loss_avg_g() where the average is calculated for the last epoch.
+
+    Returns:
+        avg_loss_g_last_epoch (float): The average loss of the generator model on the last epoch.
+    """
+    def __get_loss_avg_g_last_epoch(self):
+        return self.__get_loss_avg_g(constants.num_training_steps)
+
+
+    """
+    Function for testing the models.
+    The models are tested on the fixed noise.
+
+    Returns:
+        data (dict): Contains the generated configurations, initial configurations, simulated configurations,
+        simulated metrics and predicted metrics.
+    """
     def __test_models(self):
         return test_models(self.model_g, self.model_p, self.fixed_noise, self.device)
 
 
+    """
+    Function for saving the progress plot.
+    It save the plot that shows the generated configurations, initial configurations, simulated configurations,
+    simulated metrics and predicted metrics.
+
+    Args:
+        data (dict): Contains the generated configurations, initial configurations, simulated configurations,
+        simulated metrics and predicted metrics.
+    """
     def __save_progress_plot(self, data):
         save_progress_plot(data, self.current_epoch, self.folders.results_path)
 
 
+    """
+    Function for saving the models.
+    It saves the generator and predictor models.
+
+    """
     def __save_models(self):
 
         if self.path_g is None:
@@ -336,14 +465,13 @@ class Training():
                    }, self.path_p)
 
 
-    def __get__n_times_trained_g(self):
-        return len(self.results["losses_g"])
+    """
+    Function that returns if the generator model can be trained.
+    The generator model can be trained if the average loss of the predictor model is less than a certain threshold.
 
-
-    def __get__n_times_trained_p(self):
-        return len(self.results["losses_p"])
-
-
+    Returns:
+        can_train (bool): True if the generator model can be trained, False otherwise.
+    """
     def __can_g_train(self):
 
         if not self.properties_g["enabled"]:
@@ -353,7 +481,14 @@ class Training():
             return True
 
         if self.properties_g["enabled"] and not self.properties_g["can_train"]:
-            self.properties_g["can_train"] = self.__get_loss_avg_p(self.n_times_trained_p) < constants.threshold_avg_loss_p
+            self.properties_g["can_train"] = self.__get_loss_avg_p_last_epoch() < constants.threshold_avg_loss_p
 
         return self.properties_g["can_train"]
 
+
+    def __set_optimizer_p(self, optimizer):
+        pass
+
+
+    def __set_optimizer_g(self, optimizer):
+        pass

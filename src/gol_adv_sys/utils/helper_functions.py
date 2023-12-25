@@ -6,7 +6,7 @@ import numpy as np
 import torch
 
 from . import constants as constants
-from .simulation_functions import simulate_grid
+from .simulation_functions import simulate_conf
 
 
 def generate_new_configs(model_g, n_configs, device):
@@ -16,13 +16,16 @@ def generate_new_configs(model_g, n_configs, device):
 
     for _ in range(iters):
         noise = torch.randn(constants.bs, constants.nz, 1, 1, device=device)
+        generated_conf = model_g(noise)
 
-        generated_grid = model_g(noise)
-        simulated_grid, simulated_metric = simulate_grid(generated_grid, constants.TOPOLOGY["toroidal"], constants.n_simulation_steps, device)
+        with torch.no_grad():
+            initial_conf, simulated_conf, simulated_metric = simulate_conf(generated_conf, constants.TOPOLOGY["toroidal"],
+                                                             constants.n_simulation_steps, device)
 
         configs.append({
-            "generated": generated_grid,
-            "simulated": {"grid": simulated_grid, "metric": simulated_metric}
+            "initial": initial_conf,
+            "generated": generated_conf,
+            "simulated": {"conf": simulated_conf, "metric": simulated_metric}
         })
 
     return configs
@@ -58,16 +61,14 @@ def test_models(model_g, model_p, fixed_noise, device):
     with torch.no_grad():
         model_g.eval()
         model_p.eval()
-        generated_grid_fixed = model_g(fixed_noise)
-        data["generated_data"] = generated_grid_fixed
-        data["initial_conf"]   = torch.where(generated_grid_fixed < constants.threshold_cell_value,
-                                                  torch.zeros_like(generated_grid_fixed),
-                                                  torch.ones_like(generated_grid_fixed))
-        data["simulated_conf"], data["simulated_metric"] = simulate_grid(data["initial_conf"],
-                                                                         constants.TOPOLOGY["toroidal"],
-                                                                         constants.n_simulation_steps,
-                                                                         device)
-        data["predicted_metric"] = model_p(data["initial_conf"])
+        generated_conf_fixed = model_g(fixed_noise)
+        data["generated_data"] = generated_conf_fixed
+
+        data["initial_conf"] , data["simulated_conf"], data["simulated_metric"] = simulate_conf(data["generated_data"],
+                                                                                                constants.TOPOLOGY["toroidal"],
+                                                                                                constants.n_simulation_steps,
+                                                                                                device)
+        data["predicted_metric"] = model_p(data["generated_data"])
 
     return data
 

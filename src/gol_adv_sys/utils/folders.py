@@ -11,36 +11,37 @@ class training_folders:
         if not os.path.exists(constants.trainings_folder_path):
             os.makedirs(constants.trainings_folder_path, exist_ok=True)
 
-        self.__results_path = None
-        self.__models_path  = None
-        self.__logs_path    = None
+        self.__base_path    = os.path.join(constants.trainings_folder_path, self.__date_str)
+        self.__results_path = os.path.join(self.__base_path, constants.results_folder_path)
+        self.__models_path  = os.path.join(self.__base_path, constants.models_folder_path)
+        self.__logs_path    = os.path.join(self.__base_path, constants.logs_folder_path)
 
     @property
     def results_path(self):
-        if self.__results_path is None:
-            self.__results_path = self.__create_folder(constants.results_folder_path)
+        if not os.path.exists(self.__results_path):
+            self.__results_path = self.__create_folder(self.__results_path)
 
         return self.__results_path
 
     @property
     def models_path(self):
-        if self.__models_path is None:
-            self.__models_path = self.__create_folder(constants.models_folder_path)
+        if not os.path.exists(self.__models_path):
+            self.__models_path = self.__create_folder(self.__models_path)
+
         return self.__models_path
 
     @property
     def logs_path(self):
-        if self.__logs_path is None:
-            self.__logs_path = self.__create_folder(constants.logs_folder_path)
+        if not os.path.exists(self.__logs_path):
+            self.__logs_path = self.__create_folder(self.__logs_path)
+
         return self.__logs_path
 
 
     def __create_folder(self, path):
 
-        base_path = os.path.join(constants.trainings_folder_path, self.__date_str)
+        if not os.path.exists(path):
+            os.makedirs(path, exist_ok=True)
 
-        #create new folder
-        new_folder_path = os.path.join(base_path, path)
-        os.makedirs(new_folder_path, exist_ok=True)
-        return new_folder_path
+        return path
 

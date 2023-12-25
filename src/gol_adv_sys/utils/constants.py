@@ -10,13 +10,13 @@ num_epochs = 100
 n_configs = 128*bs
 
 # Max number of configurations in data set
-n_max_configs = 5*n_configs
+n_max_configs = 10*n_configs
 
 # Number of steps for training with a certain data set in an epoch
 num_training_steps = 20
 
 # Average loss of P threshold before training G
-threshold_avg_loss_p = 5e-5  #0.00005
+threshold_avg_loss_p = 5e-6
 
 # Base path to the folder where the trainings will be saved
 trainings_folder_path = "trainings"
@@ -36,9 +36,6 @@ logs_folder_path = "logs"
 # Spatial size of training grids. All grixs will be resized to this size using a transformer.
 grid_size = 32
 
-# Number of cells in the generated grid
-n_max_living_cells = grid_size * 2
-
 # Number of steps to run the simulation
 n_simulation_steps = 1
 
@@ -46,8 +43,7 @@ n_simulation_steps = 1
 n_max_simulation_steps = 100
 
 # Threshold for the value of the cells in the generated grids
-threshold_cell_value = 0.95
-
+threshold_cell_value = 0.99
 
 TOPOLOGY = {
     "toroidal": "toroidal",

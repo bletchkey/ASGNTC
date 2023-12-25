@@ -3,52 +3,54 @@ import torch
 from . import constants as constants
 
 
-def _apply_conway_rules(grid, neighbors):
+def _apply_conway_rules(conf, neighbors):
 
-    birth = (neighbors == 3) & (grid == 0)
-    survive = ((neighbors == 2) | (neighbors == 3)) & (grid == 1)
-    new_grid = birth | survive
+    birth = (neighbors == 3) & (conf == 0)
+    survive = ((neighbors == 2) | (neighbors == 3)) & (conf == 1)
+    new_conf = birth | survive
 
-    return new_grid.float()
+    return new_conf.float()
 
 
-def _simulate_grid_toroidal(grid, kernel, device):
+def _simulate_conf_toroidal(conf, kernel, device):
 
-    # Pad the grid toroidally
-    grid = torch.cat([grid[:, :, -1:], grid, grid[:, :, :1]], dim=2)
-    grid = torch.cat([grid[:, :, :, -1:], grid, grid[:, :, :, :1]], dim=3)
+    # Pad the conf toroidally
+    conf = torch.cat([conf[:, :, -1:], conf, conf[:, :, :1]], dim=2)
+    conf = torch.cat([conf[:, :, :, -1:], conf, conf[:, :, :, :1]], dim=3)
 
     # Apply convolution to count neighbors
     # No additional padding is required here as we've already padded toroidally
-    neighbors = torch.conv2d(grid, kernel, padding=0).to(device)
+    neighbors = torch.conv2d(conf, kernel, padding=0).to(device)
 
     # Remove the padding
-    grid = grid[:, :, 1:-1, 1:-1]
+    conf = conf[:, :, 1:-1, 1:-1]
 
-    return _apply_conway_rules(grid, neighbors)
+    return _apply_conway_rules(conf, neighbors)
 
 
-def _simulate_grid_flat(grid, kernel, device):
+def _simulate_conf_flat(conf, kernel, device):
 
     # Apply convolution to count neighbors
-    neighbors = torch.conv2d(grid, kernel, padding=1).to(device)
+    neighbors = torch.conv2d(conf, kernel, padding=1).to(device)
 
-    return _apply_conway_rules(grid, neighbors)
+    return _apply_conway_rules(conf, neighbors)
 
 
-def simulate_grid(grid, topology, steps, device):
+def simulate_conf(conf, topology, steps, device):
 
-    metric = torch.zeros_like(grid)
+    sim_metric = torch.zeros_like(conf)
     _simulation_function = None
 
-    # for every value in grid, if value is < 0.5, set to 0, else set to 1
-    grid = torch.where(grid < constants.threshold_cell_value, torch.zeros_like(grid), torch.ones_like(grid))
+    # for every value in conf, if value is < 0.5, set to 0, else set to 1
+    conf = torch.where(conf < constants.threshold_cell_value, torch.zeros_like(conf), torch.ones_like(conf))
+
+    init_config = conf.clone()
 
     # Define the simulation function
     if topology == constants.TOPOLOGY["toroidal"]:
-        _simulation_function = _simulate_grid_toroidal
+        _simulation_function = _simulate_conf_toroidal
     elif topology == constants.TOPOLOGY["flat"]:
-        _simulation_function = _simulate_grid_flat
+        _simulation_function = _simulate_conf_flat
     else:
         raise ValueError(f"Topology {topology} not supported")
 
@@ -57,11 +59,12 @@ def simulate_grid(grid, topology, steps, device):
     kernel[:, :, 1, 1] = 0
 
     for step in range(steps):
-        grid = _simulation_function(grid, kernel, device)
+        conf = _simulation_function(conf, kernel, device)
 
         # Update the metric
         parameter = 0.1 * (0.999 ** step)
-        metric = metric + (grid * parameter)
+        sim_metric = sim_metric + (conf * parameter)
 
-    return grid, metric
+
+    return init_config, conf, sim_metric
 
