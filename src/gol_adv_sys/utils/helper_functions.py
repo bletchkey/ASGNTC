@@ -9,18 +9,17 @@ from . import constants as constants
 from .simulation_functions import simulate_conf
 
 
-def generate_new_configs(model_g, n_configs, device):
+def generate_new_batches(model_g, n_batches, device):
 
-    iters = n_configs // constants.bs
     configs = []
 
-    for _ in range(iters):
+    for _ in range(constants.n_batches):
         noise = torch.randn(constants.bs, constants.nz, 1, 1, device=device)
         generated_conf = model_g(noise)
 
         with torch.no_grad():
             initial_conf, simulated_conf, simulated_metric = simulate_conf(generated_conf, constants.TOPOLOGY["toroidal"],
-                                                             constants.n_simulation_steps, device)
+                                                                           constants.n_simulation_steps, device)
 
         configs.append({
             "initial": initial_conf,
@@ -31,18 +30,21 @@ def generate_new_configs(model_g, n_configs, device):
     return configs
 
 
+"""
+Function to get the dataloader for the training of the predictor model
+
+Add configurations to the dataloader until it reaches the maximum number of configurations
+If max number of configurations is reached, remove the oldest configurations to make room for the new ones
+
+This method implements a sliding window approach
+"""
 def get_dataloader(dataloader, model_g, device):
 
-    # Add configurations to the dataloader until it reaches the maximum number of configurations
-    # If max number of configurations is reached, remove the oldest configurations to make room for the new ones
-    new_configs = generate_new_configs(model_g, constants.n_configs, device)
-    n_to_remove = constants.n_configs // constants.bs
+    new_configs = generate_new_batches(model_g, constants.n_batches, device)
 
-    # Sliding window approach
-    if len(dataloader) + len(new_configs) > constants.n_max_configs // constants.bs:
-        dataloader = dataloader[n_to_remove:]
+    if len(dataloader) + len(new_configs) > constants.n_max_batches:
+        dataloader = dataloader[constants.n_batches:]
 
-    # Add the new configurations
     dataloader += new_configs
 
     return dataloader

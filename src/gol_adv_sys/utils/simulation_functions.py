@@ -36,14 +36,55 @@ def _simulate_conf_flat(conf, kernel, device):
     return _apply_conway_rules(conf, neighbors)
 
 
+def _get_init_conf_threshold(conf):
+
+    # for every value in conf, if value is < 0.5, set to 0, else set to 1
+    return torch.where(conf < constants.threshold_cell_value, torch.zeros_like(conf), torch.ones_like(conf))
+
+
+"""
+From the conf, get the indices of the n_living_cells highest values and set the rest to 0
+The n_living_cells highest values are set to 1
+
+"""
+def _get_init_conf_n_living_cells(conf):
+    batch_size, _, height, width = conf.size()
+    conf_flat = conf.view(batch_size, -1)  # Flatten each image in the batch
+
+    # Find the indices of the top values for each image in the batch
+    _, indices = torch.topk(conf_flat, constants.n_living_cells, dim=1)
+
+    # Create a zero tensor of the same shape
+    conf_new = torch.zeros_like(conf_flat)
+
+    # Set the top indices to 1 for each image
+    conf_new.scatter_(1, indices, 1)
+
+    # Reshape back to the original shape
+    conf = conf_new.view(batch_size, 1, height, width)
+
+    return conf
+
+    # _g = torch.zeros_like(grid)
+
+    # for j in range(constants.bs):
+    #     flattened_grid = grid[j].flatten()
+    #     indices_of_highest_values = torch.argsort(flattened_grid)[-ncells:]
+    #     result_grid = torch.zeros_like(flattened_grid)
+    #     result_grid[indices_of_highest_values] = 1.
+    #     result_grid = result_grid.reshape_as(grid[j])
+
+    #     _g[j] = result_grid
+
+    # return _g
+
+
 def simulate_conf(conf, topology, steps, device):
 
     sim_metric = torch.zeros_like(conf)
     _simulation_function = None
 
-    # for every value in conf, if value is < 0.5, set to 0, else set to 1
-    conf = torch.where(conf < constants.threshold_cell_value, torch.zeros_like(conf), torch.ones_like(conf))
-
+    conf = _get_init_conf_n_living_cells(conf)
     init_config = conf.clone()
 
     # Define the simulation function

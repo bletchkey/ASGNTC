@@ -1,22 +1,31 @@
 ### TRAINING PARAMETERS #############################################################
 
-# Batch size during training
-bs = 64
-
 # Number of training epochs
 num_epochs = 100
 
+# Batch size during training
+bs = 64
+
+# Number of batches to generate at each epoch
+n_batches = 128
+
+# Max number of batches in the data set
+n_max_batches = 10*n_batches
+
 # Number of new configurations to generate at each epoch
-n_configs = 128*bs
+n_configs = n_batches*bs
 
 # Max number of configurations in data set
-n_max_configs = 10*n_configs
+n_max_configs = n_max_batches*bs
+
+# Number of batches for training the generator
+n_batches_g_training = n_batches
 
 # Number of steps for training with a certain data set in an epoch
 num_training_steps = 20
 
 # Average loss of P threshold before training G
-threshold_avg_loss_p = 5e-6
+threshold_avg_loss_p = 5e-7
 
 # Base path to the folder where the trainings will be saved
 trainings_folder_path = "trainings"
@@ -42,8 +51,11 @@ n_simulation_steps = 1
 # Max number of steps to run the simulation
 n_max_simulation_steps = 100
 
+# Number of living cells in the initial grid
+n_living_cells = 64
+
 # Threshold for the value of the cells in the generated grids
-threshold_cell_value = 0.99
+threshold_cell_value = 0.9
 
 TOPOLOGY = {
     "toroidal": "toroidal",
