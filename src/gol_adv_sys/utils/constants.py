@@ -52,14 +52,19 @@ n_simulation_steps = 1
 n_max_simulation_steps = 100
 
 # Number of living cells in the initial grid
-n_living_cells = 64
+n_living_cells = 2 * grid_size
 
 # Threshold for the value of the cells in the generated grids
 threshold_cell_value = 0.9
 
-TOPOLOGY = {
+TOPOLOGY_TYPE = {
     "toroidal": "toroidal",
     "flat": "flat"
+}
+
+INIT_CONF_TYPE = {
+    "n_living_cells": "n_living_cells",
+    "threshold": "threshold"
 }
 
 
@@ -68,11 +73,11 @@ TOPOLOGY = {
 # Number of channels in the training grids.
 nc = 1
 
-# Size of feature maps in generator
+# Size of feature maps in the generator
 ngf = 32
 
-# Size of feature maps in discriminator
-ndf = 32
+# Size of feature maps in the predictor
+npf = 32
 
 # Size of z latent vector (i.e. size of generator input)
 nz = 128
@@ -88,7 +93,6 @@ g_adam_lr=0.001
 g_adam_b1=0.9
 g_adam_b2=0.999
 g_adam_eps=1e-08
-
 
 # Hyperparameters for AdamW optimizer
 p_adamw_lr=0.001

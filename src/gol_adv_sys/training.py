@@ -33,10 +33,14 @@ class Training():
 
         self.__seed_type = {"fixed": 54, "random": random.randint(1, 10000), "is_random": True}
         self.seed = self.__seed_type["random"] if self.__seed_type["is_random"] else self.__seed_type["fixed"]
+        self.__set_seed()
 
+        self.n_devices = torch.cuda.device_count()
         self.device = self.__choose_device()
+        self.balanced_gpu_indices = self.__get_balanced_gpu_indices()
 
-        self.fixed_noise = torch.randn(constants.bs, constants.nz, 1, 1, device=self.device)
+        self.simulation_topology = constants.TOPOLOGY_TYPE["toroidal"]
+        self.init_conf_type = constants.INIT_CONF_TYPE["n_living_cells"]
 
         self.dataloader = []
         self.current_epoch = 0
@@ -50,9 +54,9 @@ class Training():
         self.n_times_trained_g = 0
 
         self.criterion_p = nn.MSELoss()
-        self.criterion_g = lambda x, y: -1 * nn.MSELoss()(x, y)
+        self.criterion_g = lambda x, y: -self.criterion_p(x, y)
 
-        self.model_p = Predictor_18().to(self.device)
+        self.model_p = Predictor().to(self.device)
         self.model_g = Generator().to(self.device)
 
         self.optimizer_p = optim.AdamW(self.model_p.parameters(),
@@ -66,43 +70,11 @@ class Training():
                                       betas=(constants.g_adam_b1, constants.g_adam_b2),
                                       eps=constants.g_adam_eps)
 
-        self.path_log_file = self.__init_log_file()
+        self.fixed_noise = torch.randn(constants.bs, constants.nz, 1, 1, device=self.device)
 
-        self.path_p = None
-        self.path_g = None
-
-
-    """
-    Get the specifications of the training session.
-
-    Returns:
-        training_specs (dict): The specifications of the training session.
-
-    """
-    def get_training_specs(self):
-        return {
-            "seed": self.seed,
-            "device": self.device,
-            "batch_size": constants.bs,
-            "epochs": constants.num_epochs,
-            "training_steps": constants.num_training_steps,
-            "n_batches": constants.n_batches,
-            "max_n_batches": constants.n_max_batches,
-            "n_configs": constants.n_configs,
-            "max_n_configs": constants.n_max_configs,
-            "grid_size": constants.grid_size,
-            "simulation_steps": constants.n_simulation_steps,
-            "num_living_cells": constants.n_living_cells,
-            "nc": constants.nc,
-            "ngf": constants.ngf,
-            "ndf": constants.ndf,
-            "nz": constants.nz,
-            "optimizer_p": self.optimizer_p.__class__.__name__,
-            "optimizer_g": self.optimizer_g.__class__.__name__,
-            "criterion_p": self.criterion_p.__class__.__name__,
-            "criterion_g": "-MSELoss",
-            "avg_loss_p_before_training_g": constants.threshold_avg_loss_p
-        }
+        self.path_log_file = None
+        self.path_p        = None
+        self.path_g        = None
 
 
     """
@@ -110,18 +82,11 @@ class Training():
 
     """
     def run(self):
-        random.seed(self.seed)
-        torch.manual_seed(self.seed)
-        # torch.use_deterministic_algorithms(True) # Needed for reproducible results
         torch.autograd.set_detect_anomaly(True)
+        # torch.backends.cudnn.deterministic = True
+        # torch.use_deterministic_algorithms(True) # Needed for reproducible results
 
         self.__fit()
-
-        with open(self.path_log_file, "a") as log:
-            log.write(f"\n\nTraining ended at {datetime.datetime.now().strftime('%d/%m/%Y %H:%M:%S')}\n")
-            log.write(f"Number of times P was trained: {self.n_times_trained_p}\n")
-            log.write(f"Number of times G was trained: {self.n_times_trained_g}\n")
-            log.flush()
 
 
     """
@@ -129,6 +94,14 @@ class Training():
 
     """
     def __fit(self):
+
+        if len(self.balanced_gpu_indices) > 0:
+            self.model_p = nn.DataParallel(self.model_p, device_ids=self.balanced_gpu_indices)
+            self.model_g = nn.DataParallel(self.model_g, device_ids=self.balanced_gpu_indices)
+
+        if self.path_log_file is None:
+            self.path_log_file = self.__init_log_file()
+
         with open(self.path_log_file, "a") as log:
             for epoch in range(constants.num_epochs):
 
@@ -138,7 +111,7 @@ class Training():
                 self.__get_dataloader()
 
                 log.write(f"\n\nEpoch: {epoch+1}/{constants.num_epochs}\n")
-                log.write(f"Number of generated configurations in data set: {len(self.dataloader)*constants.bs}\n")
+                log.write(f"Number of generated configurations in data set: {len(self.dataloader)*constants.bs}\n\n")
                 log.flush()
 
                 for step in range(constants.num_training_steps):
@@ -156,87 +129,25 @@ class Training():
                     self.__log_training_step(step)
 
 
-                log.write(f"Elapsed time: {get_epoch_elapsed_time_str(self.step_times_secs[epoch])}\n")
-                log.write(f"Avg loss P: {self.__get_loss_avg_p(constants.num_training_steps)}\n")
+                log.write(f"\nElapsed time: {get_epoch_elapsed_time_str(self.step_times_secs[epoch])}\n")
+                log.write(f"Average loss P: {self.__get_loss_avg_p(constants.num_training_steps)}\n")
                 log.flush()
 
                 # Update properties for G
                 self.__can_g_train()
 
+                # Test and save models
                 data = self.__test_models()
                 self.__save_progress_plot(data)
                 self.__save_models()
 
-                # Clear CUDA cache
-                if self.device.type == "cuda":
-                    torch.cuda.empty_cache()
+                self.__resource_cleanup
 
-
-    """
-    Create a log file for the training session.
-    When creating the log file, the training specifications are also written to the file.
-
-    Returns:
-        path (str): The path to the log file.
-
-    """
-    def __init_log_file(self):
-
-        path = os.path.join(self.folders.logs_path, "asgntc.txt")
-
-        with open(path, "w") as log_file:
-            log_file.write(f"Training session started at {self.__date.strftime('%d/%m/%Y %H:%M:%S')}\n\n")
-
-            log_file.write(f"Seed: {self.seed}\n")
-            log_file.write(f"Device: {self.device}\n")
-            log_file.write(f"Batch size: {constants.bs}\n")
-            log_file.write(f"Epochs: {constants.num_epochs}\n")
-            log_file.write(f"Number of training steps in each epoch: {constants.num_training_steps}\n")
-            log_file.write(f"Number of batches generated in each epoch: {constants.n_batches}\n")
-            log_file.write(f"Number of configurations generated each epoch: {constants.n_configs} \n")
-            log_file.write(f"Max number of generated batches in data set: {constants.n_max_batches}\n")
-            log_file.write(f"Max number of generated configurations in data set: {constants.n_max_configs}\n\n")
-
-            log_file.write(f"Game of Life specs:\n")
-            log_file.write(f"Grid size: {constants.grid_size}\n")
-            log_file.write(f"Simulation steps: {constants.n_simulation_steps}\n")
-            log_file.write(f"Number of living cells in initial grid: {constants.n_living_cells}\n\n")
-
-            log_file.write(f"Models specs:\n")
-            log_file.write(f"Latent space size: {constants.nz}\n")
-            log_file.write(f"Optimizer P: {self.optimizer_p.__class__.__name__}\n")
-            log_file.write(f"Optimizer G: {self.optimizer_g.__class__.__name__}\n")
-            log_file.write(f"Criterion P: {self.criterion_p.__class__.__name__}\n")
-            log_file.write(f"Criterion G: -MSELoss\n")
-            log_file.write(f"Average loss of P before training G: {constants.threshold_avg_loss_p}\n\n")
-            log_file.flush()
-
-        return path
-
-
-    """
-    Function for choosing the device to use for training.
-    If a GPU is available, the GPU with the most free memory is selected.
-
-    Returns:
-        device (torch.device): The device to use for training.
-    """
-    def __choose_device(self):
-        if not torch.cuda.is_available():
-            return torch.device("cpu")
-
-        num_gpus = torch.cuda.device_count()
-        device_specs = []
-
-        for i in range(num_gpus):
-            gpu_properties = torch.cuda.get_device_properties(i)
-            memory_free = torch.cuda.memory_reserved(i) - torch.cuda.memory_allocated(i)
-            device_specs.append((i, gpu_properties.total_memory, memory_free))
-
-        # Select a GPU based on the amount of free memory
-        selected_device = max(device_specs, key=lambda x: x[2])[0]
-
-        return torch.device(f"cuda:{selected_device}")
+        with open(self.path_log_file, "a") as log:
+            log.write(f"\n\nTraining ended at {datetime.datetime.now().strftime('%d/%m/%Y %H:%M:%S')}\n")
+            log.write(f"Number of times P was trained: {self.n_times_trained_p}\n")
+            log.write(f"Number of times G was trained: {self.n_times_trained_g}\n")
+            log.flush()
 
 
     """
@@ -254,6 +165,124 @@ class Training():
             log.write(f"{str_step_time} | Step: {str_step}, Loss P: {str_err_p}, Loss G: {str_err_g}\n")
             log.flush()
 
+
+    """
+    Create a log file for the training session.
+    When creating the log file, the training specifications are also written to the file.
+
+    Returns:
+        path (str): The path to the log file.
+
+    """
+    def __init_log_file(self):
+
+        path = os.path.join(self.folders.logs_path, "asgntc.txt")
+
+        with open(path, "w") as log_file:
+            log_file.write(f"Training session started at {self.__date.strftime('%d/%m/%Y %H:%M:%S')}\n\n")
+
+            if self.__seed_type["random"]:
+                log_file.write(f"Random seed: {self.seed}\n")
+            elif self.__seed_type["fixed"]:
+                log_file.write(f"Fixed seed: {self.seed}\n")
+            else:
+                log_file.write(f"Unknown seed\n")
+
+            log_file.write(f"Default device: {self.device}\n")
+            if len(self.balanced_gpu_indices) > 0:
+                log_file.write(f"Balanced GPU indices: {self.balanced_gpu_indices}\n")
+
+            log_file.write(f"\nTraining specs:\n")
+            log_file.write(f"Batch size: {constants.bs}\n")
+            log_file.write(f"Epochs: {constants.num_epochs}\n")
+            log_file.write(f"Number of training steps in each epoch: {constants.num_training_steps}\n")
+            log_file.write(f"Number of batches generated in each epoch: {constants.n_batches} ({constants.n_configs} configs)\n")
+            log_file.write(f"Max number of generated batches in data set: {constants.n_max_batches} ({constants.n_max_configs} configs)\n")
+
+            log_file.write(f"\nSimulation specs:\n")
+            log_file.write(f"Grid size: {constants.grid_size}\n")
+            log_file.write(f"Simulation steps: {constants.n_simulation_steps}\n")
+
+            if self.simulation_topology == constants.TOPOLOGY_TYPE["toroidal"]:
+                log_file.write(f"Topology: toroidal\n")
+            elif self.simulation_topology == constants.TOPOLOGY_TYPE["flat"]:
+                log_file.write(f"Topology: flat\n")
+            else:
+                log_file.write(f"Topology: unknown\n")
+
+            if self.init_conf_type == constants.INIT_CONF_TYPE["threshold"]:
+                log_file.write(f"Initial configuration type: threshold\n")
+                log_file.write(f"Threshold for the value of the cells: {constants.threshold_cell_value}\n")
+            elif self.init_conf_type == constants.INIT_CONF_TYPE["n_living_cells"]:
+                log_file.write(f"Initial configuration type: n_living_cells\n")
+                log_file.write(f"Number of living cells in initial grid: {constants.n_living_cells}\n")
+            else:
+                log_file.write(f"Initial configuration type: unknown\n")
+
+
+            log_file.write(f"\nModels specs:\n")
+            log_file.write(f"Latent space size: {constants.nz}\n")
+            log_file.write(f"Optimizer P: {self.optimizer_p.__class__.__name__}\n")
+            log_file.write(f"Optimizer G: {self.optimizer_g.__class__.__name__}\n")
+            log_file.write(f"Criterion P: {self.criterion_p.__class__.__name__}\n")
+            log_file.write(f"Criterion G: -{self.criterion_p.__class__.__name__}\n")
+            log_file.write(f"Average loss of P before training G: {constants.threshold_avg_loss_p}\n\n")
+            log_file.flush()
+
+        return path
+
+
+    """
+    Function for choosing the device to use for training.
+    If a GPU is available, the GPU with the most free memory is selected.
+
+    Returns:
+        device (torch.device): The device to use for training.
+    """
+    def __choose_device(self):
+        if not torch.cuda.is_available():
+            return torch.device("cpu")
+
+        device_specs = []
+
+        for i in range(self.n_devices):
+            gpu_properties = torch.cuda.get_device_properties(i)
+            memory_free = torch.cuda.memory_reserved(i) - torch.cuda.memory_allocated(i)
+            device_specs.append((i, gpu_properties.total_memory, memory_free))
+
+        selected_device = max(device_specs, key=lambda x: x[2])[0]
+
+        return torch.device(f"cuda:{selected_device}")
+
+
+    """
+    Get GPU indices that are balanced compared to the default device that has been chosen.
+
+    Args:
+        threshold (float): The minimum ratio of memory and cores compared to the default device to be considered balanced.
+
+    Returns:
+        list: A list of GPU indices that are balanced.
+    """
+    def __get_balanced_gpu_indices(self, threshold=0.75):
+        if not torch.cuda.is_available() or torch.cuda.device_count() <= 1:
+            return []
+
+        id_default_device = torch.cuda.current_device()
+        default_gpu_properties = torch.cuda.get_device_properties(id_default_device)
+        balanced_gpus = []
+
+        for i in range(self.n_devices):
+            gpu_properties = torch.cuda.get_device_properties(i)
+            memory_ratio = gpu_properties.total_memory / default_gpu_properties.total_memory
+            cores_ratio = gpu_properties.multi_processor_count / default_gpu_properties.multi_processor_count
+
+            if memory_ratio >= threshold and cores_ratio >= threshold and i != id_default_device:
+                balanced_gpus.append(i)
+
+        return balanced_gpus
+
+
     """
     Get the dataloader for the current epoch.
 
@@ -268,7 +297,7 @@ class Training():
         dataloader (torch.utils.data.DataLoader): The dataloader for the current epoch.
     """
     def __get_dataloader(self):
-        self.dataloader = get_dataloader(self.dataloader, self.model_g, self.device)
+        self.dataloader = get_dataloader(self.dataloader, self.model_g, self.simulation_topology, self.init_conf_type, self.device)
 
         return self.dataloader
 
@@ -282,7 +311,7 @@ class Training():
         new_configs (list): A list of dictionaries containing information about the generated configurations.
     """
     def __get_new_batches(self, n_batches):
-        return  generate_new_batches(self.model_g, n_batches, self.device)
+        return  generate_new_batches(self.model_g, n_batches, self.simulation_topology, self.init_conf_type, self.device)
 
 
     """
@@ -304,9 +333,14 @@ class Training():
 
         loss = 0
         self.model_p.train()
+
         for batch in self.dataloader:
+            if torch.cuda.is_available():
+                batch["initial"] = batch["initial"].to("cuda")
+                batch["simulated"]["metric"] = batch["simulated"]["metric"].to("cuda")
+
             self.optimizer_p.zero_grad()
-            predicted_metric = self.model_p(batch["generated"].detach())
+            predicted_metric = self.model_p(batch["initial"])
             errP = self.criterion_p(predicted_metric, batch["simulated"]["metric"])
             errP.backward()
             self.optimizer_p.step()
@@ -333,9 +367,14 @@ class Training():
             loss = 0
             for _ in range(constants.n_batches_g_training):
                 self.model_g.train()
+
                 batch = self.__get_one_new_batch()
+                if torch.cuda.is_available():
+                    batch[0]["initial"] = batch[0]["initial"].to("cuda")
+                    batch[0]["simulated"]["metric"] = batch[0]["simulated"]["metric"].to("cuda")
+
                 self.optimizer_g.zero_grad()
-                predicted_metric = self.model_p(batch[0]["generated"])
+                predicted_metric = self.model_p(batch[0]["initial"])
                 errG = self.criterion_g(predicted_metric, batch[0]["simulated"]["metric"])
                 errG.backward()
                 self.optimizer_g.step()
@@ -435,7 +474,7 @@ class Training():
         simulated metrics and predicted metrics.
     """
     def __test_models(self):
-        return test_models(self.model_g, self.model_p, self.fixed_noise, self.device)
+        return test_models(self.model_g, self.model_p, self.simulation_topology, self.init_conf_type, self.fixed_noise, self.device)
 
 
     """
@@ -464,17 +503,31 @@ class Training():
         if self.path_p is None and self.n_times_trained_p > 0:
             self.path_p = os.path.join(self.folders.models_path, "predictor.pth.tar")
 
+
         if self.path_g is not None:
-            torch.save({
+            if isinstance(self.model_g, nn.DataParallel):
+                torch.save({
+                        "state_dict": self.model_g.module.state_dict(),
+                        "optimizer": self.optimizer_g.state_dict(),
+                       }, self.path_g)
+            else:
+                torch.save({
                         "state_dict": self.model_g.state_dict(),
                         "optimizer": self.optimizer_g.state_dict(),
                        }, self.path_g)
 
+
         if self.path_p is not None:
-            torch.save({
+            if isinstance(self.model_p, nn.DataParallel):
+                torch.save({
+                        "state_dict": self.model_p.module.state_dict(),
+                        "optimizer": self.optimizer_p.state_dict(),
+                    }, self.path_p)
+            else:
+                torch.save({
                         "state_dict": self.model_p.state_dict(),
                         "optimizer": self.optimizer_p.state_dict(),
-                       }, self.path_p)
+                    }, self.path_p)
 
 
     """
@@ -498,9 +551,21 @@ class Training():
         return self.properties_g["can_train"]
 
 
-    def __set_optimizer_p(self, optimizer):
-        pass
+    """
+    Function for cleaning up the resources used by the training session.
+    If the device used for training is a GPU, the CUDA cache is cleared.
+
+    """
+    def __resource_cleanup(self):
+        if self.device.type == "cuda":
+            torch.cuda.empty_cache()
 
 
-    def __set_optimizer_g(self, optimizer):
-        pass
+    """
+    Function for setting the seed for the random number generators.
+    """
+    def __set_seed(self):
+        random.seed(self.seed)
+        torch.manual_seed(self.seed)
+        np.random.seed(self.seed)
+        torch.cuda.manual_seed(self.seed)

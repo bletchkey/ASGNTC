@@ -29,7 +29,7 @@ class block(nn.Module):
 class ResNet(nn.Module):
     def __init__(self, block, layers):
         super(ResNet, self).__init__()
-        self.channels = 2* constants.ndf
+        self.channels = constants.npf
         self.conv1 = nn.Conv2d(constants.nc, self.channels, kernel_size = 3, stride = 1, padding = 1)
         self.bn1 = nn.BatchNorm2d(self.channels)
         self.relu = nn.ReLU()
@@ -65,7 +65,7 @@ class ResNet(nn.Module):
 
 
 def Predictor():
-    return ResNet(block, [3, 3, 3, 3])
+    return ResNet(block, [4, 4, 4, 4])
 
 
 def Predictor_18():
