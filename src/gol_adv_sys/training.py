@@ -72,7 +72,9 @@ class Training():
 
         self.fixed_noise = torch.randn(constants.bs, constants.nz, 1, 1, device=self.device)
 
-        self.path_log_file = None
+        self.load_models = {"predictor": True, "generator": False}
+
+        self.path_log_file = self.__init_log_file()
         self.path_p        = None
         self.path_g        = None
 
@@ -86,6 +88,9 @@ class Training():
         # torch.backends.cudnn.deterministic = True
         # torch.use_deterministic_algorithms(True) # Needed for reproducible results
 
+        if self.load_models["predictor"]:
+            self.__load_predictor()
+
         self.__fit()
 
 
@@ -98,9 +103,6 @@ class Training():
         if len(self.balanced_gpu_indices) > 0:
             self.model_p = nn.DataParallel(self.model_p, device_ids=self.balanced_gpu_indices)
             self.model_g = nn.DataParallel(self.model_g, device_ids=self.balanced_gpu_indices)
-
-        if self.path_log_file is None:
-            self.path_log_file = self.__init_log_file()
 
         with open(self.path_log_file, "a") as log:
             for epoch in range(constants.num_epochs):
@@ -528,6 +530,19 @@ class Training():
                         "state_dict": self.model_p.state_dict(),
                         "optimizer": self.optimizer_p.state_dict(),
                     }, self.path_p)
+
+
+    """
+    Function for loading the predictor model.
+
+    """
+    def __load_predictor(self):
+        path = os.path.join(constants.trained_predictor_path, "predictor.pth.tar")
+
+        if os.path.isfile(path):
+            checkpoint = torch.load(path)
+            self.model_p.load_state_dict(checkpoint["state_dict"])
+            self.optimizer_p.load_state_dict(checkpoint["optimizer"])
 
 
     """

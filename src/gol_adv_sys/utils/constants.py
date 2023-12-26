@@ -7,7 +7,7 @@ num_epochs = 100
 bs = 64
 
 # Number of batches to generate at each epoch
-n_batches = 128
+n_batches = 64
 
 # Max number of batches in the data set
 n_max_batches = 10*n_batches
@@ -39,6 +39,8 @@ models_folder_path = "models"
 # Path to the folder where the logs will be saved
 logs_folder_path = "logs"
 
+# Path to the folder where the trained predictor is saved
+trained_predictor_path = "trained_predictor"
 
 ### SIMULATION PARAMETERS #########################################################
 
