@@ -2,7 +2,7 @@ import sys
 
 import torch
 from gol_adv_sys.utils import constants as constants
-from gol_adv_sys.training import Training
+from gol_adv_sys.Training import Training
 from gol_adv_sys.utils import helper_functions as hf
 
 

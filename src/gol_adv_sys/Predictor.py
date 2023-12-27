@@ -4,7 +4,7 @@ import torch.nn as nn
 from .utils import constants as constants
 
 class block(nn.Module):
-    def __init__(self, channels):
+    def __init__(self, channels) -> None:
         super(block, self).__init__()
 
         self.conv = nn.Conv2d(channels, channels, kernel_size = 3, stride = 1, padding = 1)
@@ -64,11 +64,11 @@ class ResNet(nn.Module):
         return nn.Sequential(*layers)
 
 
-def Predictor():
-    return ResNet(block, [4, 4, 4, 4])
+def Predictor_34():
+    return ResNet(block, [3, 4, 6, 3])
 
 
 def Predictor_18():
-    return ResNet(block, [3, 3, 3])
+    return ResNet(block, [2, 2, 2, 2])
 
 

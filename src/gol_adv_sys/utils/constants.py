@@ -18,14 +18,11 @@ n_configs = n_batches*bs
 # Max number of configurations in data set
 n_max_configs = n_max_batches*bs
 
-# Number of batches for training the generator
-n_batches_g_training = n_batches
-
 # Number of steps for training with a certain data set in an epoch
 num_training_steps = 20
 
 # Average loss of P threshold before training G
-threshold_avg_loss_p = 5e-7
+threshold_avg_loss_p = 5e-4
 
 # Base path to the folder where the trainings will be saved
 trainings_folder_path = "trainings"
@@ -40,7 +37,7 @@ models_folder_path = "models"
 logs_folder_path = "logs"
 
 # Path to the folder where the trained predictor is saved
-trained_predictor_path = "trained_predictor"
+trained_models_path = "trained_models"
 
 ### SIMULATION PARAMETERS #########################################################
 
@@ -48,16 +45,16 @@ trained_predictor_path = "trained_predictor"
 grid_size = 32
 
 # Number of steps to run the simulation
-n_simulation_steps = 1
+n_simulation_steps = 10
 
 # Max number of steps to run the simulation
-n_max_simulation_steps = 100
+n_max_simulation_steps = 1000
 
 # Number of living cells in the initial grid
 n_living_cells = 2 * grid_size
 
 # Threshold for the value of the cells in the generated grids
-threshold_cell_value = 0.9
+threshold_cell_value = 0.5
 
 TOPOLOGY_TYPE = {
     "toroidal": "toroidal",
@@ -82,16 +79,16 @@ ngf = 32
 npf = 32
 
 # Size of z latent vector (i.e. size of generator input)
-nz = 128
+nz = 1024
 
 
 # Hyperparameters for Adam optimizer
-p_adam_lr=0.001
+p_adam_lr=0.0001
 p_adam_b1=0.9
 p_adam_b2=0.999
 p_adam_eps=1e-08
 
-g_adam_lr=0.001
+g_adam_lr=0.0001
 g_adam_b1=0.9
 g_adam_b2=0.999
 g_adam_eps=1e-08

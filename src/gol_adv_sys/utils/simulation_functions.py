@@ -6,7 +6,6 @@ from . import constants as constants
 """
 Function to simulate the configuration for a given number of steps
 
-
 """
 def simulate_conf(conf, topology, steps, device):
 

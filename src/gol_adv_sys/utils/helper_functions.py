@@ -80,8 +80,7 @@ def test_models(model_g, model_p, topology, init_conf_type, fixed_noise, device)
                                                                          topology,
                                                                          constants.n_simulation_steps,
                                                                          device)
-        # data["predicted_metric"] = model_p(data["generated_data"])
-        data["predicted_metric"] = model_p(data["initial_conf"])
+        data["predicted_metric"] = model_p(data["generated_data"])
 
     return data
 
@@ -129,9 +128,9 @@ Args:
 All the times are summed together and then converted to hours, minutes and seconds
 
 """
-def get_epoch_elapsed_time_str(times):
+def get_elapsed_time_str(times):
 
-    seconds = sum(times)
+    seconds = sum(times) if isinstance(times, list) else times
     minutes = int(seconds // 60)
     hours = int(minutes // 60)
     remaining_seconds = int(math.floor(seconds % 60))
@@ -191,5 +190,4 @@ For every value in conf, if value is < threshold, set to 0, else set to 1
 """
 def __get_init_conf_threshold(conf):
 
-    return torch.where(conf < constants.threshold_cell_value, torch.zeros_like(conf), torch.ones_like(conf))
-
+    return (conf > constants.threshold_cell_value).float()

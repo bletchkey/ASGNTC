@@ -19,33 +19,31 @@ import datetime
 
 from .utils import constants as constants
 
-from .model_p import Predictor, Predictor_18
-from .model_g import Generator
+from .Predictor import Predictor_18, Predictor_34
+from .Generator import Generator
 
-from .utils.folders import training_folders
-from .utils.helper_functions import test_models, save_progress_plot, get_epoch_elapsed_time_str, generate_new_batches, get_dataloader
+from .FolderManager import FolderManager
+from .DeviceManager import DeviceManager
+from .utils.helper_functions import test_models, save_progress_plot, get_elapsed_time_str, generate_new_batches, get_dataloader
 
 
 class Training():
-    def __init__(self):
+    def __init__(self) -> None:
         self.__date = datetime.datetime.now()
-        self.folders = training_folders(self.__date)
 
         self.__seed_type = {"fixed": 54, "random": random.randint(1, 10000), "is_random": True}
         self.seed = self.__seed_type["random"] if self.__seed_type["is_random"] else self.__seed_type["fixed"]
         self.__set_seed()
 
-        self.n_devices = torch.cuda.device_count()
-        self.device = self.__choose_device()
-        self.balanced_gpu_indices = self.__get_balanced_gpu_indices()
+        self.folders = FolderManager(self.__date)
+        self.device_manager = DeviceManager()
 
         self.simulation_topology = constants.TOPOLOGY_TYPE["toroidal"]
-        self.init_conf_type = constants.INIT_CONF_TYPE["n_living_cells"]
+        self.init_conf_type = constants.INIT_CONF_TYPE["threshold"]
 
         self.dataloader = []
         self.current_epoch = 0
         self.step_times_secs = []
-        self.properties_g= {"enabled": True, "can_train": False}
 
         self.results = {"losses_g": [],
                         "losses_p": []}
@@ -56,8 +54,8 @@ class Training():
         self.criterion_p = nn.MSELoss()
         self.criterion_g = lambda x, y: -self.criterion_p(x, y)
 
-        self.model_p = Predictor().to(self.device)
-        self.model_g = Generator().to(self.device)
+        self.model_p = Predictor_18().to(self.device_manager.default_device)
+        self.model_g = Generator().to(self.device_manager.default_device)
 
         self.optimizer_p = optim.AdamW(self.model_p.parameters(),
                                        lr=constants.p_adamw_lr,
@@ -70,9 +68,11 @@ class Training():
                                       betas=(constants.g_adam_b1, constants.g_adam_b2),
                                       eps=constants.g_adam_eps)
 
-        self.fixed_noise = torch.randn(constants.bs, constants.nz, 1, 1, device=self.device)
+        self.fixed_noise = torch.randn(constants.bs, constants.nz, 1, 1, device=self.device_manager.default_device)
 
-        self.load_models = {"predictor": True, "generator": False}
+        self.properties_g= {"enabled": True, "can_train": False}
+
+        self.load_models = {"predictor": False, "generator": False}
 
         self.path_log_file = self.__init_log_file()
         self.path_p        = None
@@ -84,12 +84,15 @@ class Training():
 
     """
     def run(self):
-        torch.autograd.set_detect_anomaly(True)
-        # torch.backends.cudnn.deterministic = True
-        # torch.use_deterministic_algorithms(True) # Needed for reproducible results
 
         if self.load_models["predictor"]:
             self.__load_predictor()
+
+        if self.load_models["generator"]:
+
+            self.__load_generator()
+            self.properties_g["enabled"] = True
+            self.properties_g["can_train"] = True
 
         self.__fit()
 
@@ -100,50 +103,56 @@ class Training():
     """
     def __fit(self):
 
-        if len(self.balanced_gpu_indices) > 0:
-            self.model_p = nn.DataParallel(self.model_p, device_ids=self.balanced_gpu_indices)
-            self.model_g = nn.DataParallel(self.model_g, device_ids=self.balanced_gpu_indices)
+        torch.autograd.set_detect_anomaly(True)
 
-        with open(self.path_log_file, "a") as log:
-            for epoch in range(constants.num_epochs):
+        if self.device_manager.n_balanced_gpus > 0:
+            self.model_p = nn.DataParallel(self.model_p, device_ids=self.device_manager.balanced_gpu_indices)
+            self.model_g = nn.DataParallel(self.model_g, device_ids=self.device_manager.balanced_gpu_indices)
 
-                self.step_times_secs.append([])
-                self.current_epoch = epoch
+        for epoch in range(constants.num_epochs):
 
-                self.__get_dataloader()
+            self.step_times_secs.append([])
+            self.current_epoch = epoch
+
+            self.__get_dataloader()
+
+            with open(self.path_log_file, "a") as log:
 
                 log.write(f"\n\nEpoch: {epoch+1}/{constants.num_epochs}\n")
                 log.write(f"Number of generated configurations in data set: {len(self.dataloader)*constants.bs}\n\n")
                 log.flush()
 
-                for step in range(constants.num_training_steps):
+            for step in range(constants.num_training_steps):
 
-                    step_start_time = time.time()
+                step_start_time = time.time()
 
-                    self.__train_predictor()
+                self.__train_predictor()
 
-                    if self.properties_g["enabled"]:
-                        self.__train_generator()
+                if self.properties_g["enabled"]:
+                    self.__train_generator()
 
-                    step_end_time = time.time()
-                    self.step_times_secs[self.current_epoch].append(step_end_time - step_start_time)
+                step_end_time = time.time()
+                self.step_times_secs[self.current_epoch].append(step_end_time - step_start_time)
 
-                    self.__log_training_step(step)
+                self.__log_training_step(step)
 
-
-                log.write(f"\nElapsed time: {get_epoch_elapsed_time_str(self.step_times_secs[epoch])}\n")
-                log.write(f"Average loss P: {self.__get_loss_avg_p(constants.num_training_steps)}\n")
+            with open(self.path_log_file, "a") as log:
+                log.write(f"\nElapsed time: {get_elapsed_time_str(self.step_times_secs[epoch])}\n")
+                if self.n_times_trained_p > 0:
+                    log.write(f"Average loss P: {self.__get_loss_avg_p_last_epoch()}\n")
+                if self.n_times_trained_g > 0:
+                    log.write(f"Average loss G: {self.__get_loss_avg_g_last_epoch()}\n")
                 log.flush()
 
-                # Update properties for G
-                self.__can_g_train()
+            # Update properties for G
+            self.__can_g_train()
 
-                # Test and save models
-                data = self.__test_models()
-                self.__save_progress_plot(data)
-                self.__save_models()
+            # Test and save models
+            data = self.__test_models()
+            self.__save_progress_plot(data)
+            self.__save_models()
 
-                self.__resource_cleanup
+            self.__resource_cleanup
 
         with open(self.path_log_file, "a") as log:
             log.write(f"\n\nTraining ended at {datetime.datetime.now().strftime('%d/%m/%Y %H:%M:%S')}\n")
@@ -159,8 +168,8 @@ class Training():
     def __log_training_step(self, step):
         with open(self.path_log_file, "a") as log:
 
+            str_step_time = f"{get_elapsed_time_str(self.step_times_secs[self.current_epoch][step])}"
             str_step      = f"{step+1}/{constants.num_training_steps}"
-            str_step_time = f"{self.step_times_secs[self.current_epoch][step]:.2f} s"
             str_err_p     = f"{self.results['losses_p'][-1]}"
             str_err_g     = f"{self.results['losses_g'][-1]}" if len(self.results['losses_g']) > 0 else "N/A"
 
@@ -178,7 +187,7 @@ class Training():
     """
     def __init_log_file(self):
 
-        path = os.path.join(self.folders.logs_path, "asgntc.txt")
+        path = os.path.join(self.folders.logs_folder, "asgntc.txt")
 
         with open(path, "w") as log_file:
             log_file.write(f"Training session started at {self.__date.strftime('%d/%m/%Y %H:%M:%S')}\n\n")
@@ -190,9 +199,9 @@ class Training():
             else:
                 log_file.write(f"Unknown seed\n")
 
-            log_file.write(f"Default device: {self.device}\n")
-            if len(self.balanced_gpu_indices) > 0:
-                log_file.write(f"Balanced GPU indices: {self.balanced_gpu_indices}\n")
+            log_file.write(f"Default device: {self.device_manager.default_device}\n")
+            if len(self.device_manager.balanced_gpu_indices) > 0:
+                log_file.write(f"Balanced GPU indices: {self.device_manager.balanced_gpu_indices}\n")
 
             log_file.write(f"\nTraining specs:\n")
             log_file.write(f"Batch size: {constants.bs}\n")
@@ -222,67 +231,24 @@ class Training():
                 log_file.write(f"Initial configuration type: unknown\n")
 
 
-            log_file.write(f"\nModels specs:\n")
-            log_file.write(f"Latent space size: {constants.nz}\n")
+            log_file.write(f"\nModel specs:\n")
             log_file.write(f"Optimizer P: {self.optimizer_p.__class__.__name__}\n")
-            log_file.write(f"Optimizer G: {self.optimizer_g.__class__.__name__}\n")
             log_file.write(f"Criterion P: {self.criterion_p.__class__.__name__}\n")
-            log_file.write(f"Criterion G: -{self.criterion_p.__class__.__name__}\n")
-            log_file.write(f"Average loss of P before training G: {constants.threshold_avg_loss_p}\n\n")
+
+            if self.load_models["predictor"]:
+                log_file.write(f"The predictor model has been loaded from a previous training session\n")
+
+            if self.properties_g["enabled"]:
+                if self.load_models["generator"]:
+                    log_file.write(f"The generator model has been loaded from a previous training session\n")
+                log_file.write(f"Latent space size: {constants.nz}\n")
+                log_file.write(f"Optimizer G: {self.optimizer_g.__class__.__name__}\n")
+                log_file.write(f"Criterion G: -{self.criterion_p.__class__.__name__}\n")
+                log_file.write(f"Average loss of P before training G: {constants.threshold_avg_loss_p}\n\n")
+
             log_file.flush()
 
         return path
-
-
-    """
-    Function for choosing the device to use for training.
-    If a GPU is available, the GPU with the most free memory is selected.
-
-    Returns:
-        device (torch.device): The device to use for training.
-    """
-    def __choose_device(self):
-        if not torch.cuda.is_available():
-            return torch.device("cpu")
-
-        device_specs = []
-
-        for i in range(self.n_devices):
-            gpu_properties = torch.cuda.get_device_properties(i)
-            memory_free = torch.cuda.memory_reserved(i) - torch.cuda.memory_allocated(i)
-            device_specs.append((i, gpu_properties.total_memory, memory_free))
-
-        selected_device = max(device_specs, key=lambda x: x[2])[0]
-
-        return torch.device(f"cuda:{selected_device}")
-
-
-    """
-    Get GPU indices that are balanced compared to the default device that has been chosen.
-
-    Args:
-        threshold (float): The minimum ratio of memory and cores compared to the default device to be considered balanced.
-
-    Returns:
-        list: A list of GPU indices that are balanced.
-    """
-    def __get_balanced_gpu_indices(self, threshold=0.75):
-        if not torch.cuda.is_available() or torch.cuda.device_count() <= 1:
-            return []
-
-        id_default_device = torch.cuda.current_device()
-        default_gpu_properties = torch.cuda.get_device_properties(id_default_device)
-        balanced_gpus = []
-
-        for i in range(self.n_devices):
-            gpu_properties = torch.cuda.get_device_properties(i)
-            memory_ratio = gpu_properties.total_memory / default_gpu_properties.total_memory
-            cores_ratio = gpu_properties.multi_processor_count / default_gpu_properties.multi_processor_count
-
-            if memory_ratio >= threshold and cores_ratio >= threshold and i != id_default_device:
-                balanced_gpus.append(i)
-
-        return balanced_gpus
 
 
     """
@@ -299,7 +265,8 @@ class Training():
         dataloader (torch.utils.data.DataLoader): The dataloader for the current epoch.
     """
     def __get_dataloader(self):
-        self.dataloader = get_dataloader(self.dataloader, self.model_g, self.simulation_topology, self.init_conf_type, self.device)
+        self.dataloader = get_dataloader(self.dataloader, self.model_g,
+                                         self.simulation_topology, self.init_conf_type, self.device_manager.default_device)
 
         return self.dataloader
 
@@ -313,7 +280,8 @@ class Training():
         new_configs (list): A list of dictionaries containing information about the generated configurations.
     """
     def __get_new_batches(self, n_batches):
-        return  generate_new_batches(self.model_g, n_batches, self.simulation_topology, self.init_conf_type, self.device)
+        return  generate_new_batches(self.model_g, n_batches, self.simulation_topology,
+                                     self.init_conf_type, self.device_manager.default_device)
 
 
     """
@@ -337,12 +305,8 @@ class Training():
         self.model_p.train()
 
         for batch in self.dataloader:
-            if torch.cuda.is_available():
-                batch["initial"] = batch["initial"].to("cuda")
-                batch["simulated"]["metric"] = batch["simulated"]["metric"].to("cuda")
-
             self.optimizer_p.zero_grad()
-            predicted_metric = self.model_p(batch["initial"])
+            predicted_metric = self.model_p(batch["generated"].detach())
             errP = self.criterion_p(predicted_metric, batch["simulated"]["metric"])
             errP.backward()
             self.optimizer_p.step()
@@ -367,20 +331,16 @@ class Training():
         if self.properties_g["can_train"]:
 
             loss = 0
-            for _ in range(constants.n_batches_g_training):
+            for _ in range(len(self.dataloader)):
                 self.model_g.train()
-
                 batch = self.__get_one_new_batch()
-                if torch.cuda.is_available():
-                    batch[0]["initial"] = batch[0]["initial"].to("cuda")
-                    batch[0]["simulated"]["metric"] = batch[0]["simulated"]["metric"].to("cuda")
 
                 self.optimizer_g.zero_grad()
-                predicted_metric = self.model_p(batch[0]["initial"])
+                predicted_metric = self.model_p(batch[0]["generated"])
                 errG = self.criterion_g(predicted_metric, batch[0]["simulated"]["metric"])
                 errG.backward()
                 self.optimizer_g.step()
-                loss += errG.item()
+                loss += (-1 * errG.item())
 
             self.n_times_trained_g += 1
 
@@ -476,7 +436,8 @@ class Training():
         simulated metrics and predicted metrics.
     """
     def __test_models(self):
-        return test_models(self.model_g, self.model_p, self.simulation_topology, self.init_conf_type, self.fixed_noise, self.device)
+        return test_models(self.model_g, self.model_p, self.simulation_topology,
+                           self.init_conf_type, self.fixed_noise, self.device_manager.default_device)
 
 
     """
@@ -489,7 +450,7 @@ class Training():
         simulated metrics and predicted metrics.
     """
     def __save_progress_plot(self, data):
-        save_progress_plot(data, self.current_epoch, self.folders.results_path)
+        save_progress_plot(data, self.current_epoch, self.folders.results_folder)
 
 
     """
@@ -500,10 +461,10 @@ class Training():
     def __save_models(self):
 
         if self.path_g is None and self.n_times_trained_g > 0:
-            self.path_g = os.path.join(self.folders.models_path, "generator.pth.tar")
+            self.path_g = os.path.join(self.folders.models_folder, "generator.pth.tar")
 
         if self.path_p is None and self.n_times_trained_p > 0:
-            self.path_p = os.path.join(self.folders.models_path, "predictor.pth.tar")
+            self.path_p = os.path.join(self.folders.models_folder, "predictor.pth.tar")
 
 
         if self.path_g is not None:
@@ -537,12 +498,25 @@ class Training():
 
     """
     def __load_predictor(self):
-        path = os.path.join(constants.trained_predictor_path, "predictor.pth.tar")
+        path = os.path.join(constants.trained_models_path, "predictor.pth.tar")
 
         if os.path.isfile(path):
             checkpoint = torch.load(path)
             self.model_p.load_state_dict(checkpoint["state_dict"])
             self.optimizer_p.load_state_dict(checkpoint["optimizer"])
+
+
+    """
+    Function for loading the generator model.
+
+    """
+    def __load_generator(self):
+        path = os.path.join(constants.trained_models_path, "generator.pth.tar")
+
+        if os.path.isfile(path):
+            checkpoint = torch.load(path)
+            self.model_g.load_state_dict(checkpoint["state_dict"])
+            self.optimizer_g.load_state_dict(checkpoint["optimizer"])
 
 
     """
@@ -584,3 +558,4 @@ class Training():
         torch.manual_seed(self.seed)
         np.random.seed(self.seed)
         torch.cuda.manual_seed(self.seed)
+
