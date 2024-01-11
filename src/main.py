@@ -3,7 +3,8 @@ import sys
 import torch
 from gol_adv_sys.utils import constants as constants
 from gol_adv_sys.Training import Training
-from gol_adv_sys.utils import helper_functions as hf
+from gol_adv_sys.utils.simulation_functions import simulate_conf
+from gol_adv_sys.utils.helper_functions import save_progress_plot
 
 
 def test():
@@ -35,13 +36,13 @@ def test():
 
 
     plot_data["initial_conf"] = grid[0]
-    grid, metric = hf.simulate_grid(grid, constants.TOPOLOGY["toroidal"], steps, device)
+    grid, metric = simulate_conf(grid, constants.TOPOLOGY_TYPE["toroidal"], steps, device)
     plot_data["simulated_conf"] = grid[0]
     plot_data["predicted_metric"] = torch.ones_like(metric[0])
     plot_data["simulated_metric"] = metric[0]
 
 
-    hf.save_progress_plot(plot_data, 0)
+    save_progress_plot(plot_data, 0)
 
 
 def main():

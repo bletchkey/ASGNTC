@@ -133,10 +133,11 @@ def get_elapsed_time_str(times):
     seconds = sum(times) if isinstance(times, list) else times
     minutes = int(seconds // 60)
     hours = int(minutes // 60)
-    remaining_seconds = int(math.floor(seconds % 60))
+    remaining_minutes = minutes % 60  # Remaining minutes after converting to hours
+    remaining_seconds = int(seconds % 60)
 
     # Format time
-    time_format = f"{hours}h {minutes}m {remaining_seconds}s"
+    time_format = f"{hours}h {remaining_minutes}m {remaining_seconds}s"
 
     return time_format
 
@@ -191,3 +192,4 @@ For every value in conf, if value is < threshold, set to 0, else set to 1
 def __get_init_conf_threshold(conf):
 
     return (conf > constants.threshold_cell_value).float()
+

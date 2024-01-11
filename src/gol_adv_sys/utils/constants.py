@@ -7,7 +7,7 @@ num_epochs = 100
 bs = 64
 
 # Number of batches to generate at each epoch
-n_batches = 64
+n_batches = 128
 
 # Max number of batches in the data set
 n_max_batches = 10*n_batches
@@ -22,7 +22,7 @@ n_max_configs = n_max_batches*bs
 num_training_steps = 20
 
 # Average loss of P threshold before training G
-threshold_avg_loss_p = 5e-4
+threshold_avg_loss_p = 5e-3
 
 # Base path to the folder where the trainings will be saved
 trainings_folder_path = "trainings"
@@ -39,13 +39,14 @@ logs_folder_path = "logs"
 # Path to the folder where the trained predictor is saved
 trained_models_path = "trained_models"
 
+
 ### SIMULATION PARAMETERS #########################################################
 
 # Spatial size of training grids. All grixs will be resized to this size using a transformer.
 grid_size = 32
 
 # Number of steps to run the simulation
-n_simulation_steps = 10
+n_simulation_steps = 20
 
 # Max number of steps to run the simulation
 n_max_simulation_steps = 1000
@@ -73,13 +74,13 @@ INIT_CONF_TYPE = {
 nc = 1
 
 # Size of feature maps in the generator
-ngf = 32
+ngf = 16
 
 # Size of feature maps in the predictor
-npf = 32
+npf = 16
 
 # Size of z latent vector (i.e. size of generator input)
-nz = 1024
+nz = 10 #4
 
 
 # Hyperparameters for Adam optimizer

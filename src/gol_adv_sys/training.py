@@ -19,7 +19,7 @@ import datetime
 
 from .utils import constants as constants
 
-from .Predictor import Predictor_18, Predictor_34
+from .Predictor import Predictor_UNet
 from .Generator import Generator
 
 from .FolderManager import FolderManager
@@ -41,7 +41,6 @@ class Training():
         self.simulation_topology = constants.TOPOLOGY_TYPE["toroidal"]
         self.init_conf_type = constants.INIT_CONF_TYPE["threshold"]
 
-        self.dataloader = []
         self.current_epoch = 0
         self.step_times_secs = []
 
@@ -54,7 +53,7 @@ class Training():
         self.criterion_p = nn.MSELoss()
         self.criterion_g = lambda x, y: -self.criterion_p(x, y)
 
-        self.model_p = Predictor_18().to(self.device_manager.default_device)
+        self.model_p = Predictor_UNet().to(self.device_manager.default_device)
         self.model_g = Generator().to(self.device_manager.default_device)
 
         self.optimizer_p = optim.AdamW(self.model_p.parameters(),
@@ -63,20 +62,24 @@ class Training():
                                        eps=constants.p_adamw_eps,
                                        weight_decay=constants.p_adamw_wd)
 
-        self.optimizer_g = optim.Adam(self.model_g.parameters(),
-                                      lr=constants.g_adam_lr,
-                                      betas=(constants.g_adam_b1, constants.g_adam_b2),
-                                      eps=constants.g_adam_eps)
+        self.optimizer_g = optim.AdamW(self.model_g.parameters(),
+                                       lr=constants.g_adamw_lr,
+                                       betas=(constants.g_adamw_b1, constants.g_adamw_b2),
+                                       eps=constants.g_adamw_eps,
+                                       weight_decay=constants.g_adamw_wd)
 
-        self.fixed_noise = torch.randn(constants.bs, constants.nz, 1, 1, device=self.device_manager.default_device)
+        self.fixed_noise = torch.randn(constants.bs, constants.nz, 1, 1, device=self.device_manager.default_device)*2
 
         self.properties_g= {"enabled": True, "can_train": False}
+
 
         self.load_models = {"predictor": False, "generator": False}
 
         self.path_log_file = self.__init_log_file()
         self.path_p        = None
         self.path_g        = None
+
+        self.dataloader = []
 
 
     """
@@ -89,7 +92,6 @@ class Training():
             self.__load_predictor()
 
         if self.load_models["generator"]:
-
             self.__load_generator()
             self.properties_g["enabled"] = True
             self.properties_g["can_train"] = True
@@ -291,7 +293,8 @@ class Training():
         new_config (dict): A dictionary containing information about the generated configurations.
     """
     def __get_one_new_batch(self):
-        return self.__get_new_batches(1)
+        batch = self.__get_new_batches(1)
+        return batch[0]
 
     """
     Function for training the predictor model.
@@ -301,10 +304,15 @@ class Training():
     """
     def __train_predictor(self):
 
+        data = self.dataloader
+
+        data_shuffled = data.copy()
+        random.shuffle(data_shuffled)
+
         loss = 0
         self.model_p.train()
 
-        for batch in self.dataloader:
+        for batch in data_shuffled:
             self.optimizer_p.zero_grad()
             predicted_metric = self.model_p(batch["generated"].detach())
             errP = self.criterion_p(predicted_metric, batch["simulated"]["metric"])
@@ -331,20 +339,21 @@ class Training():
         if self.properties_g["can_train"]:
 
             loss = 0
-            for _ in range(len(self.dataloader)):
+            n = constants.n_batches
+            for _ in range(n):
                 self.model_g.train()
                 batch = self.__get_one_new_batch()
 
                 self.optimizer_g.zero_grad()
-                predicted_metric = self.model_p(batch[0]["generated"])
-                errG = self.criterion_g(predicted_metric, batch[0]["simulated"]["metric"])
+                predicted_metric = self.model_p(batch["generated"])
+                errG = self.criterion_g(predicted_metric, batch["simulated"]["metric"])
                 errG.backward()
                 self.optimizer_g.step()
                 loss += (-1 * errG.item())
 
             self.n_times_trained_g += 1
 
-            loss /= constants.n_batches_g_training
+            loss /= n
             self.results["losses_g"].append(loss)
 
             return loss
