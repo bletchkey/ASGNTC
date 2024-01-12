@@ -19,7 +19,7 @@ n_configs = n_batches*bs
 n_max_configs = n_max_batches*bs
 
 # Number of steps for training with a certain data set in an epoch
-num_training_steps = 20
+num_training_steps = 5
 
 # Average loss of P threshold before training G
 threshold_avg_loss_p = 5e-3

@@ -70,7 +70,7 @@ class Training():
 
         self.fixed_noise = torch.randn(constants.bs, constants.nz, 1, 1, device=self.device_manager.default_device)*2
 
-        self.properties_g= {"enabled": True, "can_train": False}
+        self.properties_g= {"enabled": True, "can_train": True}
 
 
         self.load_models = {"predictor": False, "generator": False}
@@ -246,7 +246,11 @@ class Training():
                 log_file.write(f"Latent space size: {constants.nz}\n")
                 log_file.write(f"Optimizer G: {self.optimizer_g.__class__.__name__}\n")
                 log_file.write(f"Criterion G: -{self.criterion_p.__class__.__name__}\n")
-                log_file.write(f"Average loss of P before training G: {constants.threshold_avg_loss_p}\n\n")
+
+                if self.properties_g["can_train"]:
+                    log_file.write(f"\nThe generator model starts to train at the beginning of the training session\n")
+                else:
+                    log_file.write(f"\nAverage loss of P before training G: {constants.threshold_avg_loss_p}\n\n")
 
             log_file.flush()
 
@@ -340,10 +344,10 @@ class Training():
 
             loss = 0
             n = constants.n_batches
-            for _ in range(n):
-                self.model_g.train()
-                batch = self.__get_one_new_batch()
 
+            self.model_g.train()
+            for _ in range(n):
+                batch = self.__get_one_new_batch()
                 self.optimizer_g.zero_grad()
                 predicted_metric = self.model_p(batch["generated"])
                 errG = self.criterion_g(predicted_metric, batch["simulated"]["metric"])
