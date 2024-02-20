@@ -28,7 +28,6 @@ def get_dataloader(dataloader, model_g, topology, init_conf_type, device):
 
     return dataloader
 
-
 """
 Function to generate new batches of configurations
 
@@ -37,7 +36,7 @@ def generate_new_batches(model_g, n_batches, topology, init_conf_type, device):
 
     configs = []
 
-    for _ in range(constants.n_batches):
+    for _ in range(n_batches):
         noise = torch.randn(constants.bs, constants.nz, 1, 1, device=device)
         generated_conf = model_g(noise)
         initial_conf = get_init_conf(generated_conf, init_conf_type)
@@ -86,6 +85,31 @@ def test_models(model_g, model_p, topology, init_conf_type, fixed_noise, device)
 
 
 """
+Function to test the predictor model
+
+"""
+def test_predictor_model(batch, model_p):
+
+    data = {
+        "generated_data": None,
+        "initial_conf": None,
+        "simulated_conf": None,
+        "simulated_metric": None,
+        "predicted_metric": None,
+    }
+
+    # Test the models on the fixed noise
+    with torch.no_grad():
+        model_p.eval()
+        data["generated_data"] = batch["generated"]
+        data["initial_conf"]   = batch["initial"]
+        data["simulated_conf"], data["simulated_metric"] = batch["simulated"]["conf"], batch["simulated"]["metric"]
+        data["predicted_metric"] = model_p(data["generated_data"])
+
+    return data
+
+
+"""
 Function to save the progress plot
 
 """
@@ -94,7 +118,6 @@ def save_progress_plot(plot_data, epoch, results_path):
     # Convert to NumPy
     for key in plot_data.keys():
         plot_data[key] = plot_data[key].detach().cpu().numpy().squeeze()
-
 
     current_epoch = epoch+1
 
@@ -117,6 +140,37 @@ def save_progress_plot(plot_data, epoch, results_path):
     plt.tight_layout()
     plt.savefig(os.path.join(results_path, f"epoch_{current_epoch}.png"))
     plt.close(fig)
+
+
+"""
+Function to check the dataset while plotting some configurations
+
+"""
+def check_dataset():
+    n = 300
+    indices = np.random.randint(0, constants.n_fixed_dataset_batches, n)
+
+    dataset = torch.load(os.path.join(constants.fixed_dataset_path, "fixed_dataset.pt"))
+
+    # Iterate through indices in steps of 30
+    for fig_idx in range(0, len(indices), 30):
+        fig, axs = plt.subplots(6, 5, figsize=(25, 30))  # 6 rows, 5 columns for 30 images
+
+        for i, ax in enumerate(axs.flatten()):
+            if fig_idx + i >= len(indices):  # Check if index exceeds the number of selected indices
+                ax.axis('off')  # Turn off the axis for a cleaner look if no more images
+                continue
+
+            data = dataset[indices[fig_idx + i]]
+            random_value = np.random.randint(0, constants.bs)
+            generated_conf = data["generated"][random_value].detach().cpu().numpy().squeeze()
+            ax.imshow(generated_conf, cmap='gray')
+            ax.set_title(f"Generated {indices[fig_idx + i]}")
+            ax.axis('off')
+
+        plt.tight_layout()
+        plt.savefig(os.path.join(constants.fixed_dataset_path, f"configurations{fig_idx//30}.png"))
+        plt.close(fig)
 
 
 """

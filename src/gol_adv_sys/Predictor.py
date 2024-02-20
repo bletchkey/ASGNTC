@@ -72,17 +72,16 @@ class UNet(nn.Module):
     def __init__(self) -> None:
         super(UNet, self).__init__()
 
-        self.resnet = ResNetConstantChannels(block, [2, 2, 2, 2], constants.npf*2)
-
-        # Encoder (Downsampling Path)
+        # Encoder (Downsampling)
         self.enc_conv1 = nn.Conv2d(constants.nc, constants.npf, kernel_size=3, padding=0)
         self.avgpool = nn.AvgPool2d(2, 2)
+        self.maxpool = nn.MaxPool2d(2, 2)
         self.enc_conv2 = nn.Conv2d(constants.npf, constants.npf*2, kernel_size=3, padding=0)
 
         # Bottleneck
         self.bottleneck_conv = nn.Conv2d(constants.npf*2, constants.npf*4, kernel_size=3, padding=0)
 
-        # Decoder (Upsampling Path)
+        # Decoder (Upsampling)
         self.up_conv1 = nn.ConvTranspose2d(constants.npf*4, constants.npf*2, kernel_size=2, stride=2)
         self.dec_conv1 = nn.Conv2d(constants.npf*4, constants.npf*2, kernel_size=3, padding=0)
         self.up_conv2 = nn.ConvTranspose2d(constants.npf*2, constants.npf, kernel_size=2, stride=2)
@@ -95,6 +94,21 @@ class UNet(nn.Module):
         self.relu = nn.ReLU()
 
     def forward(self, x):
+
+        for _ in range(2):
+            x = self._u_structure(x)
+
+        return x
+
+    def _pad_conv(self, x, f):
+
+        x = add_toroidal_padding(x)
+        x = f(x)
+
+        return x
+
+    def _u_structure(self, x):
+
         # Encoder
         x = self.relu(x)
         enc_1 = self._pad_conv(x, self.enc_conv1)
@@ -102,10 +116,6 @@ class UNet(nn.Module):
         x = self.relu(x)
         enc_2 = self._pad_conv(x, self.enc_conv2)
         x = self.avgpool(enc_2)
-
-        # ResNet
-        # x = self.relu(x)
-        # x = self.resnet(x)
 
         # Bottleneck
         x = self.relu(x)
@@ -124,14 +134,8 @@ class UNet(nn.Module):
 
         # Output
         out = self.output_conv(x)
+
         return out
-
-    def _pad_conv(self, x, f):
-
-        x = add_toroidal_padding(x)
-        x = f(x)
-
-        return x
 
 
 def Predictor_UNet():

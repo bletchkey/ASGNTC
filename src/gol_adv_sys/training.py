@@ -24,7 +24,8 @@ from .Generator import Generator
 
 from .FolderManager import FolderManager
 from .DeviceManager import DeviceManager
-from .utils.helper_functions import test_models, save_progress_plot, get_elapsed_time_str, generate_new_batches, get_dataloader
+from .utils.helper_functions import test_models, save_progress_plot, test_predictor_model, check_dataset
+from .utils.helper_functions import generate_new_batches, get_dataloader, get_elapsed_time_str
 
 
 class Training():
@@ -54,7 +55,7 @@ class Training():
         self.criterion_g = lambda x, y: -self.criterion_p(x, y)
 
         self.model_p = Predictor_UNet().to(self.device_manager.default_device)
-        self.model_g = Generator().to(self.device_manager.default_device)
+        self.model_g = Generator(noise_std=0).to(self.device_manager.default_device)
 
         self.optimizer_p = optim.AdamW(self.model_p.parameters(),
                                        lr=constants.p_adamw_lr,
@@ -68,10 +69,9 @@ class Training():
                                        eps=constants.g_adamw_eps,
                                        weight_decay=constants.g_adamw_wd)
 
-        self.fixed_noise = torch.randn(constants.bs, constants.nz, 1, 1, device=self.device_manager.default_device)*2
+        self.fixed_noise = torch.randn(constants.bs, constants.nz, 1, 1, device=self.device_manager.default_device)
 
-        self.properties_g= {"enabled": True, "can_train": True}
-
+        self.properties_g= {"enabled": False, "can_train": False}
 
         self.load_models = {"predictor": False, "generator": False}
 
@@ -81,6 +81,8 @@ class Training():
 
         self.dataloader = []
 
+        self.fixed_dataset = {"enabled": True}
+
 
     """
     Function to run the training.
@@ -88,15 +90,26 @@ class Training():
     """
     def run(self):
 
-        if self.load_models["predictor"]:
-            self.__load_predictor()
+        self.__check_load_models()
 
-        if self.load_models["generator"]:
-            self.__load_generator()
-            self.properties_g["enabled"] = True
-            self.properties_g["can_train"] = True
+        if self.fixed_dataset["enabled"]:
+            self.dataloader = torch.load(os.path.join(constants.fixed_dataset_path, "fixed_dataset.pt"))
 
         self.__fit()
+
+
+    """
+    Create fixed dataset
+
+    """
+    def create_fixed_dataset(self):
+        confs = generate_new_batches(self.model_g, constants.n_fixed_dataset_batches, self.simulation_topology, self.init_conf_type,
+                                         self.device_manager.default_device)
+
+        #save the configurations
+        torch.save(confs, os.path.join(constants.fixed_dataset_path, "fixed_dataset.pt"))
+
+        check_dataset()
 
 
     """
@@ -116,7 +129,8 @@ class Training():
             self.step_times_secs.append([])
             self.current_epoch = epoch
 
-            self.__get_dataloader()
+            if self.fixed_dataset["enabled"] == False:
+                self.__get_dataloader()
 
             with open(self.path_log_file, "a") as log:
 
@@ -150,7 +164,12 @@ class Training():
             self.__can_g_train()
 
             # Test and save models
-            data = self.__test_models()
+            data = None
+            if self.fixed_dataset["enabled"] == False:
+                data = self.__test_models()
+            else:
+                data = self.__test_predictor_model()
+
             self.__save_progress_plot(data)
             self.__save_models()
 
@@ -209,6 +228,7 @@ class Training():
             log_file.write(f"Batch size: {constants.bs}\n")
             log_file.write(f"Epochs: {constants.num_epochs}\n")
             log_file.write(f"Number of training steps in each epoch: {constants.num_training_steps}\n")
+
             log_file.write(f"Number of batches generated in each epoch: {constants.n_batches} ({constants.n_configs} configs)\n")
             log_file.write(f"Max number of generated batches in data set: {constants.n_max_batches} ({constants.n_max_configs} configs)\n")
 
@@ -454,6 +474,18 @@ class Training():
 
 
     """
+    Function for testing the predictor model.
+
+    Returns:
+        data (dict): Contains the generated configurations, initial configurations, simulated configurations,
+        simulated metrics and predicted metrics.
+    """
+    def __test_predictor_model(self):
+        random_batch = self.dataloader[random.randint(0, len(self.dataloader)-1)]
+        return test_predictor_model(random_batch, self.model_p)
+
+
+    """
     Function for saving the progress plot.
     It save the plot that shows the generated configurations, initial configurations, simulated configurations,
     simulated metrics and predicted metrics.
@@ -530,6 +562,19 @@ class Training():
             checkpoint = torch.load(path)
             self.model_g.load_state_dict(checkpoint["state_dict"])
             self.optimizer_g.load_state_dict(checkpoint["optimizer"])
+
+
+    """
+    Function for checking if the models should be loaded from a previous training session.
+    """
+    def __check_load_models(self):
+        if self.load_models["predictor"]:
+            self.__load_predictor()
+
+        if self.load_models["generator"]:
+            self.__load_generator()
+            self.properties_g["enabled"] = True
+            self.properties_g["can_train"] = True
 
 
     """

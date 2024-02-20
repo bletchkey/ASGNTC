@@ -1,12 +1,14 @@
 import torch
 import torch.nn as nn
+import random
 
 from .utils import constants as constants
 
-
 class GeneratorDC(nn.Module):
-    def __init__(self) -> None:
+    def __init__(self, noise_std=1) -> None:
         super(GeneratorDC, self).__init__()
+
+        self.noise_std = noise_std  # Standard deviation of the noise to add for variance
 
         layers = [
             self._make_layer(constants.nz, constants.ngf * 4, kernel_size=4, stride=1, padding=0),
@@ -18,7 +20,6 @@ class GeneratorDC(nn.Module):
         self.model = nn.Sequential(*layers)
         self.alpha = 1000
 
-
     def _make_layer(self, in_channels, out_channels, kernel_size=4, stride=2, padding=1):
         return nn.Sequential(
             nn.ConvTranspose2d(in_channels, out_channels, kernel_size, stride, padding, bias=True),
@@ -29,20 +30,23 @@ class GeneratorDC(nn.Module):
     def _make_final_layer(self, in_channels, out_channels):
         return nn.Sequential(
             nn.ConvTranspose2d(in_channels, out_channels, 4, 2, 1, bias=True),
-            nn.Tanh()
         )
 
     def threshold(self, x, alpha):
-        return nn.Sigmoid()(alpha * x)
+        return (1 + nn.Tanh()(alpha * x)) / 2
 
     def forward(self, input):
         x = self.model(input)
+        # Add random noise for variance
+        if self.noise_std > 0:
+            mean_shift = random.uniform(-10, 0)
+            noise = (torch.randn_like(x) * self.noise_std) + mean_shift
+            x = x + noise
         x = self.threshold(x, self.alpha)
         return x
 
-
-def Generator():
-    generator = GeneratorDC()
+def Generator(noise_std=1):
+    generator = GeneratorDC(noise_std=noise_std)
 
     # Kaiming initialization
     for layer in generator.modules():
@@ -52,4 +56,3 @@ def Generator():
                 layer.bias.data.fill_(0)
 
     return generator
-

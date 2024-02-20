@@ -12,6 +12,9 @@ n_batches = 128
 # Max number of batches in the data set
 n_max_batches = 10*n_batches
 
+# Number of batches to generate for the fixed dataset
+n_fixed_dataset_batches = 2000
+
 # Number of new configurations to generate at each epoch
 n_configs = n_batches*bs
 
@@ -19,10 +22,10 @@ n_configs = n_batches*bs
 n_max_configs = n_max_batches*bs
 
 # Number of steps for training with a certain data set in an epoch
-num_training_steps = 5
+num_training_steps = 20
 
 # Average loss of P threshold before training G
-threshold_avg_loss_p = 5e-3
+threshold_avg_loss_p = 0.005
 
 # Base path to the folder where the trainings will be saved
 trainings_folder_path = "trainings"
@@ -39,6 +42,9 @@ logs_folder_path = "logs"
 # Path to the folder where the trained predictor is saved
 trained_models_path = "trained_models"
 
+# Path to the folder where the fixed dataset is saved
+fixed_dataset_path = "data"
+
 
 ### SIMULATION PARAMETERS #########################################################
 
@@ -46,7 +52,7 @@ trained_models_path = "trained_models"
 grid_size = 32
 
 # Number of steps to run the simulation
-n_simulation_steps = 20
+n_simulation_steps = 10
 
 # Max number of steps to run the simulation
 n_max_simulation_steps = 1000
@@ -74,22 +80,22 @@ INIT_CONF_TYPE = {
 nc = 1
 
 # Size of feature maps in the generator
-ngf = 16
+ngf = 32
 
 # Size of feature maps in the predictor
-npf = 16
+npf = 64
 
 # Size of z latent vector (i.e. size of generator input)
-nz = 10 #4
+nz = 10
 
 
 # Hyperparameters for Adam optimizer
-p_adam_lr=0.0001
+p_adam_lr=0.001
 p_adam_b1=0.9
 p_adam_b2=0.999
 p_adam_eps=1e-08
 
-g_adam_lr=0.0001
+g_adam_lr=0.001
 g_adam_b1=0.9
 g_adam_b2=0.999
 g_adam_eps=1e-08
