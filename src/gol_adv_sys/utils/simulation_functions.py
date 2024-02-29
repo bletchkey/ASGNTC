@@ -9,7 +9,6 @@ Function to simulate the configuration for a given number of steps
 """
 def simulate_conf(conf, topology, steps, device):
 
-    sim_metric = torch.zeros_like(conf)
     _simulation_function = None
 
     # Define the simulation function
@@ -30,15 +29,111 @@ def simulate_conf(conf, topology, steps, device):
         print(f"Setting steps to {constants.n_max_simulation_steps}")
         steps = constants.n_max_simulation_steps
 
-    for step in range(steps):
+    sim_confs = []
+    for _ in range(steps):
         conf = _simulation_function(conf, kernel, device)
+        sim_confs.append(conf)
 
-        # Update the metric
-        parameter = 0.1 * (0.999 ** step)
-        sim_metric = sim_metric + (conf * parameter)
+    sim_metrics = __calculate_metrics(conf, sim_confs, steps)
+
+    return conf, sim_metrics
 
 
-    return conf, sim_metric
+"""
+Function to simulate the configuration for the fixed dataset
+
+"""
+def simulate_conf_fixed_dataset(conf, topology, steps, device):
+
+    final_conf = conf.clone()
+
+    _simulation_function = None
+
+    # Define the simulation function
+    if topology == constants.TOPOLOGY_TYPE["toroidal"]:
+        _simulation_function = __simulate_conf_toroidal
+    elif topology == constants.TOPOLOGY_TYPE["flat"]:
+        _simulation_function = __simulate_conf_flat
+    else:
+        raise ValueError(f"Topology {topology} not supported")
+
+    # Define the kernel for counting neighbors
+    kernel = torch.ones((1, 1, 3, 3)).to(device)
+    kernel[:, :, 1, 1] = 0
+
+    sim_confs = []
+    for _ in range(steps):
+        conf = _simulation_function(conf, kernel, device)
+        sim_confs.append(conf)
+
+    sim_metrics = __calculate_metrics(conf, sim_confs, steps)
+
+    # Final conf is the last configuration before a cycle is detected
+    conf_hashes = set()
+    current_hash = hash(final_conf.cpu().numpy().tobytes())
+    conf_hashes.add(current_hash)
+
+    while True:
+        final_conf = _simulation_function(final_conf, kernel, device)
+        current_hash = hash(final_conf.cpu().numpy().tobytes())
+
+        # Check if the current configuration has been seen before.
+        if current_hash in conf_hashes:
+            break
+
+        conf_hashes.add(current_hash)
+
+
+    return final_conf, sim_metrics
+
+
+"""
+Function for computing the metrics
+
+"""
+def __calculate_metrics(conf, confs, steps):
+    sim_metrics = {
+            "easy": torch.zeros_like(conf),
+            "medium": torch.zeros_like(conf),
+            "hard": torch.zeros_like(conf),
+        }
+
+    eps_easy   = __calculate_eps(half_step=2)
+    eps_medium = __calculate_eps(half_step=4)
+    eps_hard   = __calculate_eps(half_step=constants.fixed_dataset_metric_steps)
+
+    for step, config in enumerate(reversed(confs)):
+        step = len(confs) - step - 1
+        sim_metrics["easy"]   = __update_metric(sim_metrics["easy"], config, step, eps_easy)
+        sim_metrics["medium"] = __update_metric(sim_metrics["medium"], config, step, eps_medium)
+        sim_metrics["hard"]   = __update_metric(sim_metrics["hard"], config, step, eps_hard)
+
+    correction_easy   = eps_easy / (1 - ((1 - eps_easy) ** steps ))
+    correction_medium = eps_medium / (1 - ((1 - eps_medium) ** steps))
+    correction_hard   = eps_hard / (1 - ((1 - eps_hard) ** steps))
+
+    sim_metrics["easy"]   = sim_metrics["easy"] * correction_easy
+    sim_metrics["medium"] = sim_metrics["medium"] * correction_medium
+    sim_metrics["hard"]   = sim_metrics["hard"] * correction_hard
+
+
+    return sim_metrics
+
+
+"""
+Function for updating the metric
+
+"""
+def __update_metric(metric, conf, step, eps):
+    return metric + (conf * ((1 - eps) ** step))
+
+
+"""
+Function for calculating the epsilon value
+
+"""
+def __calculate_eps(half_step):
+    return 1 - (0.5 ** (1 / half_step))
 
 
 """

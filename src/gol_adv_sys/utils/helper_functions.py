@@ -6,7 +6,7 @@ import numpy as np
 import torch
 
 from . import constants as constants
-from .simulation_functions import simulate_conf
+from .simulation_functions import simulate_conf, simulate_conf_fixed_dataset
 
 
 """
@@ -16,6 +16,7 @@ Add configurations to the dataloader until it reaches the maximum number of conf
 If max number of configurations is reached, remove the oldest configurations to make room for the new ones
 
 This method implements a sliding window approach
+
 """
 def get_dataloader(dataloader, model_g, topology, init_conf_type, device):
 
@@ -27,6 +28,7 @@ def get_dataloader(dataloader, model_g, topology, init_conf_type, device):
     dataloader += new_configs
 
     return dataloader
+
 
 """
 Function to generate new batches of configurations
@@ -42,13 +44,45 @@ def generate_new_batches(model_g, n_batches, topology, init_conf_type, device):
         initial_conf = get_init_conf(generated_conf, init_conf_type)
 
         with torch.no_grad():
-            simulated_conf, simulated_metric = simulate_conf(initial_conf, topology,
+            simulated_conf, simulated_metrics = simulate_conf(initial_conf, topology,
                                                              constants.n_simulation_steps, device)
 
         configs.append({
-            "initial": initial_conf,
             "generated": generated_conf,
-            "simulated": {"conf": simulated_conf, "metric": simulated_metric}
+            "initial": initial_conf,
+            "simulated":  simulated_conf,
+            "metric_easy": simulated_metrics["easy"],
+            "metric_medium": simulated_metrics["medium"],
+            "metric_hard": simulated_metrics["hard"],
+        })
+
+    return configs
+
+
+"""
+Function to generate new batches of configurations for fixed dataset
+
+"""
+def generate_new_batches_fixed_dataset(model_g, n_configs, batch_size, nz, topology, init_conf_type, metric_steps, device):
+
+    configs = []
+
+    n_batches = n_configs // batch_size
+
+    for _ in range(n_batches):
+        noise = torch.randn(batch_size, nz, 1, 1, device=device)
+        generated_conf = model_g(noise)
+        initial_conf = get_init_conf(generated_conf, init_conf_type)
+
+        with torch.no_grad():
+            final_conf, metrics = simulate_conf_fixed_dataset(initial_conf, topology, metric_steps, device)
+
+        configs.append({
+            "initial": initial_conf,
+            "final": final_conf,
+            "metric_easy": metrics["easy"],
+            "metric_medium": metrics["medium"],
+            "metric_hard": metrics["hard"],
         })
 
     return configs
@@ -60,10 +94,10 @@ Function to test the models
 """
 def test_models(model_g, model_p, topology, init_conf_type, fixed_noise, device):
     data = {
-        "generated_data": None,
-        "initial_conf": None,
-        "simulated_conf": None,
-        "simulated_metric": None,
+        "generated": None,
+        "initial": None,
+        "simulated": None,
+        "metrics": None,
         "predicted_metric": None,
     }
 
@@ -71,15 +105,12 @@ def test_models(model_g, model_p, topology, init_conf_type, fixed_noise, device)
     with torch.no_grad():
         model_g.eval()
         model_p.eval()
-        generated_conf_fixed   = model_g(fixed_noise)
-        data["generated_data"] = generated_conf_fixed
-        data["initial_conf"]   = get_init_conf(generated_conf_fixed, init_conf_type)
+        generated_conf_fixed = model_g(fixed_noise)
+        data["generated"] = generated_conf_fixed
+        data["initial"]   = get_init_conf(generated_conf_fixed, init_conf_type)
 
-        data["simulated_conf"], data["simulated_metric"] = simulate_conf(data["initial_conf"],
-                                                                         topology,
-                                                                         constants.n_simulation_steps,
-                                                                         device)
-        data["predicted_metric"] = model_p(data["generated_data"])
+        data["simulated"], data["metrics"] = simulate_conf(data["initial"], topology, constants.n_simulation_steps, device)
+        data["predicted_metric"] = model_p(data["initial"])
 
     return data
 
@@ -88,26 +119,39 @@ def test_models(model_g, model_p, topology, init_conf_type, fixed_noise, device)
 Function to test the predictor model
 
 """
-def test_predictor_model(batch, model_p):
+def test_predictor_model(test_set, metric_type, model_p):
+
+    # Create an iterator from the data_loader
+    data_iterator = iter(test_set)
+    # Fetch the first batch
+    batch = next(data_iterator)
 
     data = {
-        "generated_data": None,
-        "initial_conf": None,
-        "simulated_conf": None,
-        "simulated_metric": None,
+        "generated": None,
+        "initial": None,
+        "simulated": None,
+        "metrics": None,
         "predicted_metric": None,
     }
 
     # Test the models on the fixed noise
     with torch.no_grad():
         model_p.eval()
-        data["generated_data"] = batch["generated"]
-        data["initial_conf"]   = batch["initial"]
-        data["simulated_conf"], data["simulated_metric"] = batch["simulated"]["conf"], batch["simulated"]["metric"]
-        data["predicted_metric"] = model_p(data["generated_data"])
+        data["predicted_metric"] = model_p(batch[:, 0, :, :, :])
+
+    if metric_type == constants.METRIC_TYPE["easy"]:
+        metric = batch[:, 2, :, :, :]
+    elif metric_type == constants.METRIC_TYPE["medium"]:
+        metric = batch[:, 3, :, :, :]
+    elif metric_type == constants.METRIC_TYPE["hard"]:
+        metric = batch[:, 4, :, :, :]
+
+    data["generated"] = batch[:, 0, :, :, :]
+    data["initial"]   = batch[:, 0, :, :, :]
+    data["simulated"] = batch[:, 1, :, :, :]
+    data["metrics"]   = metric
 
     return data
-
 
 """
 Function to save the progress plot
@@ -146,31 +190,64 @@ def save_progress_plot(plot_data, epoch, results_path):
 Function to check the dataset while plotting some configurations
 
 """
-def check_dataset():
-    n = 300
-    indices = np.random.randint(0, constants.n_fixed_dataset_batches, n)
+def check_train_fixed_dataset_configurations():
+    total_indices = 300
+    n_per_png = 30
+    indices = np.random.randint(0, constants.fixed_dataset_n_configs * constants.fixed_dataset_train_ratio, total_indices)
+    dataset = torch.load(os.path.join(constants.fixed_dataset_path, "gol_fixed_dataset_train.pt"))
 
-    dataset = torch.load(os.path.join(constants.fixed_dataset_path, "fixed_dataset.pt"))
+    for png_idx in range(total_indices // n_per_png):
+        fig, axs = plt.subplots(n_per_png, 5, figsize=(20, 2 * n_per_png))
 
-    # Iterate through indices in steps of 30
-    for fig_idx in range(0, len(indices), 30):
-        fig, axs = plt.subplots(6, 5, figsize=(25, 30))  # 6 rows, 5 columns for 30 images
+        for conf_idx in range(n_per_png):
+            global_idx = png_idx * n_per_png + conf_idx
+            conf = dataset[indices[global_idx]]
 
-        for i, ax in enumerate(axs.flatten()):
-            if fig_idx + i >= len(indices):  # Check if index exceeds the number of selected indices
-                ax.axis('off')  # Turn off the axis for a cleaner look if no more images
-                continue
+            for img_idx in range(5):
+                ax = axs[conf_idx, img_idx]
+                ax.imshow(conf[img_idx].detach().cpu().numpy().squeeze(), cmap='gray')
+                ax.axis('off')
 
-            data = dataset[indices[fig_idx + i]]
-            random_value = np.random.randint(0, constants.bs)
-            generated_conf = data["generated"][random_value].detach().cpu().numpy().squeeze()
-            ax.imshow(generated_conf, cmap='gray')
-            ax.set_title(f"Generated {indices[fig_idx + i]}")
-            ax.axis('off')
+                if conf_idx == 0:
+                    titles = ["Initial", "Final", "Easy", "Medium", "Hard"]
+                    ax.set_title(titles[img_idx])
 
         plt.tight_layout()
-        plt.savefig(os.path.join(constants.fixed_dataset_path, f"configurations{fig_idx//30}.png"))
+        plt.savefig(os.path.join(constants.fixed_dataset_path, f"fixed_confs_set_{png_idx}.png"))
         plt.close(fig)
+
+
+"""
+Function to check the distribution of the training dataset
+
+"""
+def check_fixed_dataset_distribution(device, dataset_path):
+    n = constants.grid_size ** 2
+    bins = torch.zeros(n+1, dtype=torch.int64, device=device)
+    img_path = dataset_path + "_distribution.png"
+
+    # Load the dataset
+    dataset = torch.load(dataset_path, map_location=device)
+
+    for conf in dataset:
+        conf_flat = conf[0].view(-1)
+        living_cells = int(torch.sum(conf_flat).item())
+
+        if living_cells <= n:
+            bins[living_cells] += 1
+        else:
+            print(f"Warning: Living cells count {living_cells} exceeds expected range.")
+
+    # Move the bins tensor back to CPU for plotting
+    bins_cpu = bins.to('cpu').numpy()
+    max_value = bins_cpu.max()
+
+    # Plotting
+    plt.bar(range(n+1), bins_cpu)
+    plt.ylim(0, max_value + max_value * 0.1)  # Add 10% headroom above the max value
+    plt.draw()  # Force redraw with the new limits
+    plt.savefig(img_path)
+    plt.close()
 
 
 """

@@ -67,16 +67,16 @@ class ResNetConstantChannels(nn.Module):
         return nn.Sequential(*layers)
 
 
-
 class UNet(nn.Module):
     def __init__(self) -> None:
         super(UNet, self).__init__()
 
         # Encoder (Downsampling)
         self.enc_conv1 = nn.Conv2d(constants.nc, constants.npf, kernel_size=3, padding=0)
+        self.enc_conv2 = nn.Conv2d(constants.npf, constants.npf*2, kernel_size=3, padding=0)
+
         self.avgpool = nn.AvgPool2d(2, 2)
         self.maxpool = nn.MaxPool2d(2, 2)
-        self.enc_conv2 = nn.Conv2d(constants.npf, constants.npf*2, kernel_size=3, padding=0)
 
         # Bottleneck
         self.bottleneck_conv = nn.Conv2d(constants.npf*2, constants.npf*4, kernel_size=3, padding=0)
@@ -88,7 +88,7 @@ class UNet(nn.Module):
         self.dec_conv2 = nn.Conv2d(constants.npf*2, constants.npf, kernel_size=3, padding=0)
 
         # Output Convolution
-        self.output_conv = nn.Conv2d(constants.npf, constants.nc, kernel_size=1, padding = 0)  # Assuming binary segmentation
+        self.output_conv = nn.Conv2d(constants.npf, constants.nc, kernel_size=1, padding = 0)
 
         # Activation Function
         self.relu = nn.ReLU()
@@ -111,14 +111,16 @@ class UNet(nn.Module):
 
         # Encoder
         x = self.relu(x)
+
         enc_1 = self._pad_conv(x, self.enc_conv1)
         x = self.avgpool(enc_1)
         x = self.relu(x)
+
         enc_2 = self._pad_conv(x, self.enc_conv2)
         x = self.avgpool(enc_2)
+        x = self.relu(x)
 
         # Bottleneck
-        x = self.relu(x)
         x = self._pad_conv(x, self.bottleneck_conv)
 
         # Decoder
@@ -138,6 +140,59 @@ class UNet(nn.Module):
         return out
 
 
+class VGGLike(nn.Module):
+    def __init__(self) -> None:
+        super(VGGLike, self).__init__()
+
+        self.conv1 = nn.Conv2d(constants.nc, constants.npf, kernel_size=3, padding=0)
+        self.conv2 = nn.Conv2d(constants.npf, constants.npf*2, kernel_size=3, padding=0)
+        self.conv3 = nn.Conv2d(constants.npf*2, constants.npf*4, kernel_size=3, padding=0)
+        self.conv4 = nn.Conv2d(constants.npf*4, constants.npf*8, kernel_size=3, padding=0)
+        self.conv5 = nn.Conv2d(constants.npf*8, constants.npf*16, kernel_size=3, padding=0)
+
+        self.maxpool = nn.MaxPool2d(2, 2)
+        self.avgpool = nn.AvgPool2d(2, 2)
+
+        self.relu = nn.ReLU()
+
+    def forward(self, x):
+
+        x = self.relu(x)
+
+        x = self._pad_conv(x, self.conv1)
+        x = self.maxpool(x)
+        x = self.relu(x)
+
+        x = self._pad_conv(x, self.conv2)
+        x = self.maxpool(x)
+        x = self.relu(x)
+
+        x = self._pad_conv(x, self.conv3)
+        x = self.maxpool(x)
+        x = self.relu(x)
+
+        x = self._pad_conv(x, self.conv4)
+        x = self.maxpool(x)
+        x = self.relu(x)
+
+        x = self._pad_conv(x, self.conv5)
+        x = self.maxpool(x)
+        x = self.relu(x)
+
+        return x
+
+    def _pad_conv(self, x, f):
+
+        x = add_toroidal_padding(x)
+        x = f
+
+
+def Predictor_ResNet():
+    return ResNetConstantChannels(block, [2, 2, 2, 2], constants.npf)
+
 def Predictor_UNet():
     return UNet()
+
+def Predictor_VGGLike():
+    return VGGLike()
 

@@ -5,10 +5,10 @@ import random
 from .utils import constants as constants
 
 class GeneratorDC(nn.Module):
-    def __init__(self, noise_std=1) -> None:
+    def __init__(self, noise_std=0) -> None:
         super(GeneratorDC, self).__init__()
 
-        self.noise_std = noise_std  # Standard deviation of the noise to add for variance
+        self.noise_std = noise_std
 
         layers = [
             self._make_layer(constants.nz, constants.ngf * 4, kernel_size=4, stride=1, padding=0),
@@ -37,15 +37,16 @@ class GeneratorDC(nn.Module):
 
     def forward(self, input):
         x = self.model(input)
-        # Add random noise for variance
+        # Add variance to the output
         if self.noise_std > 0:
-            mean_shift = random.uniform(-10, 0)
+            # mean_shift = random.uniform(-8, 8)
+            mean_shift = random.normalvariate(0, 6)
             noise = (torch.randn_like(x) * self.noise_std) + mean_shift
             x = x + noise
         x = self.threshold(x, self.alpha)
         return x
 
-def Generator(noise_std=1):
+def Generator(noise_std=0):
     generator = GeneratorDC(noise_std=noise_std)
 
     # Kaiming initialization

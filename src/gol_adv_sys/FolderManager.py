@@ -16,6 +16,8 @@ class FolderManager:
         self.__models_folder  = os.path.join(self.__base_folder, constants.models_folder_path)
         self.__logs_folder    = os.path.join(self.__base_folder, constants.logs_folder_path)
 
+        self.__data_folder    = constants.fixed_dataset_path
+
     @property
     def results_folder(self):
         if not os.path.exists(self.__results_folder):
@@ -36,6 +38,13 @@ class FolderManager:
             self.__logs_folder = self.__create_folder(self.__logs_folder)
 
         return self.__logs_folder
+
+    @property
+    def data_folder(self):
+        if not os.path.exists(self.__data_folder):
+            self.__data_folder = self.__create_folder(self.__data_folder)
+
+        return self.__data_folder
 
 
     def __create_folder(self, path):

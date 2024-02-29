@@ -15,17 +15,22 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 
+from torch.utils.data import Dataset, DataLoader
+
 import datetime
 
 from .utils import constants as constants
 
-from .Predictor import Predictor_UNet
+from .Predictor import Predictor_UNet, Predictor_VGGLike, Predictor_ResNet
 from .Generator import Generator
 
 from .FolderManager import FolderManager
 from .DeviceManager import DeviceManager
-from .utils.helper_functions import test_models, save_progress_plot, test_predictor_model, check_dataset
+from .DatasetManager import FixedDataset, DatasetCreator
+
+from .utils.helper_functions import test_models, save_progress_plot, test_predictor_model
 from .utils.helper_functions import generate_new_batches, get_dataloader, get_elapsed_time_str
+from .utils.helper_functions import check_fixed_dataset_distribution, check_train_fixed_dataset_configurations
 
 
 class Training():
@@ -41,12 +46,15 @@ class Training():
 
         self.simulation_topology = constants.TOPOLOGY_TYPE["toroidal"]
         self.init_conf_type = constants.INIT_CONF_TYPE["threshold"]
+        self.metric_type = constants.METRIC_TYPE["easy"]
 
         self.current_epoch = 0
         self.step_times_secs = []
 
         self.results = {"losses_g": [],
-                        "losses_p": []}
+                        "losses_p_train": [],
+                        "losses_p_val": [],
+                        "losses_p_test": [],}
 
         self.n_times_trained_p = 0
         self.n_times_trained_g = 0
@@ -57,11 +65,10 @@ class Training():
         self.model_p = Predictor_UNet().to(self.device_manager.default_device)
         self.model_g = Generator(noise_std=0).to(self.device_manager.default_device)
 
-        self.optimizer_p = optim.AdamW(self.model_p.parameters(),
-                                       lr=constants.p_adamw_lr,
-                                       betas=(constants.p_adamw_b1, constants.p_adamw_b2),
-                                       eps=constants.p_adamw_eps,
-                                       weight_decay=constants.p_adamw_wd)
+        self.optimizer_p = optim.SGD(self.model_p.parameters(),
+                                     lr=constants.p_sgd_lr,
+                                     momentum=constants.p_sgd_momentum,
+                                     weight_decay=constants.p_sgd_wd)
 
         self.optimizer_g = optim.AdamW(self.model_g.parameters(),
                                        lr=constants.g_adamw_lr,
@@ -73,15 +80,17 @@ class Training():
 
         self.properties_g= {"enabled": False, "can_train": False}
 
-        self.load_models = {"predictor": False, "generator": False}
+        self.load_models = {"predictor": False, "generator": False, "name_p": None, "name_g": None}
 
-        self.path_log_file = self.__init_log_file()
+        self.train_dataloader = []
+        self.test_dataloader = []
+        self.val_dataloader = []
+
+        self.fixed_dataset = {"enabled": True, "train_data": None, "val_data": None, "test_data": None}
+
+        self.path_log_file = self.__init_log_file() if self.fixed_dataset["enabled"] == False else self.__init_log_file_fixed_dataset()
         self.path_p        = None
         self.path_g        = None
-
-        self.dataloader = []
-
-        self.fixed_dataset = {"enabled": True}
 
 
     """
@@ -90,26 +99,113 @@ class Training():
     """
     def run(self):
 
-        self.__check_load_models()
-
         if self.fixed_dataset["enabled"]:
-            self.dataloader = torch.load(os.path.join(constants.fixed_dataset_path, "fixed_dataset.pt"))
 
-        self.__fit()
+            train_path = os.path.join(self.folders.data_folder, "gol_fixed_dataset_train.pt")
+            val_path   = os.path.join(self.folders.data_folder, "gol_fixed_dataset_val.pt")
+            test_path  = os.path.join(self.folders.data_folder, "gol_fixed_dataset_test.pt")
+
+            if False:
+                dataset = DatasetCreator(folder_manager=self.folders, device_manager=self.device_manager)
+
+                self.fixed_dataset["train_data"] = dataset.data[0]
+                self.fixed_dataset["val_data"]   = dataset.data[1]
+                self.fixed_dataset["test_data"]  = dataset.data[2]
+
+                check_fixed_dataset_distribution(self.device_manager.default_device, train_path)
+                check_fixed_dataset_distribution(self.device_manager.default_device, val_path)
+                check_fixed_dataset_distribution(self.device_manager.default_device, test_path)
+
+                check_train_fixed_dataset_configurations()
+
+            else:
+                self.fixed_dataset["train_data"] = FixedDataset(train_path)
+                self.fixed_dataset["val_data"]   = FixedDataset(val_path)
+                self.fixed_dataset["test_data"]  = FixedDataset(test_path)
+
+            self.train_dataloader = DataLoader(self.fixed_dataset["train_data"], batch_size=constants.bs, shuffle=True)
+            self.val_dataloader   = DataLoader(self.fixed_dataset["val_data"], batch_size=constants.bs, shuffle=True)
+            self.test_dataloader  = DataLoader(self.fixed_dataset["test_data"], batch_size=constants.bs, shuffle=True)
+
+            self.__fit_p_on_fixed_dataset()
+        else:
+            self.__check_load_models(self.load_models["name_p"], self.load_models["name_g"])
+            self.__fit()
 
 
     """
-    Create fixed dataset
+    Training loop for the predictor model.
+
+    The predictor model is trained on the fixed data set.
 
     """
-    def create_fixed_dataset(self):
-        confs = generate_new_batches(self.model_g, constants.n_fixed_dataset_batches, self.simulation_topology, self.init_conf_type,
-                                         self.device_manager.default_device)
+    def __fit_p_on_fixed_dataset(self):
 
-        #save the configurations
-        torch.save(confs, os.path.join(constants.fixed_dataset_path, "fixed_dataset.pt"))
+        torch.autograd.set_detect_anomaly(True)
 
-        check_dataset()
+        if self.device_manager.n_balanced_gpus > 0:
+            self.model_p = nn.DataParallel(self.model_p, device_ids=self.device_manager.balanced_gpu_indices)
+
+        # Learning rate scheduler
+        scheduler = optim.lr_scheduler.ReduceLROnPlateau(self.optimizer_p, mode='min', factor=0.1, patience=5, verbose=True,
+                                                         threshold=1e-4, threshold_mode='rel', cooldown=0, min_lr=0, eps=1e-8)
+
+        # Training loop
+        for epoch in range(constants.num_epochs):
+            self.current_epoch = epoch
+
+            epoch_start_time = time.time()
+
+            # Train the predictor model
+            train_loss = 0
+            self.model_p.train()
+            for batch in self.train_dataloader:
+                intial = batch[:, 0, :, :, :]
+                easy_metric = batch[:, 2, :, :, :]
+                self.optimizer_p.zero_grad()
+                predicted_metric = self.model_p(intial)
+                errP = self.criterion_p(predicted_metric, easy_metric)
+                errP.backward()
+                self.optimizer_p.step()
+                train_loss += errP.item()
+
+            self.n_times_trained_p += 1
+            train_loss /= len(self.train_dataloader)
+            self.results["losses_p_train"].append(train_loss)
+
+            # Check the validation loss
+            val_loss = 0
+            self.model_p.eval()
+            with torch.no_grad():
+                for batch in self.val_dataloader:
+                    initial = batch[:, 0, :, :, :]
+                    easy_metric = batch[:, 2, :, :, :]
+                    predicted_metric = self.model_p(initial)
+                    errP = self.criterion_p(predicted_metric, easy_metric)
+                    val_loss += errP.item()
+
+            val_loss /= len(self.val_dataloader)
+            self.results["losses_p_val"].append(val_loss)
+
+            # Update the learning rate
+            scheduler.step(val_loss)
+
+            epoch_end_time = time.time()
+            epoch_elapsed_time = epoch_end_time - epoch_start_time
+
+            # Log the training epoch progress
+            self.__log_training_epoch_p(epoch_elapsed_time)
+
+            # Test and save models
+            data = self.__test_predictor_model()
+            self.__save_progress_plot(data)
+            self.__save_models()
+            self.__resource_cleanup
+
+        with open(self.path_log_file, "a") as log:
+            log.write(f"\n\nTraining ended at {datetime.datetime.now().strftime('%d/%m/%Y %H:%M:%S')}\n")
+            log.write(f"Number of times P was trained: {self.n_times_trained_p}\n")
+            log.flush()
 
 
     """
@@ -129,13 +225,12 @@ class Training():
             self.step_times_secs.append([])
             self.current_epoch = epoch
 
-            if self.fixed_dataset["enabled"] == False:
-                self.__get_dataloader()
+            self.__get_train_dataloader()
 
             with open(self.path_log_file, "a") as log:
 
                 log.write(f"\n\nEpoch: {epoch+1}/{constants.num_epochs}\n")
-                log.write(f"Number of generated configurations in data set: {len(self.dataloader)*constants.bs}\n\n")
+                log.write(f"Number of generated configurations in data set: {len(self.train_dataloader)*constants.bs}\n\n")
                 log.flush()
 
             for step in range(constants.num_training_steps):
@@ -164,12 +259,7 @@ class Training():
             self.__can_g_train()
 
             # Test and save models
-            data = None
-            if self.fixed_dataset["enabled"] == False:
-                data = self.__test_models()
-            else:
-                data = self.__test_predictor_model()
-
+            data = self.__test_models()
             self.__save_progress_plot(data)
             self.__save_models()
 
@@ -183,6 +273,25 @@ class Training():
 
 
     """
+    Log the progress of the training session inside each epoch for the predictor model.
+
+    """
+    def __log_training_epoch_p(self, time):
+        with open(self.path_log_file, "a") as log:
+
+            str_epoch_time  = f"{get_elapsed_time_str(time)}"
+            str_epoch       = f"{self.current_epoch+1}/{constants.num_epochs}"
+            str_err_p_train = f"{self.results['losses_p_train'][-1]}"
+            str_err_p_val   = f"{self.results['losses_p_val'][-1]}"
+
+            for param_group in self.optimizer_p.param_groups:
+                lr = param_group['lr']
+
+            log.write(f"{str_epoch_time} | Epoch: {str_epoch}, Loss P (train): {str_err_p_train}, Loss P (val): {str_err_p_val}, [LR: {lr}]\n")
+            log.flush()
+
+
+    """
     Log the progress of the training session inside each epoch.
 
     """
@@ -191,7 +300,7 @@ class Training():
 
             str_step_time = f"{get_elapsed_time_str(self.step_times_secs[self.current_epoch][step])}"
             str_step      = f"{step+1}/{constants.num_training_steps}"
-            str_err_p     = f"{self.results['losses_p'][-1]}"
+            str_err_p     = f"{self.results['losses_p_train'][-1]}"
             str_err_g     = f"{self.results['losses_g'][-1]}" if len(self.results['losses_g']) > 0 else "N/A"
 
             log.write(f"{str_step_time} | Step: {str_step}, Loss P: {str_err_p}, Loss G: {str_err_g}\n")
@@ -272,10 +381,48 @@ class Training():
                 else:
                     log_file.write(f"\nAverage loss of P before training G: {constants.threshold_avg_loss_p}\n\n")
 
+            log_file.write(f"\n\nTraining progress:\n\n")
+
             log_file.flush()
 
         return path
 
+
+    """
+    Create a log file for the training session on the fixed dataset.
+    When creating the log file, the training specifications are also written to the file.
+
+    Returns:
+        path (str): The path to the log file.
+
+    """
+    def __init_log_file_fixed_dataset(self):
+
+        path = os.path.join(self.folders.logs_folder, "asgntc.txt")
+
+        with open(path, "w") as log_file:
+            log_file.write(f"Training session started at {self.__date.strftime('%d/%m/%Y %H:%M:%S')}\n\n")
+
+            if self.__seed_type["random"]:
+                log_file.write(f"Random seed: {self.seed}\n")
+            elif self.__seed_type["fixed"]:
+                log_file.write(f"Fixed seed: {self.seed}\n")
+            else:
+                log_file.write(f"Unknown seed\n")
+
+            log_file.write(f"Default device: {self.device_manager.default_device}\n")
+            if len(self.device_manager.balanced_gpu_indices) > 0:
+                log_file.write(f"Balanced GPU indices: {self.device_manager.balanced_gpu_indices}\n")
+
+            log_file.write(f"\nTraining specs:\n")
+            log_file.write(f"Batch size: {constants.bs}\n")
+            log_file.write(f"Epochs: {constants.num_epochs}\n")
+
+            log_file.write(f"\n\nTraining progress:\n\n")
+
+            log_file.flush()
+
+        return path
 
     """
     Get the dataloader for the current epoch.
@@ -289,12 +436,13 @@ class Training():
 
     Returns:
         dataloader (torch.utils.data.DataLoader): The dataloader for the current epoch.
-    """
-    def __get_dataloader(self):
-        self.dataloader = get_dataloader(self.dataloader, self.model_g,
-                                         self.simulation_topology, self.init_conf_type, self.device_manager.default_device)
 
-        return self.dataloader
+    """
+    def __get_train_dataloader(self):
+        self.train_dataloader = get_dataloader(self.train_dataloader, self.model_g,
+                                               self.simulation_topology, self.init_conf_type, self.device_manager.default_device)
+
+        return self.train_dataloader
 
     """
     Generate new configurations using the generator model.
@@ -304,6 +452,7 @@ class Training():
 
     Returns:
         new_configs (list): A list of dictionaries containing information about the generated configurations.
+
     """
     def __get_new_batches(self, n_batches):
         return  generate_new_batches(self.model_g, n_batches, self.simulation_topology,
@@ -315,20 +464,22 @@ class Training():
 
     Returns:
         new_config (dict): A dictionary containing information about the generated configurations.
+
     """
     def __get_one_new_batch(self):
-        batch = self.__get_new_batches(1)
-        return batch[0]
+        return self.__get_new_batches(1)
+
 
     """
     Function for training the predictor model.
 
     Returns:
         loss (float): The loss of the predictor model.
+
     """
     def __train_predictor(self):
 
-        data = self.dataloader
+        data = self.train_dataloader
 
         data_shuffled = data.copy()
         random.shuffle(data_shuffled)
@@ -338,16 +489,16 @@ class Training():
 
         for batch in data_shuffled:
             self.optimizer_p.zero_grad()
-            predicted_metric = self.model_p(batch["generated"].detach())
-            errP = self.criterion_p(predicted_metric, batch["simulated"]["metric"])
+            predicted_metric = self.model_p(batch["initial"])
+            errP = self.criterion_p(predicted_metric, batch[self.metric_type])
             errP.backward()
             self.optimizer_p.step()
             loss += errP.item()
 
         self.n_times_trained_p += 1
 
-        loss /= len(self.dataloader)
-        self.results["losses_p"].append(loss)
+        loss /= len(self.train_dataloader)
+        self.results["losses_p_train"].append(loss)
 
         return loss
 
@@ -357,6 +508,7 @@ class Training():
 
     Returns:
         loss (float): The loss of the generator model.
+
     """
     def __train_generator(self):
 
@@ -398,17 +550,18 @@ class Training():
 
     Returns:
         avg_loss_p (float): The average loss of the predictor model on the last n losses.
+
     """
     def __get_loss_avg_p(self, on_last_n_losses):
 
-        len_losses_p = len(self.results["losses_p"])
-        if len_losses_p <= 0:
+        len_losses_p_train = len(self.results["losses_p_train"])
+        if len_losses_p_train <= 0:
             return None
 
-        if on_last_n_losses > len_losses_p:
-            on_last_n_losses = len_losses_p
+        if on_last_n_losses > len_losses_p_train:
+            on_last_n_losses = len_losses_p_train
 
-        avg_loss_p = sum(self.results["losses_p"][-on_last_n_losses:])/on_last_n_losses
+        avg_loss_p = sum(self.results["losses_p_train"][-on_last_n_losses:])/on_last_n_losses
 
         return avg_loss_p
 
@@ -425,6 +578,7 @@ class Training():
 
     Returns:
         avg_loss_g (float): The average loss of the generator model on the last n losses.
+
     """
     def __get_loss_avg_g(self, on_last_n_losses):
 
@@ -445,6 +599,7 @@ class Training():
 
     Returns:
         avg_loss_p_last_epoch (float): The average loss of the predictor model on the last epoch.
+
     """
     def __get_loss_avg_p_last_epoch(self):
         return self.__get_loss_avg_p(constants.num_training_steps)
@@ -455,6 +610,7 @@ class Training():
 
     Returns:
         avg_loss_g_last_epoch (float): The average loss of the generator model on the last epoch.
+
     """
     def __get_loss_avg_g_last_epoch(self):
         return self.__get_loss_avg_g(constants.num_training_steps)
@@ -467,6 +623,7 @@ class Training():
     Returns:
         data (dict): Contains the generated configurations, initial configurations, simulated configurations,
         simulated metrics and predicted metrics.
+
     """
     def __test_models(self):
         return test_models(self.model_g, self.model_p, self.simulation_topology,
@@ -479,10 +636,10 @@ class Training():
     Returns:
         data (dict): Contains the generated configurations, initial configurations, simulated configurations,
         simulated metrics and predicted metrics.
+
     """
     def __test_predictor_model(self):
-        random_batch = self.dataloader[random.randint(0, len(self.dataloader)-1)]
-        return test_predictor_model(random_batch, self.model_p)
+        return test_predictor_model(self.test_dataloader, self.metric_type, self.model_p)
 
 
     """
@@ -493,6 +650,7 @@ class Training():
     Args:
         data (dict): Contains the generated configurations, initial configurations, simulated configurations,
         simulated metrics and predicted metrics.
+
     """
     def __save_progress_plot(self, data):
         save_progress_plot(data, self.current_epoch, self.folders.results_folder)
@@ -500,32 +658,18 @@ class Training():
 
     """
     Function for saving the models.
-    It saves the generator and predictor models.
+
+    It saves the generator and predictor models to the models folder every n times they are trained.
 
     """
     def __save_models(self):
 
-        if self.path_g is None and self.n_times_trained_g > 0:
-            self.path_g = os.path.join(self.folders.models_folder, "generator.pth.tar")
+        n = 10
+        epoch = self.current_epoch + 1
 
-        if self.path_p is None and self.n_times_trained_p > 0:
-            self.path_p = os.path.join(self.folders.models_folder, "predictor.pth.tar")
+        if self.n_times_trained_p > 0 and self.n_times_trained_p % n == 0:
+            self.path_p = os.path.join(self.folders.models_folder, f"predictor_{epoch}.pth.tar")
 
-
-        if self.path_g is not None:
-            if isinstance(self.model_g, nn.DataParallel):
-                torch.save({
-                        "state_dict": self.model_g.module.state_dict(),
-                        "optimizer": self.optimizer_g.state_dict(),
-                       }, self.path_g)
-            else:
-                torch.save({
-                        "state_dict": self.model_g.state_dict(),
-                        "optimizer": self.optimizer_g.state_dict(),
-                       }, self.path_g)
-
-
-        if self.path_p is not None:
             if isinstance(self.model_p, nn.DataParallel):
                 torch.save({
                         "state_dict": self.model_p.module.state_dict(),
@@ -538,12 +682,27 @@ class Training():
                     }, self.path_p)
 
 
+        if self.n_times_trained_g > 0 and self.n_times_trained_g % n == 0:
+            self.path_g = os.path.join(self.folders.models_folder, f"generator_{epoch}.pth.tar")
+
+            if isinstance(self.model_g, nn.DataParallel):
+                torch.save({
+                        "state_dict": self.model_g.module.state_dict(),
+                        "optimizer": self.optimizer_g.state_dict(),
+                       }, self.path_g)
+            else:
+                torch.save({
+                        "state_dict": self.model_g.state_dict(),
+                        "optimizer": self.optimizer_g.state_dict(),
+                       }, self.path_g)
+
+
     """
     Function for loading the predictor model.
 
     """
-    def __load_predictor(self):
-        path = os.path.join(constants.trained_models_path, "predictor.pth.tar")
+    def __load_predictor(self, name_p):
+        path = os.path.join(constants.trained_models_path, name_p)
 
         if os.path.isfile(path):
             checkpoint = torch.load(path)
@@ -555,8 +714,8 @@ class Training():
     Function for loading the generator model.
 
     """
-    def __load_generator(self):
-        path = os.path.join(constants.trained_models_path, "generator.pth.tar")
+    def __load_generator(self, name_g):
+        path = os.path.join(constants.trained_models_path, name_g)
 
         if os.path.isfile(path):
             checkpoint = torch.load(path)
@@ -566,13 +725,14 @@ class Training():
 
     """
     Function for checking if the models should be loaded from a previous training session.
+
     """
-    def __check_load_models(self):
+    def __check_load_models(self, name_p, name_g):
         if self.load_models["predictor"]:
-            self.__load_predictor()
+            self.__load_predictor(name_p)
 
         if self.load_models["generator"]:
-            self.__load_generator()
+            self.__load_generator(name_g)
             self.properties_g["enabled"] = True
             self.properties_g["can_train"] = True
 
@@ -583,6 +743,7 @@ class Training():
 
     Returns:
         can_train (bool): True if the generator model can be trained, False otherwise.
+
     """
     def __can_g_train(self):
 
@@ -610,6 +771,7 @@ class Training():
 
     """
     Function for setting the seed for the random number generators.
+
     """
     def __set_seed(self):
         random.seed(self.seed)
