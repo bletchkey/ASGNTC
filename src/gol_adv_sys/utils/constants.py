@@ -66,10 +66,19 @@ fixed_dataset_nz = 10
 # Metric steps for the fixed dataset
 fixed_dataset_metric_steps = 1000
 
+# Names for each configuration type in the fixed dataset
+CONF_NAMES = {
+    "initial": "initial",
+    "final": "final",
+    "metric_easy": "metric_easy",
+    "metric_medium": "metric_medium",
+    "metric_hard": "metric_hard"
+}
+
 
 ### SIMULATION PARAMETERS #########################################################
 
-# Spatial size of training grids. All grixs will be resized to this size using a transformer.
+# Size of the grid
 grid_size = 32
 
 # Number of steps to run the simulation
@@ -78,10 +87,10 @@ n_simulation_steps = 1000
 # Max number of steps to run the simulation
 n_max_simulation_steps = 1000
 
-# Number of living cells in the initial grid
+# Number of living cells in the initial configuration
 n_living_cells = 2 * grid_size
 
-# Threshold for the value of the cells in the generated grids
+# Threshold for the value of the cells in the generated configurations
 threshold_cell_value = 0.5
 
 TOPOLOGY_TYPE = {
@@ -95,15 +104,15 @@ INIT_CONF_TYPE = {
 }
 
 METRIC_TYPE = {
-    "easy": "metric_easy",
-    "medium": "metric_medium",
-    "hard": "metric_hard"
+    "easy": CONF_NAMES["metric_easy"],
+    "medium": CONF_NAMES["metric_medium"],
+    "hard": CONF_NAMES["metric_hard"]
 }
 
 
 ### MODELS PARAMETERS ##############################################################
 
-# Number of channels in the training grids.
+# Number of channels in the grid (input and output)
 nc = 1
 
 # Size of feature maps in the generator
@@ -141,8 +150,10 @@ g_adamw_eps=1e-08
 g_adamw_wd=0.01
 
 # Hyperparameters for SGD optimizer
-p_sgd_lr=0.1
+p_sgd_lr=0.01
 p_sgd_momentum=0.9
 p_sgd_wd=1e-4
+
+
 
 

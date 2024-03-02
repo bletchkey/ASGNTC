@@ -30,7 +30,7 @@ from .DatasetManager import FixedDataset, DatasetCreator
 
 from .utils.helper_functions import test_models, save_progress_plot, test_predictor_model
 from .utils.helper_functions import generate_new_batches, get_dataloader, get_elapsed_time_str
-from .utils.helper_functions import check_fixed_dataset_distribution, check_train_fixed_dataset_configurations
+from .utils.helper_functions import check_fixed_dataset_distribution, check_train_fixed_dataset_configurations, get_conf_from_batch
 
 
 class Training():
@@ -63,6 +63,8 @@ class Training():
         self.criterion_g = lambda x, y: -self.criterion_p(x, y)
 
         self.model_p = Predictor_UNet().to(self.device_manager.default_device)
+        #self.model_p = Predictor_VGGLike().to(self.device_manager.default_device)
+        #self.model_p = Predictor_ResNet().to(self.device_manager.default_device)
         self.model_g = Generator(noise_std=0).to(self.device_manager.default_device)
 
         self.optimizer_p = optim.SGD(self.model_p.parameters(),
@@ -160,11 +162,9 @@ class Training():
             train_loss = 0
             self.model_p.train()
             for batch in self.train_dataloader:
-                intial = batch[:, 0, :, :, :]
-                easy_metric = batch[:, 2, :, :, :]
                 self.optimizer_p.zero_grad()
-                predicted_metric = self.model_p(intial)
-                errP = self.criterion_p(predicted_metric, easy_metric)
+                predicted_metric = self.model_p(self.__get_initial_conf(batch))
+                errP = self.criterion_p(predicted_metric, self.__get_metric_conf(batch, self.metric_type))
                 errP.backward()
                 self.optimizer_p.step()
                 train_loss += errP.item()
@@ -178,10 +178,8 @@ class Training():
             self.model_p.eval()
             with torch.no_grad():
                 for batch in self.val_dataloader:
-                    initial = batch[:, 0, :, :, :]
-                    easy_metric = batch[:, 2, :, :, :]
-                    predicted_metric = self.model_p(initial)
-                    errP = self.criterion_p(predicted_metric, easy_metric)
+                    predicted_metric = self.model_p(self.__get_initial_conf(batch))
+                    errP = self.criterion_p(predicted_metric, self.__get_metric_conf(batch, self.metric_type))
                     val_loss += errP.item()
 
             val_loss /= len(self.val_dataloader)
@@ -202,7 +200,23 @@ class Training():
             self.__save_models()
             self.__resource_cleanup
 
+
+        # Check the test loss
+        test_loss = 0
+        self.model_p.eval()
+        with torch.no_grad():
+            for batch in self.test_dataloader:
+                predicted_metric = self.model_p(self.__get_initial_conf(batch))
+                errP = self.criterion_p(predicted_metric, self.__get_metric_conf(batch, self.metric_type))
+                test_loss += errP.item()
+
+        test_loss /= len(self.test_dataloader)
+        self.results["losses_p_test"].append(test_loss)
+        str_err_p_test = f"{self.results['losses_p_test'][-1]}"
+
         with open(self.path_log_file, "a") as log:
+            log.write("\n\nPerformance of the predictor model on the test set:\n")
+            log.write(f"Loss P (test): {str_err_p_test}\n\n")
             log.write(f"\n\nTraining ended at {datetime.datetime.now().strftime('%d/%m/%Y %H:%M:%S')}\n")
             log.write(f"Number of times P was trained: {self.n_times_trained_p}\n")
             log.flush()
@@ -468,6 +482,22 @@ class Training():
     """
     def __get_one_new_batch(self):
         return self.__get_new_batches(1)
+
+
+    """
+    Function to get a batch of initial configurations from the batch.
+
+    """
+    def __get_initial_conf(self, batch):
+        return get_conf_from_batch(batch, constants.CONF_NAMES["initial"], self.device_manager.default_device)
+
+
+    """
+    Function to get a batch of the specified metric type from the batch.
+
+    """
+    def __get_metric_conf(self, batch, metric_type):
+        return get_conf_from_batch(batch, metric_type, self.device_manager.default_device)
 
 
     """

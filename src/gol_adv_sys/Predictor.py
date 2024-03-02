@@ -24,19 +24,19 @@ class block(nn.Module):
 
         x = self.bn(x)
         x = self.relu(x)
-        x = self._conv(x)
+        x = self._pad_conv(x, self.conv)
 
         x = self.bn(x)
         x = self.relu(x)
-        x = self._conv(x)
+        x = self._pad_conv(x, self.conv)
 
         x += identity
 
         return x
 
-    def _conv(self, x):
+    def _pad_conv(self, x, f):
         x = add_toroidal_padding(x)
-        x = self.conv(x)
+        x = f(x)
 
         return x
 
@@ -47,13 +47,20 @@ class ResNetConstantChannels(nn.Module):
         self.channels = channels
         self.n_layers = len(layers)
 
+        self.in_conv = nn.Conv2d(constants.nc, channels, kernel_size=3, padding=0)
+        self.out_conv = nn.Conv2d(channels, constants.nc, kernel_size=1, padding=0)
+
         for i in range(self.n_layers):
             setattr(self, f"layer{i}", self._make_layer(block, layers[i], self.channels))
 
     def forward(self, x):
 
+        x = self.in_conv(add_toroidal_padding(x))
+
         for i in range(self.n_layers):
             x = getattr(self, f"layer{i}")(x)
+
+        x = self.out_conv(x)
 
         return x
 
@@ -95,7 +102,7 @@ class UNet(nn.Module):
 
     def forward(self, x):
 
-        for _ in range(2):
+        for _ in range(10):
             x = self._u_structure(x)
 
         return x
@@ -156,39 +163,32 @@ class VGGLike(nn.Module):
         self.relu = nn.ReLU()
 
     def forward(self, x):
-
         x = self.relu(x)
 
         x = self._pad_conv(x, self.conv1)
-        x = self.maxpool(x)
         x = self.relu(x)
 
         x = self._pad_conv(x, self.conv2)
-        x = self.maxpool(x)
         x = self.relu(x)
 
         x = self._pad_conv(x, self.conv3)
-        x = self.maxpool(x)
         x = self.relu(x)
 
         x = self._pad_conv(x, self.conv4)
-        x = self.maxpool(x)
         x = self.relu(x)
 
         x = self._pad_conv(x, self.conv5)
-        x = self.maxpool(x)
         x = self.relu(x)
 
         return x
 
     def _pad_conv(self, x, f):
-
         x = add_toroidal_padding(x)
         x = f
 
 
 def Predictor_ResNet():
-    return ResNetConstantChannels(block, [2, 2, 2, 2], constants.npf)
+    return ResNetConstantChannels(block, [2, 2, 2, 2], constants.grid_size)
 
 def Predictor_UNet():
     return UNet()

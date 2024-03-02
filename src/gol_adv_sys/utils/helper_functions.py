@@ -324,3 +324,21 @@ def __get_init_conf_threshold(conf):
 
     return (conf > constants.threshold_cell_value).float()
 
+
+"""
+Function to get a batch of a certain type of configuration from the batch itself
+
+"""
+def get_conf_from_batch(batch, type, device):
+    if type == constants.CONF_NAMES["initial"]:
+        return batch[:, 0, :, :, :].to(device)
+    elif type == constants.CONF_NAMES["final"]:
+        return batch[:, 1, :, :, :].to(device)
+    elif type == constants.CONF_NAMES["metric_easy"]:
+        return batch[:, 2, :, :, :].to(device)
+    elif type == constants.CONF_NAMES["metric_medium"]:
+        return batch[:, 3, :, :, :].to(device)
+    elif type == constants.CONF_NAMES["metric_hard"]:
+        return batch[:, 4, :, :, :].to(device)
+    else:
+        raise ValueError(f"Invalid type: {type}")
