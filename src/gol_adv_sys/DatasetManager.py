@@ -8,11 +8,10 @@ from .utils import constants as constants
 
 from .FolderManager import FolderManager
 
-from .utils.helper_functions import generate_new_batches_fixed_dataset, check_train_fixed_dataset_configs
 from .utils.simulation_functions import simulate_config_fixed_dataset
 
-
 class DatasetCreator():
+
     def __init__(self, device_manager) -> None:
 
         self.folders = FolderManager()
@@ -57,8 +56,8 @@ class DatasetCreator():
 
                 with torch.no_grad():
                     final_config, metrics = simulate_config_fixed_dataset(initial_config, self.simulation_topology,
-                                                                      constants.fixed_dataset_metric_steps,
-                                                                      self.device_manager.default_device)
+                                                                          constants.fixed_dataset_metric_steps,
+                                                                          self.device_manager.default_device)
 
                 configs.append({
                     "initial": initial_config,

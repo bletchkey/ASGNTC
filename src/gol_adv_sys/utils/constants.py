@@ -19,7 +19,7 @@ n_configs = n_batches*bs
 n_max_configs = n_max_batches*bs
 
 # Number of steps for training with a certain dataset in an epoch
-num_training_steps = 20
+num_training_steps = 2 #20
 
 # Average loss of P threshold before training G
 threshold_avg_loss_p = 0.05
@@ -87,9 +87,9 @@ threshold_cell_value = 0.5
 CONFIG_NAMES = {
     "initial": "initial",
     "final": "final",
-    "metric_easy": "metric_easy",
-    "metric_medium": "metric_medium",
-    "metric_hard": "metric_hard"
+    "metric_easy": "easy",
+    "metric_medium": "medium",
+    "metric_hard": "hard"
 }
 
 # Type of topology for the grid

@@ -29,7 +29,7 @@ from .DeviceManager import DeviceManager
 from .DatasetManager import FixedDataset
 
 from .utils.helper_functions import test_models, save_progress_plot, save_losses_plot, test_predictor_model
-from .utils.helper_functions import generate_new_batches, get_dataloader, get_elapsed_time_str, get_config_from_batch
+from .utils.helper_functions import generate_new_batches, get_data_tensor, get_elapsed_time_str, get_config_from_batch
 
 
 class Training():
@@ -85,7 +85,7 @@ class Training():
 
         self.fixed_noise = torch.randn(constants.bs, constants.nz, 1, 1, device=self.device_manager.default_device)
 
-        self.properties_g= {"enabled": False, "can_train": False}
+        self.properties_g= {"enabled": True, "can_train": False}
 
         self.load_models = {"predictor": False, "generator": False, "name_p": None, "name_g": None}
 
@@ -93,7 +93,9 @@ class Training():
         self.test_dataloader = []
         self.val_dataloader = []
 
-        self.fixed_dataset = {"enabled": True, "train_data": None, "val_data": None, "test_data": None}
+        self.data_tensor = None
+
+        self.fixed_dataset = {"enabled": False, "train_data": None, "val_data": None, "test_data": None}
 
         self.path_log_file = self.__init_log_file() if self.fixed_dataset["enabled"] == False else self.__init_log_file_fixed_dataset()
         self.path_p        = None
@@ -237,8 +239,8 @@ class Training():
 
             with open(self.path_log_file, "a") as log:
 
-                log.write(f"\n\nEpoch: {epoch+1}/{constants.num_epochs}\n")
-                log.write(f"Number of generated configurations in data set: {len(self.train_dataloader)*constants.bs}\n\n")
+                log.write(f"\nEpoch: {epoch+1}/{constants.num_epochs}\n")
+                log.write(f"Number of generated configurations in the dataset: {len(self.train_dataloader)*constants.bs}\n\n")
                 log.flush()
 
             for step in range(constants.num_training_steps):
@@ -446,8 +448,13 @@ class Training():
 
     """
     def __get_train_dataloader(self):
-        self.train_dataloader = get_dataloader(self.train_dataloader, self.model_g,
-                                               self.simulation_topology, self.init_conf_type, self.device_manager.default_device)
+        data = get_data_tensor(self.data_tensor, self.model_g,
+                              self.simulation_topology, self.init_config_type, self.device_manager.default_device)
+
+        self.data_tensor = data
+
+        # Create the dataloader from the tensor
+        self.train_dataloader = DataLoader(self.data_tensor, batch_size=constants.bs, shuffle=True)
 
         return self.train_dataloader
 
@@ -502,18 +509,13 @@ class Training():
     """
     def __train_predictor(self):
 
-        data = self.train_dataloader
-
-        data_shuffled = data.copy()
-        random.shuffle(data_shuffled)
-
         loss = 0
         self.model_p.train()
 
-        for batch in data_shuffled:
+        for batch in self.train_dataloader:
             self.optimizer_p.zero_grad()
-            predicted_metric = self.model_p(batch["initial"])
-            errP = self.criterion_p(predicted_metric, batch[self.metric_type])
+            predicted_metric = self.model_p(self.__get_initial_config(batch))
+            errP = self.criterion_p(predicted_metric, self.__get_metric_config(batch, self.metric_type))
             errP.backward()
             self.optimizer_p.step()
             loss += errP.item()
@@ -544,8 +546,8 @@ class Training():
             for _ in range(n):
                 batch = self.__get_one_new_batch()
                 self.optimizer_g.zero_grad()
-                predicted_metric = self.model_p(batch["generated"])
-                errG = self.criterion_g(predicted_metric, batch["simulated"]["metric"])
+                predicted_metric = self.model_p(self.__get_initial_config(batch))
+                errG = self.criterion_g(predicted_metric, self.__get_metric_config(batch, self.metric_type))
                 errG.backward()
                 self.optimizer_g.step()
                 loss += (-1 * errG.item())
@@ -650,7 +652,7 @@ class Training():
     """
     def __test_models(self):
         return test_models(self.model_g, self.model_p, self.simulation_topology,
-                           self.init_config_type, self.fixed_noise, self.device_manager.default_device)
+                           self.init_config_type, self.fixed_noise, self.metric_type, self.device_manager.default_device)
 
 
     """

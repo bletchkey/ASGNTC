@@ -6,7 +6,7 @@ import numpy as np
 import torch
 
 from . import constants as constants
-from .simulation_functions import simulate_config, simulate_config_fixed_dataset
+from .simulation_functions import simulate_config
 
 
 """
@@ -18,16 +18,29 @@ If max number of configurations is reached, remove the oldest configurations to 
 This method implements a sliding window approach
 
 """
-def get_dataloader(dataloader, model_g, topology, init_config_type, device):
+def get_data_tensor(data_tensor, model_g, topology, init_config_type, device):
 
     new_configs = generate_new_batches(model_g, constants.n_batches, topology, init_config_type, device)
 
-    if len(dataloader) + len(new_configs) > constants.n_max_batches:
-        dataloader = dataloader[constants.n_batches:]
+    # If data_tensor is None, initialize it with new_configs
+    if data_tensor is None:
+        data_tensor = new_configs
+    else:
+        # Concatenate current data with new_configs
+        combined_tensor = torch.cat([data_tensor, new_configs], dim=0)
 
-    dataloader += new_configs
+        # If the combined size exceeds the max allowed size, trim the oldest entries
+        max_size = constants.n_max_batches * constants.bs
+        if combined_tensor.size(0) > max_size:
+            # Calculate number of entries to drop from the start to fit the new_configs
+            excess_entries = combined_tensor.size(0) - max_size
+            data_tensor = combined_tensor[excess_entries:]
+        else:
+            data_tensor = combined_tensor
 
-    return dataloader
+    print(f"Data tensor shape: {data_tensor.shape}, used for creating the dataloader.")
+
+    return data_tensor
 
 
 """
@@ -45,10 +58,9 @@ def generate_new_batches(model_g, n_batches, topology, init_config_type, device)
 
         with torch.no_grad():
             simulated_config, simulated_metrics = simulate_config(initial_config, topology,
-                                                                constants.n_simulation_steps, device)
+                                                                  constants.n_simulation_steps, device)
 
         configs.append({
-            "generated": generated_config,
             "initial": initial_config,
             "simulated":  simulated_config,
             "metric_easy": simulated_metrics["easy"],
@@ -56,43 +68,25 @@ def generate_new_batches(model_g, n_batches, topology, init_config_type, device)
             "metric_hard": simulated_metrics["hard"],
         })
 
-    return configs
+    # Create a tensor from the list of configurations
+    concatenated_tensors = []
+    keys = configs[0].keys()
+    for key in keys:
+        concatenated_tensor = torch.cat([config[key] for config in configs], dim=0)
+        concatenated_tensors.append(concatenated_tensor)
+    # Stack the tensors
+    data = torch.stack(concatenated_tensors, dim=1)
+    # Shuffle the data
+    data = data[torch.randperm(data.size(0))]
 
-
-"""
-Function to generate new batches of configurations for fixed dataset
-
-"""
-def generate_new_batches_fixed_dataset(model_g, n_configs, batch_size, nz, topology, init_config_type, metric_steps, device):
-
-    configs = []
-
-    n_batches = n_configs // batch_size
-
-    for _ in range(n_batches):
-        noise = torch.randn(batch_size, nz, 1, 1, device=device)
-        generated_config = model_g(noise)
-        initial_config = get_init_config(generated_config, init_config_type)
-
-        with torch.no_grad():
-            final_config, metrics = simulate_config_fixed_dataset(initial_config, topology, metric_steps, device)
-
-        configs.append({
-            "initial": initial_config,
-            "final": final_config,
-            "metric_easy": metrics["easy"],
-            "metric_medium": metrics["medium"],
-            "metric_hard": metrics["hard"],
-        })
-
-    return configs
+    return data
 
 
 """
 Function to test the models
 
 """
-def test_models(model_g, model_p, topology, init_config_type, fixed_noise, device):
+def test_models(model_g, model_p, topology, init_config_type, fixed_noise, metric_type, device):
     data = {
         "generated": None,
         "initial": None,
@@ -108,7 +102,8 @@ def test_models(model_g, model_p, topology, init_config_type, fixed_noise, devic
         generated_config_fixed = model_g(fixed_noise)
         data["generated"] = generated_config_fixed
         data["initial"]   = get_init_config(generated_config_fixed, init_config_type)
-        data["simulated"], data["metric"] = simulate_config(data["initial"], topology, constants.n_simulation_steps, device)
+        data["simulated"], sim_metrics = simulate_config(data["initial"], topology, constants.n_simulation_steps, device)
+        data["metric"] = sim_metrics[metric_type]
         data["predicted_metric"] = model_p(data["initial"])
 
     return data
@@ -186,101 +181,39 @@ def save_losses_plot(losses_p_train, losses_p_val, learning_rates, path):
 
     epochs = list(range(1, len(losses_p_train) + 1))
 
-    learning_rate_changes = [learning_rates[0]] + [prev - curr for prev, curr in zip(learning_rates[:-1], learning_rates[1:])]
-    change_indices = [i for i, change in enumerate(learning_rate_changes) if change != 0]
+    # Detect where learning rate changes
+    if len(learning_rates) > 1:
+        change_indices = [i for i in range(1, len(learning_rates)) if learning_rates[i] != learning_rates[i-1]]
+    else:
+        change_indices = []
+
     change_epochs = [epochs[i] for i in change_indices]
     change_lr = [learning_rates[i] for i in change_indices]
 
-    # Plotting
+   # Create plot
     fig, ax1 = plt.subplots()
+
+    # Plot training and validation losses
     ax1.plot(epochs, losses_p_train, label="Training Loss", color='blue', linewidth=2, linestyle='-')
     ax1.plot(epochs, losses_p_val, label="Validation Loss", color='orange', linewidth=2, linestyle='--')
-    ax1.set_xlabel("Epochs", fontsize=12)
+
+    # Logarithmic scale for losses
+    ax1.set_yscale('log')
+    ax1.set_xlabel("Epoch", fontsize=12)
     ax1.set_ylabel("Losses", fontsize=12)
-    ax1.legend(loc='upper left')
+    ax1.legend(loc='upper right')
 
-    # Create a second y-axis for the learning rates
-    ax2 = ax1.twinx()
-    ax2.plot(epochs, learning_rates, label="Learning Rate", color='green', linewidth=2, linestyle=':')
-    ax2.scatter(change_epochs, change_lr, color='red', marker='o', label="LR Change")  # Mark changes
-    ax2.set_ylabel("Learning Rate", fontsize=12, color='green')
+    # Scatter plot for learning rate changes
+    ax1.scatter(change_epochs, 0, color='green', marker='D', label="LR Change")
 
-    # Adjust legend to include all labels
-    lines, labels = ax1.get_legend_handles_labels()
-    lines2, labels2 = ax2.get_legend_handles_labels()
-    ax2.legend(lines + lines2, labels + labels2, loc='upper right')
+    # Annotate learning rate values under the markers
+    for x, lr in zip(change_epochs, change_lr):
+        ax1.annotate(f'{lr:.1e}', (x, 0), textcoords="offset points", xytext=(0,-10), ha='center', fontsize=8, color='red')
 
     plt.tight_layout()
+
     # Save and close
-    plt.savefig(os.path.join(path, "losses_graph.png"), dpi=300)  # Increase dpi for higher resolution
-    plt.close()
-
-
-"""
-Function to check the dataset while plotting some configurations
-
-"""
-def check_train_fixed_dataset_configs():
-    total_indices = 300
-    n_per_png = 30
-    indices = np.random.randint(0, constants.fixed_dataset_n_configs * constants.fixed_dataset_train_ratio, total_indices)
-    data_name = constants.fixed_dataset_name + "_train.pt"
-    dataset = torch.load(os.path.join(constants.fixed_dataset_path, data_name))
-
-    saving_path = os.path.join(constants.fixed_dataset_path, "plots")
-    os.makedirs(saving_path, exist_ok=True)
-
-    for png_idx in range(total_indices // n_per_png):
-        fig, axs = plt.subplots(n_per_png, 5, figsize=(20, 2 * n_per_png))
-
-        for config_idx in range(n_per_png):
-            global_idx = png_idx * n_per_png + config_idx
-            config = dataset[indices[global_idx]]
-
-            for img_idx in range(5):
-                ax = axs[config_idx, img_idx]
-                ax.imshow(config[img_idx].detach().cpu().numpy().squeeze(), cmap='gray')
-                ax.axis('off')
-
-                if config_idx == 0:
-                    titles = ["Initial", "Final", "Easy", "Medium", "Hard"]
-                    ax.set_title(titles[img_idx])
-
-        plt.tight_layout()
-        plt.savefig(os.path.join(saving_path, f"fixed_configs_set_{png_idx}.png"))
-        plt.close(fig)
-
-
-"""
-Function to check the distribution of the training dataset
-
-"""
-def check_fixed_dataset_distribution(device, dataset_path):
-    n = constants.grid_size ** 2
-    bins = torch.zeros(n+1, dtype=torch.int64, device=device)
-    img_path = dataset_path + "_distribution.png"
-
-    # Load the dataset
-    dataset = torch.load(dataset_path, map_location=device)
-
-    for config in dataset:
-        config_flat = config[0].view(-1)
-        living_cells = int(torch.sum(config_flat).item())
-
-        if living_cells <= n:
-            bins[living_cells] += 1
-        else:
-            print(f"Warning: Living cells count {living_cells} exceeds expected range.")
-
-    # Move the bins tensor back to CPU for plotting
-    bins_cpu = bins.to('cpu').numpy()
-    max_value = bins_cpu.max()
-
-    # Plotting
-    plt.bar(range(n+1), bins_cpu)
-    plt.ylim(0, max_value + max_value * 0.1)  # Add 10% headroom above the max value
-    plt.draw()  # Force redraw with the new limits
-    plt.savefig(img_path)
+    plt.savefig(os.path.join(path, "losses_graph.png"), dpi=300)
     plt.close()
 
 
@@ -319,40 +252,6 @@ def get_init_config(config, init_config_type):
         return __get_init_config_n_living_cells(config)
     else:
         raise ValueError(f"Invalid init configuration type: {init_config_type}")
-
-
-"""
-From the configuration, get the indices of the n_living_cells highest values and set the rest to 0
-The n_living_cells highest values are set to 1
-
-"""
-def __get_init_config_n_living_cells(config):
-
-    batch_size, channels, height, width = config.size()
-    config_flat = config.view(batch_size, -1)  # Flatten each image in the batch
-
-    # Find the indices of the top values for each image in the batch
-    _, indices = torch.topk(config_flat, constants.n_living_cells, dim=1)
-
-    # Create a zero tensor of the same shape
-    updated_config = torch.zeros_like(config_flat)
-
-    # Set the top indices to 1 for each image
-    updated_config.scatter_(1, indices, 1)
-
-    # Reshape back to the original shape
-    updated_config = updated_config.view(batch_size, channels, height, width)
-
-    return updated_config
-
-
-"""
-For every value in configuration, if value is < threshold, set to 0, else set to 1
-
-"""
-def __get_init_config_threshold(config):
-
-    return (config > constants.threshold_cell_value).float()
 
 
 """
@@ -397,4 +296,38 @@ def add_toroidal_padding(x):
     x = torch.cat([x[:, :, :, -1:], x, x[:, :, :, :1]], dim=3)
 
     return x
+
+
+"""
+From the configuration, get the indices of the n_living_cells highest values and set the rest to 0
+The n_living_cells highest values are set to 1
+
+"""
+def __get_init_config_n_living_cells(config):
+
+    batch_size, channels, height, width = config.size()
+    config_flat = config.view(batch_size, -1)  # Flatten each image in the batch
+
+    # Find the indices of the top values for each image in the batch
+    _, indices = torch.topk(config_flat, constants.n_living_cells, dim=1)
+
+    # Create a zero tensor of the same shape
+    updated_config = torch.zeros_like(config_flat)
+
+    # Set the top indices to 1 for each image
+    updated_config.scatter_(1, indices, 1)
+
+    # Reshape back to the original shape
+    updated_config = updated_config.view(batch_size, channels, height, width)
+
+    return updated_config
+
+
+"""
+For every value in configuration, if value is < threshold, set to 0, else set to 1
+
+"""
+def __get_init_config_threshold(config):
+
+    return (config > constants.threshold_cell_value).float()
 
