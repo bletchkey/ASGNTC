@@ -4,7 +4,9 @@ import torch.nn.functional as F
 
 import math
 
-from .utils import constants as constants
+from ..utils.helper_functions import add_toroidal_padding
+from ..utils import constants as constants
+
 
 class PatchEmbedding(nn.Module):
     def __init__(self, img_size=32, patch_size=16, in_channels=1, embed_dim=768):
@@ -111,18 +113,3 @@ class VisionTransformer(nn.Module):
 
         return x
 
-
-def Predictor_ViT():
-    img_size = constants.grid_size
-    patch_size = 8  # Example: using 8x8 patches
-    in_channels = constants.nc
-    embed_dim = 768  # Size of each embedding
-    num_heads = 12  # Number of attention heads
-    num_layers = 12  # Number of transformer blocks
-    ff_dim = 2048  # Dimension of the feedforward network
-
-    model = VisionTransformer(img_size=img_size, patch_size=patch_size, in_channels=in_channels,
-                          embed_dim=embed_dim, num_heads=num_heads, num_layers=num_layers, ff_dim=ff_dim)
-
-
-    return model

@@ -21,17 +21,15 @@ import datetime
 
 from .utils import constants as constants
 
-from .Predictor import Predictor_UNet, Predictor_VGGLike_7, Predictor_VGGLike_13, Predictor_ResNet
-from .ViT_Predictor import Predictor_ViT
+from .Predictor import Predictor_Baseline
 from .Generator import Generator
 
 from .FolderManager import FolderManager
 from .DeviceManager import DeviceManager
-from .DatasetManager import FixedDataset, DatasetCreator
+from .DatasetManager import FixedDataset
 
-from .utils.helper_functions import test_models, save_progress_plot, test_predictor_model
-from .utils.helper_functions import generate_new_batches, get_dataloader, get_elapsed_time_str
-from .utils.helper_functions import check_fixed_dataset_distribution, check_train_fixed_dataset_configurations, get_conf_from_batch
+from .utils.helper_functions import test_models, save_progress_plot, save_losses_plot, test_predictor_model
+from .utils.helper_functions import generate_new_batches, get_dataloader, get_elapsed_time_str, get_config_from_batch
 
 
 class Training():
@@ -45,17 +43,25 @@ class Training():
         self.folders = FolderManager(self.__date)
         self.device_manager = DeviceManager()
 
+        # Get rid of the following two lines
         self.simulation_topology = constants.TOPOLOGY_TYPE["toroidal"]
-        self.init_conf_type = constants.INIT_CONF_TYPE["threshold"]
-        self.metric_type = constants.METRIC_TYPE["hard"]
+        self.init_config_type = constants.INIT_CONFIG_TYPE["threshold"]
+
+
+        self.metric_type = constants.METRIC_TYPE["medium"]
 
         self.current_epoch = 0
         self.step_times_secs = []
 
-        self.results = {"losses_g": [],
-                        "losses_p_train": [],
-                        "losses_p_val": [],
-                        "losses_p_test": [],}
+        self.losses = {"generator": [],
+                       "predictor_train": [],
+                       "predictor_val": [],
+                       "predictor_test": [],}
+
+        self.lr_each_epoch = {
+            "predictor": [],
+            "generator": [],
+        }
 
         self.n_times_trained_p = 0
         self.n_times_trained_g = 0
@@ -63,11 +69,8 @@ class Training():
         self.criterion_p = nn.MSELoss()
         self.criterion_g = lambda x, y: -self.criterion_p(x, y)
 
-        #self.model_p = Predictor_UNet().to(self.device_manager.default_device)
-        #self.model_p  = Predictor_ViT().to(self.device_manager.default_device)
-        #self.model_p = Predictor_ResNet().to(self.device_manager.default_device)
-        self.model_p = Predictor_VGGLike_7().to(self.device_manager.default_device)
-        self.model_g  = Generator(noise_std=0).to(self.device_manager.default_device)
+        self.model_p = Predictor_Baseline().to(self.device_manager.default_device)
+        self.model_g = Generator(noise_std=0).to(self.device_manager.default_device)
 
         self.optimizer_p = optim.SGD(self.model_p.parameters(),
                                      lr=constants.p_sgd_lr,
@@ -109,23 +112,9 @@ class Training():
             val_path   = os.path.join(self.folders.data_folder, "gol_fixed_dataset_val.pt")
             test_path  = os.path.join(self.folders.data_folder, "gol_fixed_dataset_test.pt")
 
-            if False:
-                dataset = DatasetCreator(folder_manager=self.folders, device_manager=self.device_manager)
-
-                self.fixed_dataset["train_data"] = dataset.data[0]
-                self.fixed_dataset["val_data"]   = dataset.data[1]
-                self.fixed_dataset["test_data"]  = dataset.data[2]
-
-                check_fixed_dataset_distribution(self.device_manager.default_device, train_path)
-                check_fixed_dataset_distribution(self.device_manager.default_device, val_path)
-                check_fixed_dataset_distribution(self.device_manager.default_device, test_path)
-
-                check_train_fixed_dataset_configurations()
-
-            else:
-                self.fixed_dataset["train_data"] = FixedDataset(train_path)
-                self.fixed_dataset["val_data"]   = FixedDataset(val_path)
-                self.fixed_dataset["test_data"]  = FixedDataset(test_path)
+            self.fixed_dataset["train_data"] = FixedDataset(train_path)
+            self.fixed_dataset["val_data"]   = FixedDataset(val_path)
+            self.fixed_dataset["test_data"]  = FixedDataset(test_path)
 
             self.train_dataloader = DataLoader(self.fixed_dataset["train_data"], batch_size=constants.bs, shuffle=True)
             self.val_dataloader   = DataLoader(self.fixed_dataset["val_data"], batch_size=constants.bs, shuffle=True)
@@ -133,6 +122,7 @@ class Training():
 
             self.__fit_p_on_fixed_dataset()
         else:
+
             self.__check_load_models(self.load_models["name_p"], self.load_models["name_g"])
             self.__fit()
 
@@ -151,12 +141,13 @@ class Training():
             self.model_p = nn.DataParallel(self.model_p, device_ids=self.device_manager.balanced_gpu_indices)
 
         # Learning rate scheduler
-        scheduler = optim.lr_scheduler.ReduceLROnPlateau(self.optimizer_p, mode='min', factor=0.1, patience=5, verbose=True,
-                                                         threshold=1e-4, threshold_mode='rel', cooldown=0, min_lr=0, eps=1e-8)
+        scheduler = optim.lr_scheduler.ReduceLROnPlateau(self.optimizer_p, mode="min", factor=0.1, patience=2, verbose=True,
+                                                         threshold=1e-4, threshold_mode="rel", cooldown=2, min_lr=0, eps=1e-8)
 
         # Training loop
         for epoch in range(constants.num_epochs):
             self.current_epoch = epoch
+            self.lr_each_epoch["predictor"].append(self.__get_lr(self.optimizer_p))
 
             epoch_start_time = time.time()
 
@@ -165,27 +156,27 @@ class Training():
             self.model_p.train()
             for batch in self.train_dataloader:
                 self.optimizer_p.zero_grad()
-                predicted_metric = self.model_p(self.__get_initial_conf(batch))
-                errP = self.criterion_p(predicted_metric, self.__get_metric_conf(batch, self.metric_type))
+                predicted_metric = self.model_p(self.__get_initial_config(batch))
+                errP = self.criterion_p(predicted_metric, self.__get_metric_config(batch, self.metric_type))
                 errP.backward()
                 self.optimizer_p.step()
                 train_loss += errP.item()
 
             self.n_times_trained_p += 1
             train_loss /= len(self.train_dataloader)
-            self.results["losses_p_train"].append(train_loss)
+            self.losses["predictor_train"].append(train_loss)
 
             # Check the validation loss
             val_loss = 0
             self.model_p.eval()
             with torch.no_grad():
                 for batch in self.val_dataloader:
-                    predicted_metric = self.model_p(self.__get_initial_conf(batch))
-                    errP = self.criterion_p(predicted_metric, self.__get_metric_conf(batch, self.metric_type))
+                    predicted_metric = self.model_p(self.__get_initial_config(batch))
+                    errP = self.criterion_p(predicted_metric, self.__get_metric_config(batch, self.metric_type))
                     val_loss += errP.item()
 
             val_loss /= len(self.val_dataloader)
-            self.results["losses_p_val"].append(val_loss)
+            self.losses["predictor_val"].append(val_loss)
 
             # Update the learning rate
             scheduler.step(val_loss)
@@ -199,22 +190,23 @@ class Training():
             # Test and save models
             data = self.__test_predictor_model()
             self.__save_progress_plot(data)
+            self.__save_losses_plot()
             self.__save_models()
             self.__resource_cleanup
-
 
         # Check the test loss
         test_loss = 0
         self.model_p.eval()
         with torch.no_grad():
             for batch in self.test_dataloader:
-                predicted_metric = self.model_p(self.__get_initial_conf(batch))
-                errP = self.criterion_p(predicted_metric, self.__get_metric_conf(batch, self.metric_type))
+                predicted_metric = self.model_p(self.__get_initial_config(batch))
+                errP = self.criterion_p(predicted_metric, self.__get_metric_config(batch, self.metric_type))
                 test_loss += errP.item()
 
         test_loss /= len(self.test_dataloader)
-        self.results["losses_p_test"].append(test_loss)
-        str_err_p_test = f"{self.results['losses_p_test'][-1]}"
+
+        self.losses["predictor_test"].append(test_loss)
+        str_err_p_test = f"{self.losses['predictor_test'][-1]}"
 
         with open(self.path_log_file, "a") as log:
             log.write("\n\nPerformance of the predictor model on the test set:\n")
@@ -297,11 +289,10 @@ class Training():
 
             str_epoch_time  = f"{get_elapsed_time_str(time)}"
             str_epoch       = f"{self.current_epoch+1}/{constants.num_epochs}"
-            str_err_p_train = f"{self.results['losses_p_train'][-1]}"
-            str_err_p_val   = f"{self.results['losses_p_val'][-1]}"
+            str_err_p_train = f"{self.losses['predictor_train'][-1]}"
+            str_err_p_val   = f"{self.losses['predictor_val'][-1]}"
 
-            for param_group in self.optimizer_p.param_groups:
-                lr = param_group['lr']
+            lr = self.lr_each_epoch["predictor"][self.current_epoch]
 
             log.write(f"{str_epoch_time} | Epoch: {str_epoch}, Loss P (train): {str_err_p_train}, Loss P (val): {str_err_p_val}, [LR: {lr}]\n")
             log.flush()
@@ -316,8 +307,8 @@ class Training():
 
             str_step_time = f"{get_elapsed_time_str(self.step_times_secs[self.current_epoch][step])}"
             str_step      = f"{step+1}/{constants.num_training_steps}"
-            str_err_p     = f"{self.results['losses_p_train'][-1]}"
-            str_err_g     = f"{self.results['losses_g'][-1]}" if len(self.results['losses_g']) > 0 else "N/A"
+            str_err_p     = f"{self.losses['predictor_train'][-1]}"
+            str_err_g     = f"{self.losses['generator'][-1]}" if len(self.losses['generator']) > 0 else "N/A"
 
             log.write(f"{str_step_time} | Step: {str_step}, Loss P: {str_err_p}, Loss G: {str_err_g}\n")
             log.flush()
@@ -368,10 +359,10 @@ class Training():
             else:
                 log_file.write(f"Topology: unknown\n")
 
-            if self.init_conf_type == constants.INIT_CONF_TYPE["threshold"]:
+            if self.init_config_type == constants.INIT_CONFIG_TYPE["threshold"]:
                 log_file.write(f"Initial configuration type: threshold\n")
                 log_file.write(f"Threshold for the value of the cells: {constants.threshold_cell_value}\n")
-            elif self.init_conf_type == constants.INIT_CONF_TYPE["n_living_cells"]:
+            elif self.init_config_type == constants.INIT_CONFIG_TYPE["n_living_cells"]:
                 log_file.write(f"Initial configuration type: n_living_cells\n")
                 log_file.write(f"Number of living cells in initial grid: {constants.n_living_cells}\n")
             else:
@@ -472,7 +463,7 @@ class Training():
     """
     def __get_new_batches(self, n_batches):
         return  generate_new_batches(self.model_g, n_batches, self.simulation_topology,
-                                     self.init_conf_type, self.device_manager.default_device)
+                                     self.init_config_type, self.device_manager.default_device)
 
 
     """
@@ -490,16 +481,16 @@ class Training():
     Function to get a batch of initial configurations from the batch.
 
     """
-    def __get_initial_conf(self, batch):
-        return get_conf_from_batch(batch, constants.CONF_NAMES["initial"], self.device_manager.default_device)
+    def __get_initial_config(self, batch):
+        return get_config_from_batch(batch, constants.CONFIG_NAMES["initial"], self.device_manager.default_device)
 
 
     """
     Function to get a batch of the specified metric type from the batch.
 
     """
-    def __get_metric_conf(self, batch, metric_type):
-        return get_conf_from_batch(batch, metric_type, self.device_manager.default_device)
+    def __get_metric_config(self, batch, metric_type):
+        return get_config_from_batch(batch, metric_type, self.device_manager.default_device)
 
 
     """
@@ -530,7 +521,7 @@ class Training():
         self.n_times_trained_p += 1
 
         loss /= len(self.train_dataloader)
-        self.results["losses_p_train"].append(loss)
+        self.losses["predictor_train"].append(loss)
 
         return loss
 
@@ -562,7 +553,7 @@ class Training():
             self.n_times_trained_g += 1
 
             loss /= n
-            self.results["losses_g"].append(loss)
+            self.losses["generator"].append(loss)
 
             return loss
 
@@ -586,14 +577,14 @@ class Training():
     """
     def __get_loss_avg_p(self, on_last_n_losses):
 
-        len_losses_p_train = len(self.results["losses_p_train"])
+        len_losses_p_train = len(self.losses["predictor_train"])
         if len_losses_p_train <= 0:
             return None
 
         if on_last_n_losses > len_losses_p_train:
             on_last_n_losses = len_losses_p_train
 
-        avg_loss_p = sum(self.results["losses_p_train"][-on_last_n_losses:])/on_last_n_losses
+        avg_loss_p = sum(self.losses["predictor_train"][-on_last_n_losses:])/on_last_n_losses
 
         return avg_loss_p
 
@@ -614,14 +605,14 @@ class Training():
     """
     def __get_loss_avg_g(self, on_last_n_losses):
 
-        len_losses_g = len(self.results["losses_g"])
+        len_losses_g = len(self.losses["generator"])
         if len_losses_g <= 0:
             return None
 
         if on_last_n_losses > len_losses_g:
             on_last_n_losses = len_losses_g
 
-        avg_loss_g = sum(self.results["losses_g"][-on_last_n_losses:])/on_last_n_losses
+        avg_loss_g = sum(self.losses["generator"][-on_last_n_losses:])/on_last_n_losses
 
         return avg_loss_g
 
@@ -659,7 +650,7 @@ class Training():
     """
     def __test_models(self):
         return test_models(self.model_g, self.model_p, self.simulation_topology,
-                           self.init_conf_type, self.fixed_noise, self.device_manager.default_device)
+                           self.init_config_type, self.fixed_noise, self.device_manager.default_device)
 
 
     """
@@ -671,7 +662,7 @@ class Training():
 
     """
     def __test_predictor_model(self):
-        return test_predictor_model(self.test_dataloader, self.metric_type, self.model_p)
+        return test_predictor_model(self.test_dataloader, self.metric_type, self.model_p, self.device_manager.default_device)
 
 
     """
@@ -686,6 +677,13 @@ class Training():
     """
     def __save_progress_plot(self, data):
         save_progress_plot(data, self.current_epoch, self.folders.results_folder)
+
+
+    """
+    Function
+    """
+    def __save_losses_plot(self):
+        save_losses_plot(self.losses["predictor_train"], self.losses["predictor_val"], self.lr_each_epoch, self.folders.base_folder)
 
 
     """
@@ -789,6 +787,15 @@ class Training():
             self.properties_g["can_train"] = self.__get_loss_avg_p_last_epoch() < constants.threshold_avg_loss_p
 
         return self.properties_g["can_train"]
+
+
+    """
+    Function for retrieving the learning rate of the optimizer
+
+    """
+    def __get_lr(self, optimizer):
+        for param_group in optimizer.param_groups:
+            return param_group["lr"]
 
 
     """

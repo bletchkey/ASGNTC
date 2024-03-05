@@ -9,16 +9,16 @@ bs = 128
 # Number of batches to generate at each epoch
 n_batches = 128
 
-# Max number of batches in the data set
+# Max number of batches in the dataset
 n_max_batches = 10*n_batches
 
 # Number of new configurations to generate at each epoch
 n_configs = n_batches*bs
 
-# Max number of configurations in data set
+# Max number of configurations in dataset
 n_max_configs = n_max_batches*bs
 
-# Number of steps for training with a certain data set in an epoch
+# Number of steps for training with a certain dataset in an epoch
 num_training_steps = 20
 
 # Average loss of P threshold before training G
@@ -63,6 +63,8 @@ fixed_dataset_bs = 128
 # Metric steps for the fixed dataset
 fixed_dataset_metric_steps = 1000
 
+# Fixed dataset name
+fixed_dataset_name = "gol_fixed_dataset"
 
 ### SIMULATION PARAMETERS #########################################################
 
@@ -82,7 +84,7 @@ n_living_cells = 2 * grid_size
 threshold_cell_value = 0.5
 
 # Names for each configuration
-CONF_NAMES = {
+CONFIG_NAMES = {
     "initial": "initial",
     "final": "final",
     "metric_easy": "metric_easy",
@@ -97,16 +99,16 @@ TOPOLOGY_TYPE = {
 }
 
 # Type of intialization for the grid
-INIT_CONF_TYPE = {
+INIT_CONFIG_TYPE = {
     "n_living_cells": "n_living_cells",
     "threshold": "threshold"
 }
 
 # Type of metric for the grid
 METRIC_TYPE = {
-    "easy": CONF_NAMES["metric_easy"],
-    "medium": CONF_NAMES["metric_medium"],
-    "hard": CONF_NAMES["metric_hard"]
+    "easy": CONFIG_NAMES["metric_easy"],
+    "medium": CONFIG_NAMES["metric_medium"],
+    "hard": CONFIG_NAMES["metric_hard"]
 }
 
 

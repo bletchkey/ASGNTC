@@ -19,6 +19,13 @@ class FolderManager:
         self.__data_folder    = constants.fixed_dataset_path
 
     @property
+    def base_folder(self):
+        if not os.path.exists(self.__base_folder):
+            self.__base_folder = self.__create_folder(self.__base_folder)
+
+        return self.__base_folder
+
+    @property
     def results_folder(self):
         if not os.path.exists(self.__results_folder):
             self.__results_folder = self.__create_folder(self.__results_folder)

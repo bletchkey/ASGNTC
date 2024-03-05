@@ -7,15 +7,15 @@ from . import constants as constants
 Function to simulate the configuration for a given number of steps
 
 """
-def simulate_conf(conf, topology, steps, device):
+def simulate_config(config, topology, steps, device):
 
     _simulation_function = None
 
     # Define the simulation function
     if topology == constants.TOPOLOGY_TYPE["toroidal"]:
-        _simulation_function = __simulate_conf_toroidal
+        _simulation_function = __simulate_config_toroidal
     elif topology == constants.TOPOLOGY_TYPE["flat"]:
-        _simulation_function = __simulate_conf_flat
+        _simulation_function = __simulate_config_flat
     else:
         raise ValueError(f"Topology {topology} not supported")
 
@@ -29,31 +29,31 @@ def simulate_conf(conf, topology, steps, device):
         print(f"Setting steps to {constants.n_max_simulation_steps}")
         steps = constants.n_max_simulation_steps
 
-    sim_confs = []
+    sim_configs = []
     for _ in range(steps):
-        conf = _simulation_function(conf, kernel, device)
-        sim_confs.append(conf)
+        config = _simulation_function(config, kernel, device)
+        sim_configs.append(config)
 
-    sim_metrics = __calculate_metrics(conf, sim_confs, steps)
+    sim_metrics = __calculate_metrics(config, sim_configs, steps)
 
-    return conf, sim_metrics
+    return config, sim_metrics
 
 
 """
 Function to simulate the configuration for the fixed dataset
 
 """
-def simulate_conf_fixed_dataset(conf, topology, steps, device):
+def simulate_config_fixed_dataset(config, topology, steps, device):
 
-    final_conf = conf.clone()
+    final_config = config.clone()
 
     _simulation_function = None
 
     # Define the simulation function
     if topology == constants.TOPOLOGY_TYPE["toroidal"]:
-        _simulation_function = __simulate_conf_toroidal
+        _simulation_function = __simulate_config_toroidal
     elif topology == constants.TOPOLOGY_TYPE["flat"]:
-        _simulation_function = __simulate_conf_flat
+        _simulation_function = __simulate_config_flat
     else:
         raise ValueError(f"Topology {topology} not supported")
 
@@ -61,49 +61,49 @@ def simulate_conf_fixed_dataset(conf, topology, steps, device):
     kernel = torch.ones((1, 1, 3, 3)).to(device)
     kernel[:, :, 1, 1] = 0
 
-    sim_confs = []
+    sim_configs = []
     for _ in range(steps):
-        conf = _simulation_function(conf, kernel, device)
-        sim_confs.append(conf)
+        config = _simulation_function(config, kernel, device)
+        sim_configs.append(config)
 
-    sim_metrics = __calculate_metrics(conf, sim_confs, steps)
+    sim_metrics = __calculate_metrics(config, sim_configs, steps)
 
-    # Final conf is the last configuration before a cycle is detected
-    conf_hashes = set()
-    current_hash = hash(final_conf.cpu().numpy().tobytes())
-    conf_hashes.add(current_hash)
+    # Final configuration is the last configuration before a cycle is detected
+    config_hashes = set()
+    current_hash = hash(final_config.cpu().numpy().tobytes())
+    config_hashes.add(current_hash)
 
     while True:
-        final_conf = _simulation_function(final_conf, kernel, device)
-        current_hash = hash(final_conf.cpu().numpy().tobytes())
+        final_config = _simulation_function(final_config, kernel, device)
+        current_hash = hash(final_config.cpu().numpy().tobytes())
 
         # Check if the current configuration has been seen before.
-        if current_hash in conf_hashes:
+        if current_hash in config_hashes:
             break
 
-        conf_hashes.add(current_hash)
+        config_hashes.add(current_hash)
 
 
-    return final_conf, sim_metrics
+    return final_config, sim_metrics
 
 
 """
 Function for computing the metrics
 
 """
-def __calculate_metrics(conf, confs, steps):
+def __calculate_metrics(config, configs, steps):
     sim_metrics = {
-            "easy": torch.zeros_like(conf),
-            "medium": torch.zeros_like(conf),
-            "hard": torch.zeros_like(conf),
+            "easy": torch.zeros_like(config),
+            "medium": torch.zeros_like(config),
+            "hard": torch.zeros_like(config),
         }
 
     eps_easy   = __calculate_eps(half_step=2)
     eps_medium = __calculate_eps(half_step=4)
     eps_hard   = __calculate_eps(half_step=constants.fixed_dataset_metric_steps)
 
-    for step, config in enumerate(reversed(confs)):
-        step = len(confs) - step - 1
+    for step, config in enumerate(reversed(configs)):
+        step = len(configs) - step - 1
         sim_metrics["easy"]   = __update_metric(sim_metrics["easy"], config, step, eps_easy)
         sim_metrics["medium"] = __update_metric(sim_metrics["medium"], config, step, eps_medium)
         sim_metrics["hard"]   = __update_metric(sim_metrics["hard"], config, step, eps_hard)
@@ -124,8 +124,8 @@ def __calculate_metrics(conf, confs, steps):
 Function for updating the metric
 
 """
-def __update_metric(metric, conf, step, eps):
-    return metric + (conf * ((1 - eps) ** step))
+def __update_metric(metric, config, step, eps):
+    return metric + (config * ((1 - eps) ** step))
 
 
 """
@@ -144,19 +144,19 @@ The padding is removed after the simulation
 A convolution is applied to count the neighbors
 
 """
-def __simulate_conf_toroidal(conf, kernel, device):
+def __simulate_config_toroidal(config, kernel, device):
 
-    # Pad the conf toroidally
-    conf = torch.cat([conf[:, :, -1:], conf, conf[:, :, :1]], dim=2)
-    conf = torch.cat([conf[:, :, :, -1:], conf, conf[:, :, :, :1]], dim=3)
+    # Pad the config toroidally
+    config = torch.cat([config[:, :, -1:], config, config[:, :, :1]], dim=2)
+    config = torch.cat([config[:, :, :, -1:], config, config[:, :, :, :1]], dim=3)
 
     # No additional padding is required here as we've already padded toroidally
-    neighbors = torch.conv2d(conf, kernel, padding=0).to(device)
+    neighbors = torch.conv2d(config, kernel, padding=0).to(device)
 
     # Remove the padding
-    conf = conf[:, :, 1:-1, 1:-1]
+    config = config[:, :, 1:-1, 1:-1]
 
-    return __apply_conway_rules(conf, neighbors)
+    return __apply_conway_rules(config, neighbors)
 
 
 """
@@ -166,11 +166,11 @@ Its simulates the flat topology
 A convolution is applied to count the neighbors
 
 """
-def __simulate_conf_flat(conf, kernel, device):
+def __simulate_config_flat(config, kernel, device):
 
-    neighbors = torch.conv2d(conf, kernel, padding=1).to(device)
+    neighbors = torch.conv2d(config, kernel, padding=1).to(device)
 
-    return __apply_conway_rules(conf, neighbors)
+    return __apply_conway_rules(config, neighbors)
 
 
 """
@@ -179,11 +179,11 @@ If a cell is alive and has 2 or 3 living neighbors, it stays alive
 Otherwise, it dies
 
 """
-def __apply_conway_rules(conf, neighbors):
+def __apply_conway_rules(config, neighbors):
 
-    birth = (neighbors == 3) & (conf == 0)
-    survive = ((neighbors == 2) | (neighbors == 3)) & (conf == 1)
-    new_conf = birth | survive
+    birth = (neighbors == 3) & (config == 0)
+    survive = ((neighbors == 2) | (neighbors == 3)) & (config == 1)
+    new_config = birth | survive
 
-    return new_conf.float()
+    return new_config.float()
 
