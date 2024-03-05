@@ -178,42 +178,38 @@ Function to save the losses plot
 
 """
 def save_losses_plot(losses_p_train, losses_p_val, learning_rates, path):
-
     epochs = list(range(1, len(losses_p_train) + 1))
 
-    # Detect where learning rate changes
+    # Detecting change indices more robustly
     if len(learning_rates) > 1:
         change_indices = [i for i in range(1, len(learning_rates)) if learning_rates[i] != learning_rates[i-1]]
     else:
         change_indices = []
 
     change_epochs = [epochs[i] for i in change_indices]
-    change_lr = [learning_rates[i] for i in change_indices]
+    change_lr_values = [learning_rates[i] for i in change_indices]  # Get the learning rate values at change points
 
-   # Create plot
     fig, ax1 = plt.subplots()
 
     # Plot training and validation losses
-    ax1.plot(epochs, losses_p_train, label="Training Loss", color='blue', linewidth=2, linestyle='-')
-    ax1.plot(epochs, losses_p_val, label="Validation Loss", color='orange', linewidth=2, linestyle='--')
+    ax1.plot(epochs, losses_p_train, label="Training Loss", color='blue', linewidth=0.7, linestyle='-')
+    ax1.plot(epochs, losses_p_val, label="Validation Loss", color='orange', linewidth=0.7, linestyle='--')
 
-    # Logarithmic scale for losses
     ax1.set_yscale('log')
     ax1.set_xlabel("Epoch", fontsize=12)
     ax1.set_ylabel("Losses", fontsize=12)
     ax1.legend(loc='upper right')
 
-    # Scatter plot for learning rate changes
-    ax1.scatter(change_epochs, 0, color='green', marker='D', label="LR Change")
-
-    # Annotate learning rate values under the markers
-    for x, lr in zip(change_epochs, change_lr):
-        ax1.annotate(f'{lr:.1e}', (x, 0), textcoords="offset points", xytext=(0,-10), ha='center', fontsize=8, color='red')
+    # Mark learning rate changes on the x-axis and annotate the learning rate value
+    ymin, ymax = ax1.get_ylim()
+    for epoch, lr_value in zip(change_epochs, change_lr_values):
+        ax1.plot([epoch, epoch], [ymin, ymax], color='green', linestyle='-', linewidth=0.1)  # Vertical line for each LR change
+        ax1.annotate(f'{lr_value:.2e}',  # Formatting the learning rate value
+                     (epoch, ymin),  # Position at the bottom of the plot
+                     textcoords="offset points", xytext=(-10,0), ha='left', fontsize=2, color='green')
 
     plt.tight_layout()
-
-    # Save and close
-    plt.savefig(os.path.join(path, "losses_graph.png"), dpi=300)
+    plt.savefig(os.path.join(path, "losses_graph.png"), dpi=600)
     plt.close()
 
 

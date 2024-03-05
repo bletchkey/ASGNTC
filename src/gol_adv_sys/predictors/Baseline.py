@@ -40,12 +40,12 @@ class Baseline(nn.Module):
         x = self._pad_conv(x, self.conv4)
         x = self.relu(x)
 
-        x = self._pad_conv(x, self.conv5)
-        x = self.relu(x)
-        x = self._pad_conv(x, self.conv6)
-        x = self.relu(x)
-        x = self._pad_conv(x, self.conv6)
-        x = self.relu(x)
+        # x = self._pad_conv(x, self.conv5)
+        # x = self.relu(x)
+        # x = self._pad_conv(x, self.conv6)
+        # x = self.relu(x)
+        # x = self._pad_conv(x, self.conv6)
+        # x = self.relu(x)
 
         x = self.output_conv(x)
 

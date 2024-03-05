@@ -19,10 +19,10 @@ n_configs = n_batches*bs
 n_max_configs = n_max_batches*bs
 
 # Number of steps for training with a certain dataset in an epoch
-num_training_steps = 2 #20
+num_training_steps = 20
 
 # Average loss of P threshold before training G
-threshold_avg_loss_p = 0.05
+threshold_avg_loss_p = 0.005
 
 # Base path to the folder where the trainings will be saved
 trainings_folder_path = "trainings"
@@ -43,7 +43,7 @@ trained_models_path = "trained_models"
 ### FIXED DATASET PARAMETERS ##############################################################
 
 # Number of configurations to generate for the fixed dataset
-fixed_dataset_n_configs = 262400
+fixed_dataset_n_configs = 4100 #262400
 
 # Ratio of the fixed dataset to use for training
 fixed_dataset_train_ratio = 0.8
@@ -55,7 +55,7 @@ fixed_dataset_val_ratio = 0.1
 fixed_dataset_test_ratio = 0.1
 
 # Path to the folder where the fixed dataset is saved
-fixed_dataset_path = "data"
+fixed_dataset_path = "data_test"
 
 # Batch size for the fixed dataset
 fixed_dataset_bs = 128

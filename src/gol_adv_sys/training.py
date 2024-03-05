@@ -95,7 +95,7 @@ class Training():
 
         self.data_tensor = None
 
-        self.fixed_dataset = {"enabled": False, "train_data": None, "val_data": None, "test_data": None}
+        self.fixed_dataset = {"enabled": True, "train_data": None, "val_data": None, "test_data": None}
 
         self.path_log_file = self.__init_log_file() if self.fixed_dataset["enabled"] == False else self.__init_log_file_fixed_dataset()
         self.path_p        = None
@@ -685,7 +685,8 @@ class Training():
     Function
     """
     def __save_losses_plot(self):
-        save_losses_plot(self.losses["predictor_train"], self.losses["predictor_val"], self.lr_each_epoch, self.folders.base_folder)
+        save_losses_plot(self.losses["predictor_train"], self.losses["predictor_val"],
+                         self.lr_each_epoch["predictor"], self.folders.base_folder)
 
 
     """
