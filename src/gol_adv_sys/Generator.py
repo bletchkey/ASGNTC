@@ -57,3 +57,4 @@ def Generator(noise_std=0):
                 layer.bias.data.fill_(0)
 
     return generator
+

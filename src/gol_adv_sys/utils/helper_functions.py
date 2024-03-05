@@ -294,26 +294,22 @@ The n_living_cells highest values are set to 1
 """
 def __get_init_conf_n_living_cells(conf):
 
-    init_conf = conf.clone()
-
-    batch_size, _, height, width = init_conf.size()
-    conf_flat = init_conf.view(batch_size, -1)  # Flatten each image in the batch
+    batch_size, channels, height, width = conf.size()
+    conf_flat = conf.view(batch_size, -1)  # Flatten each image in the batch
 
     # Find the indices of the top values for each image in the batch
     _, indices = torch.topk(conf_flat, constants.n_living_cells, dim=1)
 
     # Create a zero tensor of the same shape
-    conf_new = torch.zeros_like(conf_flat)
+    updated_conf = torch.zeros_like(conf_flat)
 
     # Set the top indices to 1 for each image
-    conf_new.scatter_(1, indices, 1)
+    updated_conf.scatter_(1, indices, 1)
 
     # Reshape back to the original shape
-    init_conf = conf_new.view(batch_size, 1, height, width)
+    updated_conf = updated_conf.view(batch_size, channels, height, width)
 
-    conf = init_conf
-
-    return conf
+    return updated_conf
 
 
 """
@@ -330,15 +326,25 @@ Function to get a batch of a certain type of configuration from the batch itself
 
 """
 def get_conf_from_batch(batch, type, device):
-    if type == constants.CONF_NAMES["initial"]:
-        return batch[:, 0, :, :, :].to(device)
-    elif type == constants.CONF_NAMES["final"]:
-        return batch[:, 1, :, :, :].to(device)
-    elif type == constants.CONF_NAMES["metric_easy"]:
-        return batch[:, 2, :, :, :].to(device)
-    elif type == constants.CONF_NAMES["metric_medium"]:
-        return batch[:, 3, :, :, :].to(device)
-    elif type == constants.CONF_NAMES["metric_hard"]:
-        return batch[:, 4, :, :, :].to(device)
-    else:
-        raise ValueError(f"Invalid type: {type}")
+
+    # Ensure the batch has the expected dimensions (5D tensor)
+    if batch.dim() != 5:
+        raise RuntimeError(f"Expected batch to have 5 dimensions, got {batch.dim()}")
+
+    # Mapping from type to index in the batch
+    conf_indices = {
+        constants.CONF_NAMES["initial"]: 0,
+        constants.CONF_NAMES["final"]: 1,
+        constants.CONF_NAMES["metric_easy"]: 2,
+        constants.CONF_NAMES["metric_medium"]: 3,
+        constants.CONF_NAMES["metric_hard"]: 4
+    }
+
+    # Validate and retrieve the configuration index
+    if type not in conf_indices:
+        raise ValueError(f"Invalid type: {type}. Valid types are {list(conf_indices.keys())}")
+
+    conf_index = conf_indices[type]
+
+    # Extract and return the configuration
+    return batch[:, conf_index, :, :, :].to(device)

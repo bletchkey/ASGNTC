@@ -21,7 +21,8 @@ import datetime
 
 from .utils import constants as constants
 
-from .Predictor import Predictor_UNet, Predictor_VGGLike, Predictor_ResNet
+from .Predictor import Predictor_UNet, Predictor_VGGLike_7, Predictor_VGGLike_13, Predictor_ResNet
+from .ViT_Predictor import Predictor_ViT
 from .Generator import Generator
 
 from .FolderManager import FolderManager
@@ -46,7 +47,7 @@ class Training():
 
         self.simulation_topology = constants.TOPOLOGY_TYPE["toroidal"]
         self.init_conf_type = constants.INIT_CONF_TYPE["threshold"]
-        self.metric_type = constants.METRIC_TYPE["easy"]
+        self.metric_type = constants.METRIC_TYPE["hard"]
 
         self.current_epoch = 0
         self.step_times_secs = []
@@ -62,10 +63,11 @@ class Training():
         self.criterion_p = nn.MSELoss()
         self.criterion_g = lambda x, y: -self.criterion_p(x, y)
 
-        self.model_p = Predictor_UNet().to(self.device_manager.default_device)
-        #self.model_p = Predictor_VGGLike().to(self.device_manager.default_device)
+        #self.model_p = Predictor_UNet().to(self.device_manager.default_device)
+        #self.model_p  = Predictor_ViT().to(self.device_manager.default_device)
         #self.model_p = Predictor_ResNet().to(self.device_manager.default_device)
-        self.model_g = Generator(noise_std=0).to(self.device_manager.default_device)
+        self.model_p = Predictor_VGGLike_7().to(self.device_manager.default_device)
+        self.model_g  = Generator(noise_std=0).to(self.device_manager.default_device)
 
         self.optimizer_p = optim.SGD(self.model_p.parameters(),
                                      lr=constants.p_sgd_lr,

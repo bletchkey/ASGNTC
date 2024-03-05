@@ -60,20 +60,8 @@ fixed_dataset_path = "data"
 # Batch size for the fixed dataset
 fixed_dataset_bs = 128
 
-# Size of z latent vector for the fixed dataset
-fixed_dataset_nz = 10
-
 # Metric steps for the fixed dataset
 fixed_dataset_metric_steps = 1000
-
-# Names for each configuration type in the fixed dataset
-CONF_NAMES = {
-    "initial": "initial",
-    "final": "final",
-    "metric_easy": "metric_easy",
-    "metric_medium": "metric_medium",
-    "metric_hard": "metric_hard"
-}
 
 
 ### SIMULATION PARAMETERS #########################################################
@@ -93,16 +81,28 @@ n_living_cells = 2 * grid_size
 # Threshold for the value of the cells in the generated configurations
 threshold_cell_value = 0.5
 
+# Names for each configuration
+CONF_NAMES = {
+    "initial": "initial",
+    "final": "final",
+    "metric_easy": "metric_easy",
+    "metric_medium": "metric_medium",
+    "metric_hard": "metric_hard"
+}
+
+# Type of topology for the grid
 TOPOLOGY_TYPE = {
     "toroidal": "toroidal",
     "flat": "flat"
 }
 
+# Type of intialization for the grid
 INIT_CONF_TYPE = {
     "n_living_cells": "n_living_cells",
     "threshold": "threshold"
 }
 
+# Type of metric for the grid
 METRIC_TYPE = {
     "easy": CONF_NAMES["metric_easy"],
     "medium": CONF_NAMES["metric_medium"],
@@ -123,7 +123,6 @@ npf = 64
 
 # Size of z latent vector (i.e. size of generator input)
 nz = 10
-
 
 # Hyperparameters for Adam optimizer
 p_adam_lr=0.001
@@ -153,7 +152,4 @@ g_adamw_wd=0.01
 p_sgd_lr=0.01
 p_sgd_momentum=0.9
 p_sgd_wd=1e-4
-
-
-
 
