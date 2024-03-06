@@ -5,12 +5,13 @@ import os
 import matplotlib.pyplot as plt
 import torch
 
-from ..gol_adv_sys.DatasetManager import DatasetCreator
-from ..gol_adv_sys.DeviceManager import DeviceManager
+sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 
-from ..gol_adv_sys.utils.helper_functions import check_fixed_dataset_distribution, check_train_fixed_dataset_configurations
+from gol_adv_sys.DatasetManager import DatasetCreator
+from gol_adv_sys.DeviceManager import DeviceManager
 
 import gol_adv_sys.utils.constants as constants
+
 
 def check_fixed_dataset_distribution(device, dataset_path):
     n = constants.grid_size ** 2
@@ -80,7 +81,7 @@ def main():
     check_fixed_dataset_distribution(device_manager.default_device, dataset.dataset_val_path)
     check_fixed_dataset_distribution(device_manager.default_device, dataset.dataset_test_path)
 
-    check_train_fixed_dataset_configurations()
+    check_train_fixed_dataset_configs()
 
 
 if __name__ == "__main__":

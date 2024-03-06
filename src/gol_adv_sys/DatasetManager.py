@@ -1,34 +1,36 @@
 import os
+import datetime
 
 import torch
 from torch.utils.data import Dataset
 
 from .utils import constants as constants
 
-
-from .FolderManager import FolderManager
-
 from .utils.simulation_functions import simulate_config_fixed_dataset
 
 class DatasetCreator():
 
     def __init__(self, device_manager) -> None:
-
-        self.folders = FolderManager()
         self.device_manager = device_manager
 
-        self.simulation_topology = constants.TOPOLOGY_TYPE["toroidal"]
+        self.__simulation_topology = constants.TOPOLOGY_TYPE["toroidal"]
 
-        self.dataset_train_path = os.path.join(self.folders.data_folder, str(constants.fixed_dataset_name+"_train.pt"))
-        self.dataset_val_path = os.path.join(self.folders.data_folder, str(constants.fixed_dataset_name+"_val.pt"))
-        self.dataset_test_path = os.path.join(self.folders.data_folder, str(constants.fixed_dataset_name+"_test.pt"))
+        self.__data_folder = None
+        if not os.path.exists(constants.fixed_dataset_path):
+            self.__data_folder = os.makedirs(constants.fixed_dataset_path, exist_ok=True)
+        else:
+            self.__data_folder = constants.fixed_dataset_path
+
+        self.dataset_train_path = os.path.join(self.__data_folder, str(constants.fixed_dataset_name+"_train.pt"))
+        self.dataset_val_path = os.path.join(self.__data_folder, str(constants.fixed_dataset_name+"_val.pt"))
+        self.dataset_test_path = os.path.join(self.__data_folder, str(constants.fixed_dataset_name+"_test.pt"))
 
         self.data = self.create_fixed_dataset()
 
 
     def create_fixed_dataset(self):
 
-        if len(os.listdir(self.__data_folder)) != 0:
+        if len(os.listdir(self.__data_folder)) > 0:
             print("data already exists and it's not empty")
 
         else:
@@ -55,7 +57,7 @@ class DatasetCreator():
                 initial_config = initial_config.view(constants.fixed_dataset_bs, 1, constants.grid_size, constants.grid_size)
 
                 with torch.no_grad():
-                    final_config, metrics = simulate_config_fixed_dataset(initial_config, self.simulation_topology,
+                    final_config, metrics = simulate_config_fixed_dataset(initial_config, self.__simulation_topology,
                                                                           constants.fixed_dataset_metric_steps,
                                                                           self.device_manager.default_device)
 

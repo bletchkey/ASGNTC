@@ -43,9 +43,6 @@ def main():
 
 
     # Save the plot
-
-
-
     save_losses_plot(loss_train, loss_val, lr_values, training_path)
 
     return 0

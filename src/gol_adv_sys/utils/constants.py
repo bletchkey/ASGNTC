@@ -43,7 +43,7 @@ trained_models_path = "trained_models"
 ### FIXED DATASET PARAMETERS ##############################################################
 
 # Number of configurations to generate for the fixed dataset
-fixed_dataset_n_configs = 4100 #262400
+fixed_dataset_n_configs = 262400
 
 # Ratio of the fixed dataset to use for training
 fixed_dataset_train_ratio = 0.8
@@ -55,7 +55,7 @@ fixed_dataset_val_ratio = 0.1
 fixed_dataset_test_ratio = 0.1
 
 # Path to the folder where the fixed dataset is saved
-fixed_dataset_path = "data_test"
+fixed_dataset_path = "data"
 
 # Batch size for the fixed dataset
 fixed_dataset_bs = 128

@@ -103,10 +103,9 @@ def __calculate_metrics(config, configs, steps):
     eps_hard   = __calculate_eps(half_step=constants.fixed_dataset_metric_steps)
 
     for step, config in enumerate(reversed(configs)):
-        step = len(configs) - step - 1
-        sim_metrics["easy"]   = __update_metric(sim_metrics["easy"], config, step, eps_easy)
-        sim_metrics["medium"] = __update_metric(sim_metrics["medium"], config, step, eps_medium)
-        sim_metrics["hard"]   = __update_metric(sim_metrics["hard"], config, step, eps_hard)
+        sim_metrics["easy"]   +=  (config * ((1 - eps_easy)**step))
+        sim_metrics["medium"] +=  (config * ((1 - eps_medium)**step))
+        sim_metrics["hard"]   +=  (config * ((1 - eps_hard)**step))
 
     correction_easy   = eps_easy / (1 - ((1 - eps_easy) ** steps ))
     correction_medium = eps_medium / (1 - ((1 - eps_medium) ** steps))
@@ -118,14 +117,6 @@ def __calculate_metrics(config, configs, steps):
 
 
     return sim_metrics
-
-
-"""
-Function for updating the metric
-
-"""
-def __update_metric(metric, config, step, eps):
-    return metric + (config * ((1 - eps) ** step))
 
 
 """
