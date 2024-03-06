@@ -122,35 +122,40 @@ def __calculate_metrics(configs: list, device: torch.device) -> dict:
     stacked_configs = stacked_configs.permute(1, 0, 2, 3, 4)
 
     sim_metrics = {
-            "easy": stacked_configs.clone(),
-            "medium": stacked_configs.clone(),
-            "hard": stacked_configs.clone()
-        }
+        constants.METRIC_TYPE["easy"]:   stacked_configs.clone(),
+        constants.METRIC_TYPE["medium"]: stacked_configs.clone(),
+        constants.METRIC_TYPE["hard"]:   stacked_configs.clone()
+    }
 
-    eps_easy   = __calculate_eps(half_step=2)
-    eps_medium = __calculate_eps(half_step=4)
-    eps_hard   = __calculate_eps(half_step=1000)
+    eps = {
+        constants.METRIC_TYPE["easy"]:   __calculate_eps(half_step=2),
+        constants.METRIC_TYPE["medium"]: __calculate_eps(half_step=4),
+        constants.METRIC_TYPE["hard"]:   __calculate_eps(half_step=1000)
+    }
 
+    correction_factor_easy   = eps[constants.METRIC_TYPE["easy"]] / (1 - ((1 - eps[constants.METRIC_TYPE["easy"]]) ** steps))
+    correction_factor_medium = eps[constants.METRIC_TYPE["medium"]] / (1 - ((1 - eps[constants.METRIC_TYPE["medium"]]) ** steps))
+    correction_factor_hard   = eps[constants.METRIC_TYPE["hard"]] / (1 - ((1 - eps[constants.METRIC_TYPE["hard"]]) ** steps))
+
+    # Combine the correction factors into a dictionary
     correction_factors = {
-        "easy": eps_easy / (1 - ((1 - eps_easy) ** steps)),
-        "medium": eps_medium / (1 - ((1 - eps_medium) ** steps)),
-        "hard": eps_hard / (1 - ((1 - eps_hard) ** steps))
+        constants.METRIC_TYPE["easy"]:   correction_factor_easy,
+        constants.METRIC_TYPE["medium"]: correction_factor_medium,
+        constants.METRIC_TYPE["hard"]:   correction_factor_hard,
     }
 
     # Apply decay and correction for each difficulty level
-    for difficulty in ["easy", "medium", "hard"]:
-        eps = locals()[f'eps_{difficulty}']
-        correction = correction_factors[difficulty]
+    for difficulty in [constants.METRIC_TYPE["easy"], constants.METRIC_TYPE["medium"], constants.METRIC_TYPE["hard"]]:
 
         # Efficient decay rates calculation
         step_indices = torch.arange(steps, dtype=torch.float32, device=device)
-        decay_rates  = torch.pow(1 - eps, step_indices)
+        decay_rates  = torch.pow(1 - eps[difficulty], step_indices)
         decay_tensor = decay_rates.view(1, steps, 1, 1, 1)
 
         # Apply decay, sum, and correct
         sim_metrics[difficulty] *= decay_tensor
         sim_metrics[difficulty]  = sim_metrics[difficulty].sum(dim=1)
-        sim_metrics[difficulty] *= correction
+        sim_metrics[difficulty] *= correction_factors[difficulty]
 
     return sim_metrics
 

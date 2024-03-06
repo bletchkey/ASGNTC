@@ -22,7 +22,7 @@ n_max_configs = n_max_batches*bs
 num_training_steps = 20
 
 # Average loss of P threshold before training G
-threshold_avg_loss_p = 0.005
+threshold_avg_loss_p = 0.008
 
 # Base path to the folder where the trainings will be saved
 trainings_folder_path = "../trainings"
@@ -72,7 +72,7 @@ fixed_dataset_name = "gol_fixed_dataset"
 grid_size = 32
 
 # Number of steps to run the simulation
-n_simulation_steps = 10
+n_simulation_steps = 20
 
 # Max number of steps to run the simulation
 n_max_simulation_steps = 1000
