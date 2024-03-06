@@ -23,7 +23,7 @@ class Baseline(nn.Module):
         self.conv6 = nn.Conv2d(constants.npf*4, constants.npf*4, kernel_size=3, padding=0)
 
         # Output Convolution
-        self.output_conv = nn.Conv2d(constants.npf*4, constants.nc, kernel_size=1, padding=0)
+        self.output_conv = nn.Conv2d(constants.npf*2, constants.nc, kernel_size=1, padding=0)
 
         # Activation Function
         self.relu = nn.ReLU()

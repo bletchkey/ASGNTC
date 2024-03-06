@@ -43,7 +43,7 @@ trained_models_path = "trained_models"
 ### FIXED DATASET PARAMETERS ##############################################################
 
 # Number of configurations to generate for the fixed dataset
-fixed_dataset_n_configs = 262400
+fixed_dataset_n_configs =  262400
 
 # Ratio of the fixed dataset to use for training
 fixed_dataset_train_ratio = 0.8
@@ -61,7 +61,7 @@ fixed_dataset_path = "data"
 fixed_dataset_bs = 128
 
 # Metric steps for the fixed dataset
-fixed_dataset_metric_steps = 1000
+fixed_dataset_n_simulation_steps = 1000
 
 # Fixed dataset name
 fixed_dataset_name = "gol_fixed_dataset"
@@ -72,7 +72,7 @@ fixed_dataset_name = "gol_fixed_dataset"
 grid_size = 32
 
 # Number of steps to run the simulation
-n_simulation_steps = 1000
+n_simulation_steps = 10
 
 # Max number of steps to run the simulation
 n_max_simulation_steps = 1000

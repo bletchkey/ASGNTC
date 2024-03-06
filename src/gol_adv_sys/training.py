@@ -43,12 +43,10 @@ class Training():
         self.folders = FolderManager(self.__date)
         self.device_manager = DeviceManager()
 
-        # Get rid of the following two lines
         self.simulation_topology = constants.TOPOLOGY_TYPE["toroidal"]
         self.init_config_type = constants.INIT_CONFIG_TYPE["threshold"]
 
-
-        self.metric_type = constants.METRIC_TYPE["medium"]
+        self.metric_type = constants.METRIC_TYPE["hard"]
 
         self.current_epoch = 0
         self.step_times_secs = []
@@ -110,9 +108,9 @@ class Training():
 
         if self.fixed_dataset["enabled"]:
 
-            train_path = os.path.join(self.folders.data_folder, "gol_fixed_dataset_train.pt")
-            val_path   = os.path.join(self.folders.data_folder, "gol_fixed_dataset_val.pt")
-            test_path  = os.path.join(self.folders.data_folder, "gol_fixed_dataset_test.pt")
+            train_path = os.path.join(constants.fixed_dataset_path, str(constants.fixed_dataset_name+"_train.pt"))
+            val_path   = os.path.join(constants.fixed_dataset_path, str(constants.fixed_dataset_name+"_val.pt"))
+            test_path  = os.path.join(constants.fixed_dataset_path, str(constants.fixed_dataset_name+"_test.pt"))
 
             self.fixed_dataset["train_data"] = FixedDataset(train_path)
             self.fixed_dataset["val_data"]   = FixedDataset(val_path)
