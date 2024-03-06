@@ -1,5 +1,5 @@
 import torch
-from typing import Tuple, Union
+from typing import Tuple
 
 from . import constants as constants
 
@@ -20,7 +20,7 @@ Returns:
 
 def simulate_config(config: torch.Tensor, topology: str, steps: int,
                     calculate_final_config: bool,
-                    device: torch.device) -> Union[Tuple[torch.Tensor, dict], Tuple[torch.Tensor, dict]]:
+                    device: torch.device) -> Tuple[torch.Tensor, dict]:
 
     # Mapping of topology types to their corresponding simulation functions
     simulation_functions = {
