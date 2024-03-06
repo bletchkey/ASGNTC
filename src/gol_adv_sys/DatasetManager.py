@@ -10,8 +10,30 @@ from .utils.simulation_functions import simulate_config
 
 
 class DatasetCreator():
+    """
+    Responsible for creating and managing a dataset. This class
+    handles the generation of initial configurations, simulation to obtain final configurations,
+    calculation of metrics for these configurations, and the organization of the data into
+    training, validation, and test sets.
+
+    Attributes:
+        device_manager (DeviceManager): An instance of DeviceManager to manage device selection.
+        dataset_train_path (str): Path to save the training dataset.
+        dataset_val_path (str): Path to save the validation dataset.
+        dataset_test_path (str): Path to save the test dataset.
+        data (torch.Tensor): The complete dataset generated.
+
+    """
 
     def __init__(self, device_manager) -> None:
+        """
+        Initializes the DatasetCreator with a specific device manager and predefined constants.
+        Automatically generates the dataset upon initialization.
+
+        Parameters:
+            device_manager (DeviceManager): The device manager for handling device selection.
+        """
+
         self.device_manager = device_manager
 
         self.__simulation_topology = constants.TOPOLOGY_TYPE["toroidal"]
@@ -24,6 +46,20 @@ class DatasetCreator():
 
 
     def create_fixed_dataset(self):
+        """
+        Generates a fixed dataset if it does not already exist. The dataset consists of initial
+        configurations and their corresponding final configurations after simulation, along with
+        easy, medium, and hard metrics for each configuration. The dataset is divided into
+        training, validation, and test sets.
+
+        This method checks if the dataset already exists to avoid unnecessary computation. If the
+        dataset does not exist, it proceeds with generation and saves the data to disk.
+
+        Returns:
+            torch.Tensor: The complete dataset including initial and final configurations,
+            along with the metrics.
+
+        """
 
         # Check if the data already exists, if not create it
         if os.path.exists(constants.fixed_dataset_path):
@@ -97,15 +133,60 @@ class DatasetCreator():
             torch.save(val_data, self.dataset_val_path)
             torch.save(test_data, self.dataset_test_path)
 
+            return (train_data, val_data, test_data)
+
+        return None
+
 
 class FixedDataset(Dataset):
-    def __init__(self, path) -> None:
-        self.path = path
-        self.data = torch.load(path)
+    """
+    A PyTorch Dataset class for loading data from a .pt (PyTorch saved tensor) file.
 
-    def __len__(self):
+    This class provides an interface for accessing individual data points from a dataset
+    stored in a .pt file, enabling compatibility with PyTorch DataLoader for batch
+    processing and shuffling.
+
+    Attributes:
+        path (str): The file system path to the .pt file containing the dataset.
+        data (torch.Tensor): The tensor loaded from the .pt file.
+
+    Parameters:
+        path (str): The file system path to the .pt file. This is expected to be a
+                    valid path from which a PyTorch tensor can be loaded.
+
+    Raises:
+        IOError: If the file cannot be opened or read. Note that this is implicitly
+                 raised when attempting to load the tensor using `torch.load`.
+    """
+
+
+    def __init__(self, path: str) -> None:
+        self.path = path
+        try:
+            self.data = torch.load(path)
+        except IOError as e:
+            raise e
+
+
+    def __len__(self) -> int:
+        """
+        Returns the total number of samples in the dataset.
+
+        Returns:
+            int: The size of the dataset.
+        """
         return len(self.data)
 
-    def __getitem__(self, idx):
+
+    def __getitem__(self, idx: int) -> torch.Tensor:
+        """
+        Retrieves the data point at the specified index in the dataset.
+
+        Parameters:
+            idx (int): An index into the dataset indicating which sample to retrieve.
+
+        Returns:
+            torch.Tensor: The data sample corresponding to the given index.
+        """
         return self.data[idx]
 

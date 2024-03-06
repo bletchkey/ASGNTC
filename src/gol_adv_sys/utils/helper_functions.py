@@ -9,28 +9,27 @@ from . import constants as constants
 from .simulation_functions import simulate_config
 
 
-"""
-Function to get the dataloader for the training of the predictor model
-
-Add configurations to the dataloader until it reaches the maximum number of configurations
-If max number of configurations is reached, remove the oldest configurations to make room for the new ones
-
-This method implements a sliding window approach
-
-Args:
-    data_tensor (torch.Tensor): The tensor containing the configurations
-    model_g (torch.nn.Module): The generator model
-    topology (str): The topology to use for simulating the configurations
-    init_config_type (str): The type of initial configuration to use
-    device (torch.device): The device to use for computation
-
-Returns:
-    torch.Tensor: The updated data tensor
-
-"""
 def get_data_tensor(data_tensor: torch.Tensor, model_g: torch.nn.Module,
                     topology: str, init_config_type: str, device: torch.device) -> torch.Tensor:
+    """
+    Function to get the dataloader for the training of the predictor model
 
+    Add configurations to the dataloader until it reaches the maximum number of configurations
+    If max number of configurations is reached, remove the oldest configurations to make room for the new ones
+
+    This method implements a sliding window approach
+
+    Args:
+        data_tensor (torch.Tensor): The tensor containing the configurations
+        model_g (torch.nn.Module): The generator model
+        topology (str): The topology to use for simulating the configurations
+        init_config_type (str): The type of initial configuration to use
+        device (torch.device): The device to use for computation
+
+    Returns:
+        torch.Tensor: The updated data tensor
+
+    """
     new_configs = generate_new_batches(model_g, constants.n_batches, topology, init_config_type, device)
 
     # If data_tensor is None, initialize it with new_configs
@@ -54,22 +53,23 @@ def get_data_tensor(data_tensor: torch.Tensor, model_g: torch.nn.Module,
     return data_tensor
 
 
-"""
-Function to generate new batches of configurations
-
-Args:
-    model_g (torch.nn.Module): The generator model
-    n_batches (int): The number of batches to generate
-    topology (str): The topology to use for simulating the configurations
-    init_config_type (str): The type of initial configuration to use
-    device (torch.device): The device used for computation
-
-Returns:
-    torch.Tensor: The tensor containing the new configurations
-
-"""
 def generate_new_batches(model_g: torch.nn.Module, n_batches: int, topology: str,
                          init_config_type: str, device: torch.device) -> torch.Tensor:
+
+    """
+    Function to generate new batches of configurations
+
+    Args:
+        model_g (torch.nn.Module): The generator model
+        n_batches (int): The number of batches to generate
+        topology (str): The topology to use for simulating the configurations
+        init_config_type (str): The type of initial configuration to use
+        device (torch.device): The device used for computation
+
+    Returns:
+        torch.Tensor: The tensor containing the new configurations
+
+    """
 
     configs = []
 
@@ -104,24 +104,25 @@ def generate_new_batches(model_g: torch.nn.Module, n_batches: int, topology: str
     return data
 
 
-"""
-Function to test the models
-
-Args:
-    model_g (torch.nn.Module): The generator model
-    model_p (torch.nn.Module): The predictor model
-    topology (str): The topology to use for simulating the configurations
-    init_config_type (str): The type of initial configuration to use
-    fixed_noise (torch.Tensor): The fixed noise to use for testing the generator model
-    metric_type (str): The type of metric to predict
-    device (torch.device): The device used for computation
-
-Returns:
-    dict: The dictionary containing the test results
-
-"""
 def test_models(model_g: torch.nn.Module, model_p: torch.nn.Module, topology: str,
                 init_config_type: str, fixed_noise: torch.Tensor, metric_type: str, device: torch.device) -> dict:
+    """
+    Function to test the models
+
+    Args:
+        model_g (torch.nn.Module): The generator model
+        model_p (torch.nn.Module): The predictor model
+        topology (str): The topology to use for simulating the configurations
+        init_config_type (str): The type of initial configuration to use
+        fixed_noise (torch.Tensor): The fixed noise to use for testing the generator model
+        metric_type (str): The type of metric to predict
+        device (torch.device): The device used for computation
+
+    Returns:
+        dict: The dictionary containing the test results
+
+    """
+
     data = {
         "generated": None,
         "initial": None,
@@ -146,21 +147,22 @@ def test_models(model_g: torch.nn.Module, model_p: torch.nn.Module, topology: st
     return data
 
 
-"""
-Function to test the predictor model
-
-Args:
-    test_set (torch.utils.data.DataLoader): The test set
-    metric_type (str): The type of metric to predict
-    model_p (torch.nn.Module): The predictor model
-    device (torch.device): The device used for computation
-
-Returns:
-    dict: The dictionary containing the test results
-
-"""
 def test_predictor_model(test_set: torch.utils.data.DataLoader, metric_type: str,
                          model_p: torch.nn.Module, device: torch.device) -> dict:
+
+    """
+    Function to test the predictor model
+
+    Args:
+        test_set (torch.utils.data.DataLoader): The test set
+        metric_type (str): The type of metric to predict
+        model_p (torch.nn.Module): The predictor model
+        device (torch.device): The device used for computation
+
+    Returns:
+        dict: The dictionary containing the test results
+
+    """
 
     # Create an iterator from the data_loader
     data_iterator = iter(test_set)
@@ -186,16 +188,17 @@ def test_predictor_model(test_set: torch.utils.data.DataLoader, metric_type: str
     return data
 
 
-"""
-Function to save the progress plot
-
-Args:
-    plot_data (dict): The dictionary containing the data to plot
-    epoch (int): The current epoch
-    results_path (str): The path to where the results will be saved
-
-"""
 def save_progress_plot(plot_data: dict, epoch: int, results_path: str):
+    """
+    Function to save the progress plot
+
+    Args:
+        plot_data (dict): The dictionary containing the data to plot
+        epoch (int): The current epoch
+        results_path (str): The path to where the results will be saved
+
+    """
+
     vmin = 0
     vmax = 1
 
@@ -226,17 +229,17 @@ def save_progress_plot(plot_data: dict, epoch: int, results_path: str):
     plt.close(fig)
 
 
-"""
-Function to save the losses plot
-
-Args:
-    losses_p_train (list): The training losses for the predictor model
-    losses_p_val (list): The validation losses for the predictor model
-    learning_rates (list): The learning rates used during training for each epoch
-    path (str): The path to where the results will be saved
-
-"""
 def save_losses_plot(losses_p_train: list, losses_p_val: list, learning_rates: list, path: str):
+    """
+    Function to save the losses plot
+
+    Args:
+        losses_p_train (list): The training losses for the predictor model
+        losses_p_val (list): The validation losses for the predictor model
+        learning_rates (list): The learning rates used during training for each epoch
+        path (str): The path to where the results will be saved
+
+    """
     epochs = list(range(1, len(losses_p_train) + 1))
 
     # Detecting change indices more robustly
@@ -272,19 +275,18 @@ def save_losses_plot(losses_p_train: list, losses_p_val: list, learning_rates: l
     plt.close()
 
 
-"""
-Function to get the elapsed time in an easily readable format
-All the times are summed together and then converted to hours, minutes and seconds
-
-Args:
-    times (list): The list of times in seconds
-
-Returns:
-    time_format (str): The elapsed time in the format "Hh Mm Ss"
-
-"""
 def get_elapsed_time_str(times: list) -> str:
+    """
+    Function to get the elapsed time in an easily readable format
+    All the times are summed together and then converted to hours, minutes and seconds
 
+    Args:
+        times (list): The list of times in seconds
+
+    Returns:
+        time_format (str): The elapsed time in the format "Hh Mm Ss"
+
+    """
     seconds = sum(times) if isinstance(times, list) else times
     minutes = int(seconds // 60)
     hours = int(minutes // 60)
@@ -297,19 +299,18 @@ def get_elapsed_time_str(times: list) -> str:
     return time_format
 
 
-"""
-Function to get the initial configuration from the generated configuration
-
-Args:
-    config (torch.Tensor): The generated configuration
-    init_config_type (str): The type of initial configuration to use
-
-Returns:
-    torch.Tensor: The initial configuration
-
-"""
 def get_init_config(config: torch.Tensor, init_config_type: str) -> torch.Tensor:
+    """
+    Function to get the initial configuration from the generated configuration
 
+    Args:
+        config (torch.Tensor): The generated configuration
+        init_config_type (str): The type of initial configuration to use
+
+    Returns:
+        torch.Tensor: The initial configuration
+
+    """
     if init_config_type == constants.INIT_CONFIG_TYPE["threshold"]:
         return __get_init_config_threshold(config)
     elif init_config_type == constants.INIT_CONFIG_TYPE["n_living_cells"]:
@@ -318,20 +319,19 @@ def get_init_config(config: torch.Tensor, init_config_type: str) -> torch.Tensor
         raise ValueError(f"Invalid init configuration type: {init_config_type}")
 
 
-"""
-Function to get a batch of a certain type of configuration from the batch itself
-
-Args:
-    batch (torch.Tensor): The batch containing the configurations
-    type (str): The type of configuration to retrieve
-    device (torch.device): The device to use for computation
-
-Returns:
-    torch.Tensor: The configuration specified by the type
-
-"""
 def get_config_from_batch(batch: torch.Tensor, type: str, device: torch.device) -> torch.Tensor:
+    """
+    Function to get a batch of a certain type of configuration from the batch itself
 
+    Args:
+        batch (torch.Tensor): The batch containing the configurations
+        type (str): The type of configuration to retrieve
+        device (torch.device): The device to use for computation
+
+    Returns:
+        torch.Tensor: The configuration specified by the type
+
+    """
     # Ensure the batch has the expected dimensions (5D tensor)
     if batch.dim() != 5:
         raise RuntimeError(f"Expected batch to have 5 dimensions, got {batch.dim()}")
@@ -355,18 +355,17 @@ def get_config_from_batch(batch: torch.Tensor, type: str, device: torch.device) 
     return batch[:, config_index, :, :, :].to(device)
 
 
-"""
-Function for adding toroidal padding
-
-Args:
-    x (torch.Tensor): The tensor to add padding to
-
-Returns:
-    x (torch.Tensor): The tensor with toroidal padding
-
-"""
 def add_toroidal_padding(x: torch.Tensor) -> torch.Tensor:
+    """
+    Function for adding toroidal padding
 
+    Args:
+        x (torch.Tensor): The tensor to add padding to
+
+    Returns:
+        x (torch.Tensor): The tensor with toroidal padding
+
+    """
     if x.dim() != 4:
         raise RuntimeError(f"Expected 4D tensor, got {x.dim()}")
 
@@ -376,19 +375,18 @@ def add_toroidal_padding(x: torch.Tensor) -> torch.Tensor:
     return x
 
 
-"""
-From the configuration, get the indices of the n_living_cells highest values and set the rest to 0
-The n_living_cells highest values are set to 1
-
-Args:
-    config (torch.Tensor): The configuration
-
-Returns:
-    updated_config (torch.Tensor): The updated configuration
-
-"""
 def __get_init_config_n_living_cells(config: torch.Tensor) -> torch.Tensor:
+    """
+    From the configuration, get the indices of the n_living_cells highest values and set the rest to 0
+    The n_living_cells highest values are set to 1
 
+    Args:
+        config (torch.Tensor): The configuration
+
+    Returns:
+        updated_config (torch.Tensor): The updated configuration
+
+    """
     batch_size, channels, height, width = config.size()
     config_flat = config.view(batch_size, -1)  # Flatten each image in the batch
 
@@ -407,17 +405,16 @@ def __get_init_config_n_living_cells(config: torch.Tensor) -> torch.Tensor:
     return updated_config
 
 
-"""
-For every value in configuration, if value is < threshold, set to 0, else set to 1
-
-Args:
-    config (torch.Tensor): The configuration
-
-Returns:
-    torch.Tensor: The updated configuration
-
-"""
 def __get_init_config_threshold(config: torch.Tensor) -> torch.Tensor:
+    """
+    For every value in configuration, if value is < threshold, set to 0, else set to 1
 
+    Args:
+        config (torch.Tensor): The configuration
+
+    Returns:
+        torch.Tensor: The updated configuration
+
+    """
     return (config > constants.threshold_cell_value).float()
 

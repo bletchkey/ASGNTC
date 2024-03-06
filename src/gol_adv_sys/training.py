@@ -1,8 +1,9 @@
 """
-This module contains the class Training.
-This class is used to train the generator and predictor models.
+This module contains the Training class.
+This class is used to train the generator and predictor models or only the predictor model on the fixed dataset.
 
-The training is done using the adversarial training approach.
+When training the generator and predictor models, the training is done using the adversarial training approach.
+
 """
 
 import numpy as np
@@ -33,6 +34,43 @@ from .utils.helper_functions import generate_new_batches, get_data_tensor, get_e
 
 
 class Training():
+    """
+    Class designed to handle the training of the generator and predictor models in an adversarial training approach.
+    It can also train only the predictor model on the fixed dataset.
+
+    Attributes:
+        seed (int): The seed used for random number generation.
+        folders (FolderManager): An instance of FolderManager to manage the creation of folders for the training session.
+        device_manager (DeviceManager): An instance of DeviceManager to manage device selection.
+        simulation_topology (str): The topology of the simulation grid.
+        init_config_type (str): The type of initial configuration to use.
+        metric_type (str): The type of metric used for the prediction.
+        current_epoch (int): The current epoch of the training session.
+        step_times_secs (list): A list of lists containing the time in seconds for each step in each epoch.
+        losses (dict): A dictionary containing the losses of the generator and predictor models.
+        lr_each_epoch (dict): A dictionary containing the learning rate of the generator and predictor models for each epoch.
+        n_times_trained_p (int): The number of times the predictor model has been trained.
+        n_times_trained_g (int): The number of times the generator model has been trained.
+        criterion_p (torch.nn.modules.loss): The loss function for the predictor model.
+        criterion_g (function): The loss function for the generator model.
+        model_p (torch.nn.Module): The predictor model.
+        model_g (torch.nn.Module): The generator model.
+        optimizer_p (torch.optim): The optimizer for the predictor model.
+        optimizer_g (torch.optim): The optimizer for the generator model.
+        fixed_noise (torch.Tensor): The fixed noise used for generating configurations.
+        properties_g (dict): A dictionary containing properties of the generator model.
+        load_models (dict): A dictionary containing information about loading the models from a previous training session.
+        train_dataloader (torch.utils.data.DataLoader): The dataloader for the training set.
+        test_dataloader (torch.utils.data.DataLoader): The dataloader for the test set.
+        val_dataloader (torch.utils.data.DataLoader): The dataloader for the validation set.
+        data_tensor (torch.Tensor): Auxiliary tensor used for creating the dataloader.
+        fixed_dataset (dict): A dictionary containing information about the fixed dataset.
+        path_log_file (str): The path to the log file for the training session.
+        path_p (str): The path to the saved predictor model.
+        path_g (str): The path to the saved generator model.
+
+    """
+
     def __init__(self) -> None:
         self.__date = datetime.datetime.now()
 
@@ -93,18 +131,18 @@ class Training():
 
         self.data_tensor = None
 
-        self.fixed_dataset = {"enabled": False, "train_data": None, "val_data": None, "test_data": None}
+        self.fixed_dataset = {"enabled": True, "train_data": None, "val_data": None, "test_data": None}
 
         self.path_log_file = self.__init_log_file() if self.fixed_dataset["enabled"] == False else self.__init_log_file_fixed_dataset()
         self.path_p        = None
         self.path_g        = None
 
 
-    """
-    Function to run the training.
-
-    """
     def run(self):
+        """
+        Function used for running the training session.
+
+        """
 
         if self.fixed_dataset["enabled"]:
 
@@ -127,13 +165,13 @@ class Training():
             self.__fit()
 
 
-    """
-    Training loop for the predictor model.
-
-    The predictor model is trained on the fixed data set.
-
-    """
     def __fit_p_on_fixed_dataset(self):
+        """
+        Training loop for the predictor model.
+
+        The predictor model is trained on the fixed data set.
+
+        """
 
         torch.autograd.set_detect_anomaly(True)
 
@@ -216,11 +254,11 @@ class Training():
             log.flush()
 
 
-    """
-    Adversarial training loop.
-
-    """
     def __fit(self):
+        """
+        Adversarial training loop.
+
+        """
 
         torch.autograd.set_detect_anomaly(True)
 
@@ -280,11 +318,11 @@ class Training():
             log.flush()
 
 
-    """
-    Log the progress of the training session inside each epoch for the predictor model.
-
-    """
     def __log_training_epoch_p(self, time):
+        """
+        Log the progress of the training session inside each epoch for the predictor model.
+
+        """
         with open(self.path_log_file, "a") as log:
 
             str_epoch_time  = f"{get_elapsed_time_str(time)}"
@@ -298,11 +336,11 @@ class Training():
             log.flush()
 
 
-    """
-    Log the progress of the training session inside each epoch.
-
-    """
     def __log_training_step(self, step):
+        """
+        Log the progress of the training session inside each epoch.
+
+        """
         with open(self.path_log_file, "a") as log:
 
             str_step_time = f"{get_elapsed_time_str(self.step_times_secs[self.current_epoch][step])}"
@@ -314,15 +352,15 @@ class Training():
             log.flush()
 
 
-    """
-    Create a log file for the training session.
-    When creating the log file, the training specifications are also written to the file.
-
-    Returns:
-        path (str): The path to the log file.
-
-    """
     def __init_log_file(self):
+        """
+        Create a log file for the training session.
+        When creating the log file, the training specifications are also written to the file.
+
+        Returns:
+            path (str): The path to the log file.
+
+        """
 
         path = os.path.join(self.folders.logs_folder, "asgntc.txt")
 
@@ -368,6 +406,7 @@ class Training():
             else:
                 log_file.write(f"Initial configuration type: unknown\n")
 
+            log_file.write(f"Predicting metric type: {self.metric_type}\n")
 
             log_file.write(f"\nModel specs:\n")
             log_file.write(f"Optimizer P: {self.optimizer_p.__class__.__name__}\n")
@@ -395,15 +434,15 @@ class Training():
         return path
 
 
-    """
-    Create a log file for the training session on the fixed dataset.
-    When creating the log file, the training specifications are also written to the file.
-
-    Returns:
-        path (str): The path to the log file.
-
-    """
     def __init_log_file_fixed_dataset(self):
+        """
+        Create a log file for the training session on the fixed dataset.
+        When creating the log file, the training specifications are also written to the file.
+
+        Returns:
+            path (str): The path to the log file.
+
+        """
 
         path = os.path.join(self.folders.logs_folder, "asgntc.txt")
 
@@ -433,21 +472,23 @@ class Training():
 
         return path
 
-    """
-    Get the dataloader for the current epoch.
 
-    Each epoch, a new dataloader is created by adding n_batches new configurations to the dataloader, for a total of
-    n_configs new configurations.
-    The maximum number of batches in the dataloader is n_max_batches, that contains n_max_configs configurations.
-    The older batches of configurations are removed to make room for the new ones.
-
-    The configurations are generated by the generator model.
-
-    Returns:
-        dataloader (torch.utils.data.DataLoader): The dataloader for the current epoch.
-
-    """
     def __get_train_dataloader(self):
+        """
+        Get the dataloader for the current epoch.
+
+        Each epoch, a new dataloader is created by adding n_batches new configurations to the dataloader, for a total of
+        n_configs new configurations.
+        The maximum number of batches in the dataloader is n_max_batches, that contains n_max_configs configurations.
+        The older batches of configurations are removed to make room for the new ones.
+
+        The configurations are generated by the generator model.
+
+        Returns:
+            dataloader (torch.utils.data.DataLoader): The dataloader for the current epoch.
+
+        """
+
         data = get_data_tensor(self.data_tensor, self.model_g,
                               self.simulation_topology, self.init_config_type, self.device_manager.default_device)
 
@@ -458,56 +499,61 @@ class Training():
 
         return self.train_dataloader
 
-    """
-    Generate new configurations using the generator model.
 
-    Args:
-        n_batches (int): The number of batches to generate.
-
-    Returns:
-        new_configs (list): A list of dictionaries containing information about the generated configurations.
-
-    """
     def __get_new_batches(self, n_batches):
+        """
+        Generate new configurations using the generator model.
+
+        Args:
+            n_batches (int): The number of batches to generate.
+
+        Returns:
+            new_configs (list): A list of dictionaries containing information about the generated configurations.
+
+        """
+
         return  generate_new_batches(self.model_g, n_batches, self.simulation_topology,
                                      self.init_config_type, self.device_manager.default_device)
 
 
-    """
-    Generate one new batch of configurations using the generator model.
-
-    Returns:
-        new_config (dict): A dictionary containing information about the generated configurations.
-
-    """
     def __get_one_new_batch(self):
+        """
+        Generate one new batch of configurations using the generator model.
+
+        Returns:
+            new_config (dict): A dictionary containing information about the generated configurations.
+
+        """
+
         return self.__get_new_batches(1)
 
 
-    """
-    Function to get a batch of initial configurations from the batch.
-
-    """
     def __get_initial_config(self, batch):
+        """
+        Function to get a batch of initial configurations from the batch.
+
+        """
+
         return get_config_from_batch(batch, constants.CONFIG_NAMES["initial"], self.device_manager.default_device)
 
 
-    """
-    Function to get a batch of the specified metric type from the batch.
-
-    """
     def __get_metric_config(self, batch, metric_type):
+        """
+        Function to get a batch of the specified metric type from the batch.
+
+        """
+
         return get_config_from_batch(batch, metric_type, self.device_manager.default_device)
 
 
-    """
-    Function for training the predictor model.
-
-    Returns:
-        loss (float): The loss of the predictor model.
-
-    """
     def __train_predictor(self):
+        """
+        Function for training the predictor model.
+
+        Returns:
+            loss (float): The loss of the predictor model.
+
+        """
 
         loss = 0
         self.model_p.train()
@@ -528,14 +574,14 @@ class Training():
         return loss
 
 
-    """
-    Function for training the generator model.
-
-    Returns:
-        loss (float): The loss of the generator model.
-
-    """
     def __train_generator(self):
+        """
+        Function for training the generator model.
+
+        Returns:
+            loss (float): The loss of the generator model.
+
+        """
 
         if self.properties_g["can_train"]:
 
@@ -563,21 +609,21 @@ class Training():
             return None
 
 
-    """
-    Function for getting the average loss of the predictor model.
-    The average loss is calculated on the last n losses.
-
-    If the number of losses is less than n, the average is calculated on all the losses.
-    To get the average loss of the last epoch, n should be set to num_training_steps (steps per epoch).
-
-    Args:
-        on_last_n_losses (int): The number of losses to calculate the average on starting from the last loss.
-
-    Returns:
-        avg_loss_p (float): The average loss of the predictor model on the last n losses.
-
-    """
     def __get_loss_avg_p(self, on_last_n_losses):
+        """
+        Function for getting the average loss of the predictor model.
+        The average loss is calculated on the last n losses.
+
+        If the number of losses is less than n, the average is calculated on all the losses.
+        To get the average loss of the last epoch, n should be set to num_training_steps (steps per epoch).
+
+        Args:
+            on_last_n_losses (int): The number of losses to calculate the average on starting from the last loss.
+
+        Returns:
+            avg_loss_p (float): The average loss of the predictor model on the last n losses.
+
+        """
 
         len_losses_p_train = len(self.losses["predictor_train"])
         if len_losses_p_train <= 0:
@@ -591,21 +637,21 @@ class Training():
         return avg_loss_p
 
 
-    """
-    Function for getting the average loss of the generator model.
-    The average loss is calculated on the last n losses.
-
-    If the number of losses is less than n, the average is calculated on all the losses.
-    To get the average loss of the last epoch, n should be set to num_training_steps (steps per epoch).
-
-    Args:
-        on_last_n_losses (int): The number of losses to calculate the average on starting from the last loss.
-
-    Returns:
-        avg_loss_g (float): The average loss of the generator model on the last n losses.
-
-    """
     def __get_loss_avg_g(self, on_last_n_losses):
+        """
+        Function for getting the average loss of the generator model.
+        The average loss is calculated on the last n losses.
+
+        If the number of losses is less than n, the average is calculated on all the losses.
+        To get the average loss of the last epoch, n should be set to num_training_steps (steps per epoch).
+
+        Args:
+            on_last_n_losses (int): The number of losses to calculate the average on starting from the last loss.
+
+        Returns:
+            avg_loss_g (float): The average loss of the generator model on the last n losses.
+
+        """
 
         len_losses_g = len(self.losses["generator"])
         if len_losses_g <= 0:
@@ -619,88 +665,93 @@ class Training():
         return avg_loss_g
 
 
-    """
-    Special case of __get_loss_avg_p() where the average is calculated for the last epoch.
-
-    Returns:
-        avg_loss_p_last_epoch (float): The average loss of the predictor model on the last epoch.
-
-    """
     def __get_loss_avg_p_last_epoch(self):
+        """
+        Special case of __get_loss_avg_p() where the average is calculated for the last epoch.
+
+        Returns:
+            avg_loss_p_last_epoch (float): The average loss of the predictor model on the last epoch.
+
+        """
         return self.__get_loss_avg_p(constants.num_training_steps)
 
 
-    """
-    Special case of __get_loss_avg_g() where the average is calculated for the last epoch.
-
-    Returns:
-        avg_loss_g_last_epoch (float): The average loss of the generator model on the last epoch.
-
-    """
     def __get_loss_avg_g_last_epoch(self):
+        """
+        Special case of __get_loss_avg_g() where the average is calculated for the last epoch.
+
+        Returns:
+            avg_loss_g_last_epoch (float): The average loss of the generator model on the last epoch.
+
+        """
+
         return self.__get_loss_avg_g(constants.num_training_steps)
 
 
-    """
-    Function for testing the models.
-    The models are tested on the fixed noise.
-
-    Returns:
-        data (dict): Contains the generated configurations, initial configurations, simulated configurations,
-        simulated metrics and predicted metrics.
-
-    """
     def __test_models(self):
+        """
+        Function for testing the models.
+        The models are tested on the fixed noise.
+
+        Returns:
+            data (dict): Contains the generated configurations, initial configurations, simulated configurations,
+            simulated metrics and predicted metrics.
+
+        """
+
         return test_models(self.model_g, self.model_p, self.simulation_topology,
                            self.init_config_type, self.fixed_noise, self.metric_type, self.device_manager.default_device)
 
 
-    """
-    Function for testing the predictor model.
-
-    Returns:
-        data (dict): Contains the generated configurations, initial configurations, simulated configurations,
-        simulated metrics and predicted metrics.
-
-    """
     def __test_predictor_model(self):
+        """
+        Function for testing the predictor model.
+
+        Returns:
+            data (dict): Contains the generated configurations, initial configurations, simulated configurations,
+            simulated metrics and predicted metrics.
+
+        """
+
         return test_predictor_model(self.test_dataloader, self.metric_type, self.model_p, self.device_manager.default_device)
 
 
-    """
-    Function for saving the progress plot.
-    It save the plot that shows the generated configurations, initial configurations, simulated configurations,
-    simulated metrics and predicted metrics.
-
-    Args:
-        data (dict): Contains the generated configurations, initial configurations, simulated configurations,
+    def __save_progress_plot(self, data):
+        """
+        Function for saving the progress plot.
+        It save the plot that shows the generated configurations, initial configurations, simulated configurations,
         simulated metrics and predicted metrics.
 
-    """
-    def __save_progress_plot(self, data):
+        Args:
+            data (dict): Contains the generated configurations, initial configurations, simulated configurations,
+            simulated metrics and predicted metrics.
+
+        """
         save_progress_plot(data, self.current_epoch, self.folders.results_folder)
 
 
-    """
-    Function
-    """
     def __save_losses_plot(self):
+        """
+        Function for plotting and saving the losses of training and validation for the predictor model.
+
+        """
+
         save_losses_plot(self.losses["predictor_train"], self.losses["predictor_val"],
                          self.lr_each_epoch["predictor"], self.folders.base_folder)
 
 
-    """
-    Function for saving the models.
-
-    It saves the generator and predictor models to the models folder every n times they are trained.
-
-    """
     def __save_models(self):
+        """
+        Function for saving the models.
+
+        It saves the generator and predictor models to the models folder every n times they are trained.
+
+        """
 
         n = 10
         epoch = self.current_epoch + 1
 
-        if self.n_times_trained_p > 0 and self.n_times_trained_p % n == 0:
+        if (epoch > 0) and (epoch % n == 0) and (self.n_times_trained_p > 0):
             self.path_p = os.path.join(self.folders.models_folder, f"predictor_{epoch}.pth.tar")
 
             if isinstance(self.model_p, nn.DataParallel):
@@ -715,7 +766,7 @@ class Training():
                     }, self.path_p)
 
 
-        if self.n_times_trained_g > 0 and self.n_times_trained_g % n == 0:
+        if (epoch > 0) and (epoch % n == 0) and (self.n_times_trained_g > 0):
             self.path_g = os.path.join(self.folders.models_folder, f"generator_{epoch}.pth.tar")
 
             if isinstance(self.model_g, nn.DataParallel):
@@ -730,11 +781,12 @@ class Training():
                        }, self.path_g)
 
 
-    """
-    Function for loading the predictor model.
-
-    """
     def __load_predictor(self, name_p):
+        """
+        Function for loading the predictor model.
+
+        """
+
         path = os.path.join(constants.trained_models_path, name_p)
 
         if os.path.isfile(path):
@@ -743,11 +795,12 @@ class Training():
             self.optimizer_p.load_state_dict(checkpoint["optimizer"])
 
 
-    """
-    Function for loading the generator model.
-
-    """
     def __load_generator(self, name_g):
+        """
+        Function for loading the generator model.
+
+        """
+
         path = os.path.join(constants.trained_models_path, name_g)
 
         if os.path.isfile(path):
@@ -756,11 +809,12 @@ class Training():
             self.optimizer_g.load_state_dict(checkpoint["optimizer"])
 
 
-    """
-    Function for checking if the models should be loaded from a previous training session.
-
-    """
     def __check_load_models(self, name_p, name_g):
+        """
+        Function for checking if the models should be loaded from a previous training session.
+
+        """
+
         if self.load_models["predictor"]:
             self.__load_predictor(name_p)
 
@@ -770,15 +824,15 @@ class Training():
             self.properties_g["can_train"] = True
 
 
-    """
-    Function that returns if the generator model can be trained.
-    The generator model can be trained if the average loss of the predictor model is less than a certain threshold.
-
-    Returns:
-        can_train (bool): True if the generator model can be trained, False otherwise.
-
-    """
     def __can_g_train(self):
+        """
+        Function that returns if the generator model can be trained.
+        The generator model can be trained if the average loss of the predictor model is less than a certain threshold.
+
+        Returns:
+            can_train (bool): True if the generator model can be trained, False otherwise.
+
+        """
 
         if not self.properties_g["enabled"]:
             return False
@@ -792,32 +846,36 @@ class Training():
         return self.properties_g["can_train"]
 
 
-    """
-    Function for retrieving the learning rate of the optimizer
-
-    """
     def __get_lr(self, optimizer):
+        """
+        Function for retrieving the learning rate of the optimizer
+
+        """
         for param_group in optimizer.param_groups:
             return param_group["lr"]
 
 
-    """
-    Function for cleaning up the resources used by the training session.
-    If the device used for training is a GPU, the CUDA cache is cleared.
-
-    """
     def __resource_cleanup(self):
+        """
+        Function for cleaning up the resources used by the training session.
+        If the device used for training is a GPU, the CUDA cache is cleared.
+
+        """
+
         if self.device.type == "cuda":
             torch.cuda.empty_cache()
 
 
-    """
-    Function for setting the seed for the random number generators.
-
-    """
     def __set_seed(self):
-        random.seed(self.seed)
-        torch.manual_seed(self.seed)
-        np.random.seed(self.seed)
-        torch.cuda.manual_seed(self.seed)
+        """
+        Function for setting the seed for the random number generators.
+
+        """
+        try:
+            random.seed(self.seed)
+            torch.manual_seed(self.seed)
+            np.random.seed(self.seed)
+            torch.cuda.manual_seed(self.seed)
+        except Exception as e:
+            print(e)
 
