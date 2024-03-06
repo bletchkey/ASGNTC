@@ -25,7 +25,7 @@ num_training_steps = 20
 threshold_avg_loss_p = 0.005
 
 # Base path to the folder where the trainings will be saved
-trainings_folder_path = "trainings"
+trainings_folder_path = "../trainings"
 
 # Path to the folder where the results will be saved
 results_folder_path = "results"
@@ -37,7 +37,7 @@ models_folder_path = "models"
 logs_folder_path = "logs"
 
 # Path to the folder where the trained predictor is saved
-trained_models_path = "trained_models"
+trained_models_path = "../trained_models"
 
 
 ### FIXED DATASET PARAMETERS ##############################################################
@@ -55,7 +55,7 @@ fixed_dataset_val_ratio = 0.1
 fixed_dataset_test_ratio = 0.1
 
 # Path to the folder where the fixed dataset is saved
-fixed_dataset_path = "data"
+fixed_dataset_path = "../data"
 
 # Batch size for the fixed dataset
 fixed_dataset_bs = 128

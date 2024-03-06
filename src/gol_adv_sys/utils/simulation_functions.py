@@ -16,8 +16,8 @@ Args:
 
 Returns:
     Tuple containing the final/simulated configuration and the dictionary of metrics for the easy, medium, and hard levels.
-"""
 
+"""
 def simulate_config(config: torch.Tensor, topology: str, steps: int,
                     calculate_final_config: bool,
                     device: torch.device) -> Tuple[torch.Tensor, dict]:

@@ -1,5 +1,6 @@
 import torch
 
+
 class DeviceManager:
 
     def __init__(self) -> None:

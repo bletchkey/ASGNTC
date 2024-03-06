@@ -16,11 +16,14 @@ def Predictor_Baseline():
     print(model)
     return model
 
+
 def Predictor_ResNet():
     return ResNetConstantChannels(block, [2, 2, 2, 2], constants.grid_size)
 
+
 def Predictor_UNet():
     return UNet()
+
 
 def Predictor_ViT():
     img_size = constants.grid_size

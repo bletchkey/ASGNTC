@@ -185,6 +185,7 @@ def test_predictor_model(test_set: torch.utils.data.DataLoader, metric_type: str
 
     return data
 
+
 """
 Function to save the progress plot
 

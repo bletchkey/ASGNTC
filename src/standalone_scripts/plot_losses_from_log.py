@@ -15,8 +15,7 @@ def main():
     lr_values = []
 
     # Path to your log file
-    training_path = "../trainings/2024-03-04_18-30-19"
-
+    training_path = "../../trainings/2024-03-04_18-30-19"
     file_path = "logs/asgntc.txt"
     final_path = os.path.join(training_path, file_path)
 
@@ -41,11 +40,11 @@ def main():
                 loss_train.append(float(train_loss_str))
                 loss_val.append(float(val_loss_str))
 
-
     # Save the plot
     save_losses_plot(loss_train, loss_val, lr_values, training_path)
 
     return 0
+
 
 if __name__ == "__main__":
     return_code = main()

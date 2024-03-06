@@ -57,7 +57,6 @@ class Baseline(nn.Module):
 
         return x
 
-
 # Test model
 class VGGLike_13(nn.Module):
 

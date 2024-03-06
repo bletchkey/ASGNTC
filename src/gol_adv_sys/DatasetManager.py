@@ -8,6 +8,7 @@ from .utils import constants as constants
 
 from .utils.simulation_functions import simulate_config
 
+
 class DatasetCreator():
 
     def __init__(self, device_manager) -> None:

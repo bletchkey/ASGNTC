@@ -4,6 +4,7 @@ import random
 
 from .utils import constants as constants
 
+
 class GeneratorDC(nn.Module):
     def __init__(self, noise_std=0) -> None:
         super(GeneratorDC, self).__init__()
@@ -45,6 +46,7 @@ class GeneratorDC(nn.Module):
             x = x + noise
         x = self.threshold(x, self.alpha)
         return x
+
 
 def Generator(noise_std=0):
     generator = GeneratorDC(noise_std=noise_std)

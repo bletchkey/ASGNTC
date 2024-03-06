@@ -16,7 +16,7 @@ import gol_adv_sys.utils.constants as constants
 def check_fixed_dataset_distribution(device, dataset_path):
     n = constants.grid_size ** 2
     bins = torch.zeros(n+1, dtype=torch.int64, device=device)
-    img_path = dataset_path + "_distribution.png"
+    plot_path = os.path.basename(dataset_path).replace(".pt", "_distribution.png")
 
     # Load the dataset
     dataset = torch.load(dataset_path, map_location=device)
@@ -38,19 +38,16 @@ def check_fixed_dataset_distribution(device, dataset_path):
     plt.bar(range(n+1), bins_cpu)
     plt.ylim(0, max_value + max_value * 0.1)  # Add 10% headroom above the max value
     plt.draw()  # Force redraw with the new limits
-    plt.savefig(img_path)
+    plt.savefig(plot_path)
     plt.close()
 
 
-def check_train_fixed_dataset_configs():
+def check_train_fixed_dataset_configs(saving_path):
     total_indices = 300
     n_per_png = 30
     indices = np.random.randint(0, constants.fixed_dataset_n_configs * constants.fixed_dataset_train_ratio, total_indices)
     data_name = constants.fixed_dataset_name + "_train.pt"
     dataset = torch.load(os.path.join(constants.fixed_dataset_path, data_name))
-
-    saving_path = os.path.join(constants.fixed_dataset_path, "plots")
-    os.makedirs(saving_path, exist_ok=True)
 
     for png_idx in range(total_indices // n_per_png):
         fig, axs = plt.subplots(n_per_png, 5, figsize=(20, 2 * n_per_png))
@@ -77,11 +74,16 @@ def main():
     device_manager = DeviceManager()
     dataset = DatasetCreator(device_manager=device_manager)
 
+    saving_path = os.path.join(constants.fixed_dataset_path, "plots")
+
+    if not os.path.exists(saving_path):
+        os.makedirs(saving_path, exist_ok=True)
+
     check_fixed_dataset_distribution(device_manager.default_device, dataset.dataset_train_path)
     check_fixed_dataset_distribution(device_manager.default_device, dataset.dataset_val_path)
     check_fixed_dataset_distribution(device_manager.default_device, dataset.dataset_test_path)
 
-    check_train_fixed_dataset_configs()
+    check_train_fixed_dataset_configs(saving_path)
 
 
 if __name__ == "__main__":
