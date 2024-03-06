@@ -93,7 +93,7 @@ class Training():
 
         self.data_tensor = None
 
-        self.fixed_dataset = {"enabled": True, "train_data": None, "val_data": None, "test_data": None}
+        self.fixed_dataset = {"enabled": False, "train_data": None, "val_data": None, "test_data": None}
 
         self.path_log_file = self.__init_log_file() if self.fixed_dataset["enabled"] == False else self.__init_log_file_fixed_dataset()
         self.path_p        = None
@@ -424,6 +424,8 @@ class Training():
             log_file.write(f"\nTraining specs:\n")
             log_file.write(f"Batch size: {constants.bs}\n")
             log_file.write(f"Epochs: {constants.num_epochs}\n")
+
+            log_file.write(f"Predicting metric type: {self.metric_type}\n")
 
             log_file.write(f"\n\nTraining progress:\n\n")
 
