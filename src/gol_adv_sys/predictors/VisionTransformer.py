@@ -9,7 +9,7 @@ from ..utils import constants as constants
 
 
 class PatchEmbedding(nn.Module):
-    def __init__(self, img_size=32, patch_size=16, in_channels=1, embed_dim=768):
+    def __init__(self, img_size, patch_size, in_channels, embed_dim):
         super().__init__()
         self.img_size = img_size
         self.patch_size = patch_size
@@ -17,9 +17,9 @@ class PatchEmbedding(nn.Module):
         self.proj = nn.Conv2d(in_channels, embed_dim, kernel_size=patch_size, stride=patch_size)
 
     def forward(self, x):
-        x = self.proj(x)  # [B, E, H/P, W/P]
-        x = x.flatten(2)  # [B, E, N]
-        x = x.transpose(1, 2)  # [B, N, E]
+        x = self.proj(x)
+        x = x.flatten(2)
+        x = x.transpose(1, 2)
         return x
 
 
@@ -59,31 +59,28 @@ class MultiHeadAttention(nn.Module):
 
 
 class TransformerEncoder(nn.Module):
-    def __init__(self, embed_dim, num_heads, ff_dim, dropout=0.1):
+    def __init__(self, embed_dim, num_heads, ff_dim):
         super().__init__()
         self.attention = MultiHeadAttention(embed_dim, num_heads)
         self.norm1 = nn.LayerNorm(embed_dim)
         self.ff = nn.Sequential(
             nn.Linear(embed_dim, ff_dim),
             nn.ReLU(),
-            nn.Dropout(dropout),
             nn.Linear(ff_dim, embed_dim)
         )
         self.norm2 = nn.LayerNorm(embed_dim)
-        self.dropout = nn.Dropout(dropout)
+
 
     def forward(self, x):
-        attn_output = self.attention(x)
-        x = x + self.dropout(attn_output)
+        x = self.attention(x)
         x = self.norm1(x)
-        ff_output = self.ff(x)
-        x = x + self.dropout(ff_output)
+        x = self.ff(x)
         x = self.norm2(x)
         return x
 
 
 class VisionTransformer(nn.Module):
-    def __init__(self, img_size=32, patch_size=16, in_channels=1, embed_dim=768, num_heads=12, num_layers=12, ff_dim=3072):
+    def __init__(self, img_size, patch_size, in_channels, embed_dim, num_heads, num_layers, ff_dim):
         super().__init__()
         self.patch_embedding = PatchEmbedding(img_size, patch_size, in_channels, embed_dim)
         self.cls_token = nn.Parameter(torch.zeros(1, 1, embed_dim))
@@ -92,6 +89,7 @@ class VisionTransformer(nn.Module):
         self.layers = nn.ModuleList([TransformerEncoder(embed_dim, num_heads, ff_dim) for _ in range(num_layers)])
         self.norm = nn.LayerNorm(embed_dim)
         self.head = nn.Linear(embed_dim, embed_dim)  # Example output layer
+
 
     def forward(self, x):
         batch_size = x.shape[0]

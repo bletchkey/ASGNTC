@@ -22,7 +22,9 @@ import datetime
 
 from .utils import constants as constants
 
-from .Predictor import Predictor_Baseline
+from .Predictor import Predictor_Baseline, Predictor_Baseline_v2, Predictor_Baseline_v3
+from .Predictor import Predictor_ResNet, Predictor_GoogLeNet, Predictor_UNet
+from .Predictor import Predictor_GloNet, Predictor_ViT
 from .Generator import Generator
 
 from .FolderManager import FolderManager
@@ -33,7 +35,7 @@ from .utils.helper_functions import test_models, save_progress_plot, save_losses
 from .utils.helper_functions import generate_new_batches, get_data_tensor, get_elapsed_time_str, get_config_from_batch
 
 
-class Training():
+class TrainingAdversarial():
     """
     Class designed to handle the training of the generator and predictor models in an adversarial training approach.
     It can also train only the predictor model on the fixed dataset.
@@ -60,11 +62,7 @@ class Training():
         fixed_noise (torch.Tensor): The fixed noise used for generating configurations.
         properties_g (dict): A dictionary containing properties of the generator model.
         load_models (dict): A dictionary containing information about loading the models from a previous training session.
-        train_dataloader (torch.utils.data.DataLoader): The dataloader for the training set.
-        test_dataloader (torch.utils.data.DataLoader): The dataloader for the test set.
-        val_dataloader (torch.utils.data.DataLoader): The dataloader for the validation set.
         data_tensor (torch.Tensor): Auxiliary tensor used for creating the dataloader.
-        fixed_dataset (dict): A dictionary containing information about the fixed dataset.
         path_log_file (str): The path to the log file for the training session.
         path_p (str): The path to the saved predictor model.
         path_g (str): The path to the saved generator model.
@@ -84,7 +82,7 @@ class Training():
         self.simulation_topology = constants.TOPOLOGY_TYPE["toroidal"]
         self.init_config_type = constants.INIT_CONFIG_TYPE["threshold"]
 
-        self.metric_type = constants.METRIC_TYPE["hard"]
+        self.metric_type = constants.METRIC_TYPE["medium"]
 
         self.current_epoch = 0
         self.step_times_secs = []
@@ -103,6 +101,7 @@ class Training():
         self.n_times_trained_g = 0
 
         self.criterion_p = nn.MSELoss()
+
         self.criterion_g = lambda x, y: -self.criterion_p(x, y)
 
         self.model_p = Predictor_Baseline().to(self.device_manager.default_device)
@@ -125,15 +124,9 @@ class Training():
 
         self.load_models = {"predictor": False, "generator": False, "name_p": None, "name_g": None}
 
-        self.train_dataloader = []
-        self.test_dataloader = []
-        self.val_dataloader = []
-
         self.data_tensor = None
 
-        self.fixed_dataset = {"enabled": True, "train_data": None, "val_data": None, "test_data": None}
-
-        self.path_log_file = self.__init_log_file() if self.fixed_dataset["enabled"] == False else self.__init_log_file_fixed_dataset()
+        self.path_log_file = self.__init_log_file()
         self.path_p        = None
         self.path_g        = None
 
@@ -144,117 +137,11 @@ class Training():
 
         """
 
-        if self.fixed_dataset["enabled"]:
-
-            train_path = os.path.join(constants.fixed_dataset_path, str(constants.fixed_dataset_name+"_train.pt"))
-            val_path   = os.path.join(constants.fixed_dataset_path, str(constants.fixed_dataset_name+"_val.pt"))
-            test_path  = os.path.join(constants.fixed_dataset_path, str(constants.fixed_dataset_name+"_test.pt"))
-
-            self.fixed_dataset["train_data"] = FixedDataset(train_path)
-            self.fixed_dataset["val_data"]   = FixedDataset(val_path)
-            self.fixed_dataset["test_data"]  = FixedDataset(test_path)
-
-            self.train_dataloader = DataLoader(self.fixed_dataset["train_data"], batch_size=constants.bs, shuffle=True)
-            self.val_dataloader   = DataLoader(self.fixed_dataset["val_data"], batch_size=constants.bs, shuffle=True)
-            self.test_dataloader  = DataLoader(self.fixed_dataset["test_data"], batch_size=constants.bs, shuffle=True)
-
-            self.__fit_p_on_fixed_dataset()
-        else:
-
-            self.__check_load_models(self.load_models["name_p"], self.load_models["name_g"])
-            self.__fit()
+        self.__check_load_models(self.load_models["name_p"], self.load_models["name_g"])
+        self._fit()
 
 
-    def __fit_p_on_fixed_dataset(self):
-        """
-        Training loop for the predictor model.
-
-        The predictor model is trained on the fixed data set.
-
-        """
-
-        torch.autograd.set_detect_anomaly(True)
-
-        if self.device_manager.n_balanced_gpus > 0:
-            self.model_p = nn.DataParallel(self.model_p, device_ids=self.device_manager.balanced_gpu_indices)
-
-        # Learning rate scheduler
-        scheduler = optim.lr_scheduler.ReduceLROnPlateau(self.optimizer_p, mode="min", factor=0.1, patience=2, verbose=True,
-                                                         threshold=1e-4, threshold_mode="rel", cooldown=2, min_lr=0, eps=1e-8)
-
-        # Training loop
-        for epoch in range(constants.num_epochs):
-            self.current_epoch = epoch
-            self.lr_each_epoch["predictor"].append(self.__get_lr(self.optimizer_p))
-
-            epoch_start_time = time.time()
-
-            # Train the predictor model
-            train_loss = 0
-            self.model_p.train()
-            for batch in self.train_dataloader:
-                self.optimizer_p.zero_grad()
-                predicted_metric = self.model_p(self.__get_initial_config(batch))
-                errP = self.criterion_p(predicted_metric, self.__get_metric_config(batch, self.metric_type))
-                errP.backward()
-                self.optimizer_p.step()
-                train_loss += errP.item()
-
-            self.n_times_trained_p += 1
-            train_loss /= len(self.train_dataloader)
-            self.losses["predictor_train"].append(train_loss)
-
-            # Check the validation loss
-            val_loss = 0
-            self.model_p.eval()
-            with torch.no_grad():
-                for batch in self.val_dataloader:
-                    predicted_metric = self.model_p(self.__get_initial_config(batch))
-                    errP = self.criterion_p(predicted_metric, self.__get_metric_config(batch, self.metric_type))
-                    val_loss += errP.item()
-
-            val_loss /= len(self.val_dataloader)
-            self.losses["predictor_val"].append(val_loss)
-
-            # Update the learning rate
-            scheduler.step(val_loss)
-
-            epoch_end_time = time.time()
-            epoch_elapsed_time = epoch_end_time - epoch_start_time
-
-            # Log the training epoch progress
-            self.__log_training_epoch_p(epoch_elapsed_time)
-
-            # Test and save models
-            data = self.__test_predictor_model()
-            self.__save_progress_plot(data)
-            self.__save_losses_plot()
-            self.__save_models()
-            self.__resource_cleanup
-
-        # Check the test loss
-        test_loss = 0
-        self.model_p.eval()
-        with torch.no_grad():
-            for batch in self.test_dataloader:
-                predicted_metric = self.model_p(self.__get_initial_config(batch))
-                errP = self.criterion_p(predicted_metric, self.__get_metric_config(batch, self.metric_type))
-                test_loss += errP.item()
-
-        test_loss /= len(self.test_dataloader)
-
-        self.losses["predictor_test"].append(test_loss)
-        str_err_p_test = f"{self.losses['predictor_test'][-1]}"
-
-        with open(self.path_log_file, "a") as log:
-            log.write("\n\nPerformance of the predictor model on the test set:\n")
-            log.write(f"Loss P (test): {str_err_p_test}\n\n")
-            log.write(f"\n\nTraining ended at {datetime.datetime.now().strftime('%d/%m/%Y %H:%M:%S')}\n")
-            log.write(f"Number of times P was trained: {self.n_times_trained_p}\n")
-            log.flush()
-
-
-    def __fit(self):
+    def _fit(self):
         """
         Adversarial training loop.
 
@@ -315,24 +202,6 @@ class Training():
             log.write(f"\n\nTraining ended at {datetime.datetime.now().strftime('%d/%m/%Y %H:%M:%S')}\n")
             log.write(f"Number of times P was trained: {self.n_times_trained_p}\n")
             log.write(f"Number of times G was trained: {self.n_times_trained_g}\n")
-            log.flush()
-
-
-    def __log_training_epoch_p(self, time):
-        """
-        Log the progress of the training session inside each epoch for the predictor model.
-
-        """
-        with open(self.path_log_file, "a") as log:
-
-            str_epoch_time  = f"{get_elapsed_time_str(time)}"
-            str_epoch       = f"{self.current_epoch+1}/{constants.num_epochs}"
-            str_err_p_train = f"{self.losses['predictor_train'][-1]}"
-            str_err_p_val   = f"{self.losses['predictor_val'][-1]}"
-
-            lr = self.lr_each_epoch["predictor"][self.current_epoch]
-
-            log.write(f"{str_epoch_time} | Epoch: {str_epoch}, Loss P (train): {str_err_p_train}, Loss P (val): {str_err_p_val}, [LR: {lr}]\n")
             log.flush()
 
 
@@ -426,45 +295,6 @@ class Training():
                     log_file.write(f"\nThe generator model starts to train at the beginning of the training session\n")
                 else:
                     log_file.write(f"\nAverage loss of P before training G: {constants.threshold_avg_loss_p}\n\n")
-
-            log_file.write(f"\n\nTraining progress:\n\n")
-
-            log_file.flush()
-
-        return path
-
-
-    def __init_log_file_fixed_dataset(self):
-        """
-        Create a log file for the training session on the fixed dataset.
-        When creating the log file, the training specifications are also written to the file.
-
-        Returns:
-            path (str): The path to the log file.
-
-        """
-
-        path = os.path.join(self.folders.logs_folder, "asgntc.txt")
-
-        with open(path, "w") as log_file:
-            log_file.write(f"Training session started at {self.__date.strftime('%d/%m/%Y %H:%M:%S')}\n\n")
-
-            if self.__seed_type["random"]:
-                log_file.write(f"Random seed: {self.seed}\n")
-            elif self.__seed_type["fixed"]:
-                log_file.write(f"Fixed seed: {self.seed}\n")
-            else:
-                log_file.write(f"Unknown seed\n")
-
-            log_file.write(f"Default device: {self.device_manager.default_device}\n")
-            if len(self.device_manager.balanced_gpu_indices) > 0:
-                log_file.write(f"Balanced GPU indices: {self.device_manager.balanced_gpu_indices}\n")
-
-            log_file.write(f"\nTraining specs:\n")
-            log_file.write(f"Batch size: {constants.bs}\n")
-            log_file.write(f"Epochs: {constants.num_epochs}\n")
-
-            log_file.write(f"Predicting metric type: {self.metric_type}\n")
 
             log_file.write(f"\n\nTraining progress:\n\n")
 
@@ -703,19 +533,6 @@ class Training():
                            self.init_config_type, self.fixed_noise, self.metric_type, self.device_manager.default_device)
 
 
-    def __test_predictor_model(self):
-        """
-        Function for testing the predictor model.
-
-        Returns:
-            data (dict): Contains the generated configurations, initial configurations, simulated configurations,
-            simulated metrics and predicted metrics.
-
-        """
-
-        return test_predictor_model(self.test_dataloader, self.metric_type, self.model_p, self.device_manager.default_device)
-
-
     def __save_progress_plot(self, data):
         """
         Function for saving the progress plot.
@@ -728,16 +545,6 @@ class Training():
 
         """
         save_progress_plot(data, self.current_epoch, self.folders.results_folder)
-
-
-    def __save_losses_plot(self):
-        """
-        Function for plotting and saving the losses of training and validation for the predictor model.
-
-        """
-
-        save_losses_plot(self.losses["predictor_train"], self.losses["predictor_val"],
-                         self.lr_each_epoch["predictor"], self.folders.base_folder)
 
 
     def __save_models(self):
@@ -844,15 +651,6 @@ class Training():
             self.properties_g["can_train"] = self.__get_loss_avg_p_last_epoch() < constants.threshold_avg_loss_p
 
         return self.properties_g["can_train"]
-
-
-    def __get_lr(self, optimizer):
-        """
-        Function for retrieving the learning rate of the optimizer
-
-        """
-        for param_group in optimizer.param_groups:
-            return param_group["lr"]
 
 
     def __resource_cleanup(self):

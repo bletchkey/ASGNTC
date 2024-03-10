@@ -172,6 +172,7 @@ class FixedDataset(Dataset):
         """
         Returns the total number of samples in the dataset.
 
+
         Returns:
             int: The size of the dataset.
         """

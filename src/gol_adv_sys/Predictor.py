@@ -4,10 +4,12 @@ import torch.nn as nn
 from torchsummary import summary
 
 from .utils import constants as constants
-from .predictors.Baseline import Baseline
+from .predictors.Baseline import Baseline, Baseline_v2, Baseline_v3
 from .predictors.UNet import UNet
-from .predictors.ResNet import ResNetConstantChannels, block
+from .predictors.ResNet import ResNetConstantChannels
 from .predictors.VisionTransformer import VisionTransformer
+from .predictors.GloNet import GloNet
+from .predictors.GoogLeNet import GoogLeNet
 
 
 def Predictor_Baseline():
@@ -17,12 +19,40 @@ def Predictor_Baseline():
     return model
 
 
+def Predictor_Baseline_v2():
+    model = Baseline_v2()
+    print(model)
+    return model
+
+
+def Predictor_Baseline_v3():
+    model = Baseline_v3()
+    print(model)
+    return model
+
+
 def Predictor_ResNet():
-    return ResNetConstantChannels(block, [2, 2, 2, 2], constants.grid_size)
+    module = ResNetConstantChannels([2, 2, 2, 2], constants.grid_size)
+    print(module)
+    return module
+
+
+def Predictor_GloNet():
+    model = GloNet()
+    print(model)
+    return model
 
 
 def Predictor_UNet():
-    return UNet()
+    model = UNet()
+    print(model)
+    return model
+
+
+def Predictor_GoogLeNet():
+    model = GoogLeNet()
+    print(model)
+    return model
 
 
 def Predictor_ViT():
@@ -35,8 +65,8 @@ def Predictor_ViT():
     ff_dim = 2048  # Dimension of the feedforward network
 
     model = VisionTransformer(img_size=img_size, patch_size=patch_size, in_channels=in_channels,
-                          embed_dim=embed_dim, num_heads=num_heads, num_layers=num_layers, ff_dim=ff_dim)
+                              embed_dim=embed_dim, num_heads=num_heads, num_layers=num_layers, ff_dim=ff_dim)
 
-
+    print(model)
     return model
 

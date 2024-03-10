@@ -19,7 +19,7 @@ n_configs = n_batches*bs
 n_max_configs = n_max_batches*bs
 
 # Number of steps for training with a certain dataset in an epoch
-num_training_steps = 2
+num_training_steps = 20
 
 # Average loss of P threshold before training G
 threshold_avg_loss_p = 0.008
@@ -151,7 +151,7 @@ g_adamw_eps=1e-08
 g_adamw_wd=0.01
 
 # Hyperparameters for SGD optimizer
-p_sgd_lr=0.01
+p_sgd_lr=0.1
 p_sgd_momentum=0.9
 p_sgd_wd=1e-4
 

@@ -36,7 +36,7 @@ class block(nn.Module):
 
 
 class ResNetConstantChannels(nn.Module):
-    def __init__(self, block, layers, channels):
+    def __init__(self, layers, channels):
         super(ResNetConstantChannels, self).__init__()
         self.channels = channels
         self.n_layers = len(layers)
@@ -47,9 +47,10 @@ class ResNetConstantChannels(nn.Module):
         for i in range(self.n_layers):
             setattr(self, f"layer{i}", self._make_layer(block, layers[i], self.channels))
 
+
     def forward(self, x):
 
-        x = self.in_conv(add_toroidal_padding(x))
+        x = self._pad_conv(x, self.in_conv)
 
         for i in range(self.n_layers):
             x = getattr(self, f"layer{i}")(x)
@@ -57,6 +58,15 @@ class ResNetConstantChannels(nn.Module):
         x = self.out_conv(x)
 
         return x
+
+
+    def _pad_conv(self, x, f):
+
+        x = add_toroidal_padding(x)
+        x = f(x)
+
+        return x
+
 
     def _make_layer(self, block, num_residual_blocks, channels):
         layers = []

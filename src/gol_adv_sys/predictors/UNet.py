@@ -31,12 +31,14 @@ class UNet(nn.Module):
         # Activation Function
         self.relu = nn.ReLU()
 
+
     def forward(self, x):
 
-        for _ in range(10):
+        for _ in range(1):
             x = self._u_structure(x)
 
         return x
+
 
     def _pad_conv(self, x, f):
 
@@ -44,6 +46,7 @@ class UNet(nn.Module):
         x = f(x)
 
         return x
+
 
     def _u_structure(self, x):
 
