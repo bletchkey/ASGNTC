@@ -29,6 +29,7 @@ from .utils.helper_functions import save_progress_plot, save_losses_plot, test_p
 
 from .TrainingBase import TrainingBase
 
+
 class TrainingPredictor(TrainingBase):
     """
     Class designed to handle the training of the predictor model on the fixed dataset.

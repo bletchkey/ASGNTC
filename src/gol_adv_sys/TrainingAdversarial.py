@@ -22,20 +22,16 @@ import datetime
 
 from .utils import constants as constants
 
-from .Predictor import Predictor_Baseline, Predictor_Baseline_v2, Predictor_Baseline_v3
-from .Predictor import Predictor_ResNet, Predictor_GoogLeNet, Predictor_UNet
-from .Predictor import Predictor_GloNet, Predictor_ViT
-from .Generator import Generator
-
 from .FolderManager import FolderManager
 from .DeviceManager import DeviceManager
-from .DatasetManager import FixedDataset
 
-from .utils.helper_functions import test_models, save_progress_plot, save_losses_plot, test_predictor_model
-from .utils.helper_functions import generate_new_batches, get_data_tensor, get_elapsed_time_str, get_config_from_batch
+from .utils.helper_functions import test_models, save_progress_plot, get_elapsed_time_str
+from .utils.helper_functions import generate_new_batches, get_data_tensor, get_config_from_batch
+
+from .TrainingBase import TrainingBase
 
 
-class TrainingAdversarial():
+class TrainingAdversarial(TrainingBase):
     """
     Class designed to handle the training of the generator and predictor models in an adversarial training approach.
     It can also train only the predictor model on the fixed dataset.
@@ -69,7 +65,7 @@ class TrainingAdversarial():
 
     """
 
-    def __init__(self) -> None:
+    def __init__(self, model_p=None, model_g=None) -> None:
         self.__date = datetime.datetime.now()
 
         self.__seed_type = {"fixed": 54, "random": random.randint(1, 10000), "is_random": True}
@@ -104,8 +100,8 @@ class TrainingAdversarial():
 
         self.criterion_g = lambda x, y: -self.criterion_p(x, y)
 
-        self.model_p = Predictor_Baseline().to(self.device_manager.default_device)
-        self.model_g = Generator(noise_std=0).to(self.device_manager.default_device)
+        self.model_p = model_p
+        self.model_g = model_g
 
         self.optimizer_p = optim.SGD(self.model_p.parameters(),
                                      lr=constants.p_sgd_lr,
@@ -138,6 +134,10 @@ class TrainingAdversarial():
         """
 
         self.__check_load_models(self.load_models["name_p"], self.load_models["name_g"])
+
+        self.model_p = self.model_p.to(self.device_manager.default_device)
+        self.model_g = self.model_g.to(self.device_manager.default_device)
+
         self._fit()
 
 

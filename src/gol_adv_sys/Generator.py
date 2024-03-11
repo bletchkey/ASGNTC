@@ -6,7 +6,7 @@ from .utils import constants as constants
 
 from .generators.DCGAN import DCGAN
 
-def Generator(noise_std=0):
+def Generator_DCGAN(noise_std=0):
     generator = DCGAN(noise_std=noise_std)
 
     # Kaiming initialization
