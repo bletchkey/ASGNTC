@@ -98,3 +98,13 @@ class DeviceManager:
 
         return balanced_gpus
 
+
+    def clear_resources(self):
+        """
+        Function for cleaning up the resources.
+        If the device used for training is a GPU, the CUDA cache is cleared.
+
+        """
+
+        if self.__default_device.type == "cuda":
+            torch.cuda.empty_cache()

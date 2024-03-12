@@ -1,12 +1,12 @@
 import torch
-from typing import Tuple
+from typing import Tuple, Union
 
 from . import constants as constants
 
 
 def simulate_config(config: torch.Tensor, topology: str, steps: int,
                     calculate_final_config: bool,
-                    device: torch.device) -> Tuple[torch.Tensor, dict]:
+                    device: torch.device) -> Union[Tuple[torch.Tensor, dict, int, int], Tuple[dict, dict, int, int]]:
     """
     Simulates a configuration for a given number of steps using a specified topology.
 
@@ -20,7 +20,14 @@ def simulate_config(config: torch.Tensor, topology: str, steps: int,
     Returns:
         Tuple containing the final/simulated configuration and the dictionary of metrics for the easy, medium, and hard levels.
 
+        If calculate_final_config is True, the first element of the tuple is the final: a dictionary containing the final configuration, period, and anitperiod.
+
+        If calculate_final_config is False, the first element of the tuple is the simulated configuration (torch.Tensor).
+
+        The initial and final number of living cells are also returned.
     """
+    # count living cells in the initial configuration
+    n_cells_init = torch.sum(config, dim=[2, 3], dtype=torch.int32)
 
     # Mapping of topology types to their corresponding simulation functions
     simulation_functions = {
@@ -41,7 +48,13 @@ def simulate_config(config: torch.Tensor, topology: str, steps: int,
     # Optionally calculate the final configuration
     final_config = None
     if calculate_final_config == True:
-        final_config = __calculate_final_configuration(config, _simulation_function, kernel, device)
+        final_config, period, antiperiod = __calculate_final_configuration(config, _simulation_function, kernel, device)
+
+        final = {
+            "config": final_config,
+            "period": period,
+            "antiperiod": antiperiod
+        }
 
     # Simulate the configuration for the given number of steps
     sim_configs = []
@@ -54,16 +67,21 @@ def simulate_config(config: torch.Tensor, topology: str, steps: int,
 
     # Return the appropriate tuple based on whether the final configuration was calculated
     if final_config is not None:
-        return (final_config, metrics)
+        n_cells_after = torch.sum(final_config, dim=[2, 3], dtype=torch.int32)
+        return (final, metrics, n_cells_init, n_cells_after)
     else:
-        return (config, metrics)
+        n_cells_after = torch.sum(config, dim=[2, 3], dtype=torch.int32)
+        return (config, metrics, n_cells_init, n_cells_after)
 
 
-def __calculate_final_configuration(config: torch.Tensor, simulation_function, kernel: torch.Tensor,
-                                    device: torch.device) -> torch.Tensor:
+
+def __calculate_final_configuration(config_batch: torch.Tensor, simulation_function, kernel: torch.Tensor,
+                                    device: torch.device) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
     """
     Function for calculating the final configuration
     The final configuration is the last configuration before a cycle is detected
+    The period is the length of the repeating cycle
+    The antiperiod is the number of steps before the cycle starts
 
     Args:
         config: Initial configuration
@@ -72,25 +90,39 @@ def __calculate_final_configuration(config: torch.Tensor, simulation_function, k
         device: Device used for computation
 
     Returns:
-        The final configuration
+        The final configuration, period length, and antiperiod length for each configuration in the batch
 
     """
-    # Final configuration is the last configuration before a cycle is detected
-    config_hashes = set()
-    current_hash  = hash(config.cpu().numpy().tobytes())
-    config_hashes.add(current_hash)
+    batch_size = config_batch.size(0)
+    final_config = torch.zeros_like(config_batch)
+    period = torch.full((batch_size,), -1, dtype=torch.int32, device=device) # Initialize with -1 to indicate unfinished
+    antiperiod = torch.full((batch_size,), -1, dtype=torch.int32, device=device)  # Initialize with -1 to indicate unfinished
+    active = torch.ones(batch_size, dtype=torch.bool)  # Track active (unfinished) configurations
 
-    while True:
-        config = simulation_function(config, kernel, device)
-        current_hash = hash(config.cpu().numpy().tobytes())
+    step = 0
+    config_hashes = [{} for _ in range(batch_size)]  # Separate hash tracker for each configuration
 
-        # Check if the current configuration has been seen before.
-        if current_hash in config_hashes:
-            break
+    while active.any():
+        config_batch = simulation_function(config_batch, kernel, device)
 
-        config_hashes.add(current_hash)
+        for i in range(batch_size):
+            if not active[i]:
+                continue  # Skip already completed configurations
 
-    return config
+            config = config_batch[i].unsqueeze(0)
+            current_hash = hash(config.cpu().numpy().tobytes())
+
+            if current_hash in config_hashes[i]:
+                antiperiod[i] = config_hashes[i][current_hash]
+                period[i] = step - antiperiod[i]
+                final_config[i] = config.squeeze(0)
+                active[i] = False
+            else:
+                config_hashes[i][current_hash] = step
+
+        step += 1
+
+    return final_config, period, antiperiod
 
 
 def __calculate_metrics(configs: list, device: torch.device) -> dict:

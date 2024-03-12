@@ -79,7 +79,7 @@ def generate_new_batches(model_g: torch.nn.Module, n_batches: int, topology: str
         initial_config = get_init_config(generated_config, init_config_type)
 
         with torch.no_grad():
-            simulated_config, simulated_metrics = simulate_config(config=initial_config, topology=topology,
+            simulated_config, simulated_metrics, _, _ = simulate_config(config=initial_config, topology=topology,
                                                                   steps=constants.n_simulation_steps, calculate_final_config=False,
                                                                   device=device)
         configs.append({
@@ -138,7 +138,7 @@ def test_models(model_g: torch.nn.Module, model_p: torch.nn.Module, topology: st
         generated_config_fixed = model_g(fixed_noise)
         data["generated"] = generated_config_fixed
         data["initial"]   = get_init_config(generated_config_fixed, init_config_type)
-        data["simulated"], sim_metrics = simulate_config(config=data["initial"], topology=topology,
+        data["simulated"], sim_metrics, _, _ = simulate_config(config=data["initial"], topology=topology,
                                                          steps=constants.n_simulation_steps, calculate_final_config=False,
                                                          device=device)
         data["metric"] = sim_metrics[metric_type]

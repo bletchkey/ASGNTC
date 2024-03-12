@@ -54,8 +54,8 @@ fixed_dataset_val_ratio = 0.1
 # Ratio of the fixed dataset to use for testing
 fixed_dataset_test_ratio = 0.1
 
-# Path to the folder where the fixed dataset is saved
-fixed_dataset_path = "../data"
+# Path to the folder where the fixed dataset is saved (absolute path)
+fixed_dataset_path = "/media/yui/asgntc/data"
 
 # Batch size for the fixed dataset
 fixed_dataset_bs = 128
@@ -151,7 +151,7 @@ g_adamw_eps=1e-08
 g_adamw_wd=0.01
 
 # Hyperparameters for SGD optimizer
-p_sgd_lr=0.1
+p_sgd_lr=0.01
 p_sgd_momentum=0.9
 p_sgd_wd=1e-4
 

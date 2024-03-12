@@ -42,7 +42,9 @@ class DatasetCreator():
         self.dataset_val_path = os.path.join(constants.fixed_dataset_path, str(constants.fixed_dataset_name+"_val.pt"))
         self.dataset_test_path = os.path.join(constants.fixed_dataset_path, str(constants.fixed_dataset_name+"_test.pt"))
 
-        self.data = self.create_fixed_dataset()
+        self.metadata_train_path = os.path.join(constants.fixed_dataset_path, str(constants.fixed_dataset_name+"_metadata_train.pt"))
+        self.metadata_val_path = os.path.join(constants.fixed_dataset_path, str(constants.fixed_dataset_name+"_metadata_val.pt"))
+        self.metadata_test_path = os.path.join(constants.fixed_dataset_path, str(constants.fixed_dataset_name+"_metadata_test.pt"))
 
 
     def create_fixed_dataset(self):
@@ -73,16 +75,19 @@ class DatasetCreator():
 
         else:
 
-            data = None
             n_batches = constants.fixed_dataset_n_configs // constants.fixed_dataset_bs
             n = constants.grid_size ** 2 + 1
             batches_for_n_cells = n_batches // n
             configs = []
+            metadata = []
+
+            ids = torch.arange(constants.fixed_dataset_n_configs, dtype=torch.int32, device=self.device_manager.default_device)
 
             # Generate the configurations for the fixed dataset
             for n_cells in range(n):
                 print(f"Generating configurations for n_cells = {n_cells}")
-                for _ in range(batches_for_n_cells):
+                for i in range(batches_for_n_cells):
+                    batch_number = i + n_cells * batches_for_n_cells
                     # Initialize the batch of configurations with all cells dead (0)
                     initial_config = torch.zeros(constants.fixed_dataset_bs, constants.grid_size, constants.grid_size, dtype=torch.float32,
                                                  device=self.device_manager.default_device)
@@ -96,42 +101,84 @@ class DatasetCreator():
                     initial_config = initial_config.view(constants.fixed_dataset_bs, 1, constants.grid_size, constants.grid_size)
 
                     with torch.no_grad():
-                        final_config, metrics = simulate_config(config=initial_config, topology=self.__simulation_topology,
+                        final, metrics, n_cells_init, n_cells_final = simulate_config(
+                                                                config=initial_config, topology=self.__simulation_topology,
                                                                 steps=constants.fixed_dataset_n_simulation_steps, calculate_final_config=True,
                                                                 device=self.device_manager.default_device)
 
                     configs.append({
                         "initial": initial_config,
-                        "final": final_config,
+                        "final": final["config"],
                         "metric_easy": metrics["easy"],
                         "metric_medium": metrics["medium"],
                         "metric_hard": metrics["hard"],
                     })
 
-            concatenated_tensors = []
-            keys = configs[0].keys()
+                    metadata.append({
+                        "id": ids[batch_number*constants.fixed_dataset_bs: (batch_number+1)*constants.fixed_dataset_bs],
+                        "n_cells_init": n_cells_init,
+                        "n_cells_final": n_cells_final,
+                        "period": final["period"],
+                        "antiperiod": final["antiperiod"]
+                    })
 
-            for key in keys:
+
+            # Configs
+            concatenated_configs_tensor = []
+            configs_keys = configs[0].keys()
+
+            for key in configs_keys:
                 concatenated_tensor = torch.cat([config[key] for config in configs], dim=0)
-                concatenated_tensors.append(concatenated_tensor)
+                concatenated_configs_tensor.append(concatenated_tensor)
 
-            # Stack the tensors
-            data = torch.stack(concatenated_tensors, dim=1)
+            configs_data = torch.stack(concatenated_configs_tensor, dim=1)
 
-            # Shuffle the data
-            data = data[torch.randperm(data.size(0))]
+            # Metadata
+            metadata_data = {}
+            for key in metadata[0].keys():  # Get all keys from the first batch as reference
+                # Gather the tensors for the current key from each batch
+                tensors = [batch[key].to(self.device_manager.default_device) for batch in metadata]
 
-            # Divide the data into training, validation and test sets
+                # Stack the tensors along a new dimension (creating a new batch dimension)
+                metadata_data[key] = torch.cat(tensors, dim=0)
+
+            # Generate shuffled indices based on the total number of configurations
+            total_configs = len(configs_data)  # Should be constants.fixed_dataset_n_configs
+            shuffled_indices = torch.randperm(total_configs, device=self.device_manager.default_device)
+
+            # Apply the shuffled indices to flatten configs and metadata
+            shuffled_configs  = [configs_data[i] for i in shuffled_indices]
+            shuffled_metadata = {key: metadata_data[key][shuffled_indices] for key in metadata_data.keys()}
+
+            # Convert the shuffled metadata to a list of dictionaries
+            metadata = [{} for _ in range(total_configs)]  # Initialize a list of dictionaries
+            for i in range(total_configs):
+                metadata[i] = {
+                    key: shuffled_metadata[key][i].item() for key in shuffled_metadata.keys()
+                }
+
+            # Convert the shuffled configs to a tensor
+            data = torch.stack(shuffled_configs, dim=0)
+
+            # Divide the data into training, validation, and test sets (use shuffled_metadata for indexing)
             n_train = int(constants.fixed_dataset_train_ratio * data.size(0))
             n_val   = int(constants.fixed_dataset_val_ratio * data.size(0))
             train_data = data[:n_train]
-            val_data   = data[n_train:n_train+n_val]
-            test_data  = data[n_train+n_val:]
+            val_data   = data[n_train:n_train + n_val]
+            test_data  = data[n_train + n_val:]
 
-            # Save the data sets
+            train_metadata = metadata[:n_train]
+            val_metadata   = metadata[n_train:n_train + n_val]
+            test_metadata  = metadata[n_train + n_val:]
+
+            # Save the datasets and their corresponding metadata
             torch.save(train_data, self.dataset_train_path)
             torch.save(val_data, self.dataset_val_path)
             torch.save(test_data, self.dataset_test_path)
+
+            torch.save(train_metadata, self.metadata_train_path)
+            torch.save(val_metadata, self.metadata_val_path)
+            torch.save(test_metadata, self.metadata_test_path)
 
             return (train_data, val_data, test_data)
 
@@ -190,4 +237,3 @@ class FixedDataset(Dataset):
             torch.Tensor: The data sample corresponding to the given index.
         """
         return self.data[idx]
-

@@ -46,8 +46,10 @@ def check_train_fixed_dataset_configs(saving_path):
     total_indices = 300
     n_per_png = 30
     indices = np.random.randint(0, constants.fixed_dataset_n_configs * constants.fixed_dataset_train_ratio, total_indices)
+    metadata_name = constants.fixed_dataset_name + "_metadata_train.pt"
     data_name = constants.fixed_dataset_name + "_train.pt"
     dataset = torch.load(os.path.join(constants.fixed_dataset_path, data_name))
+    metadata = torch.load(os.path.join(constants.fixed_dataset_path, metadata_name))
 
     for png_idx in range(total_indices // n_per_png):
         fig, axs = plt.subplots(n_per_png, 5, figsize=(20, 2 * n_per_png))
@@ -55,9 +57,11 @@ def check_train_fixed_dataset_configs(saving_path):
         for config_idx in range(n_per_png):
             global_idx = png_idx * n_per_png + config_idx
             config = dataset[indices[global_idx]]
+            meta = metadata[indices[global_idx]]
 
             for img_idx in range(5):
                 ax = axs[config_idx, img_idx]
+                ax.text(0.5, 0.5, f"ID: {meta['id']}\nInitial: {meta['n_cells_init']}\nFinal: {meta['n_cells_final']}\nPeriod: {meta['period']}\nAntiperiod: {meta['antiperiod']}", ha='center', va='center', fontsize=6)
                 ax.imshow(config[img_idx].detach().cpu().numpy().squeeze(), cmap='gray')
                 ax.axis('off')
 
@@ -73,6 +77,7 @@ def check_train_fixed_dataset_configs(saving_path):
 def main():
     device_manager = DeviceManager()
     dataset = DatasetCreator(device_manager=device_manager)
+    dataset.create_fixed_dataset()
 
     saving_path = os.path.join(constants.fixed_dataset_path, "plots")
 
@@ -89,3 +94,4 @@ def main():
 if __name__ == "__main__":
     return_code = main()
     exit(return_code)
+
