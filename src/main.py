@@ -12,11 +12,11 @@ from gol_adv_sys.Generator import Generator_DCGAN
 
 def main():
 
-    # train = TrainingPredictor(model_p=Predictor_Baseline())
-    # train.run()
+    train_pred = TrainingPredictor(model_p=Predictor_Baseline_v2())
+    train_pred.run()
 
-    train_adv = TrainingAdversarial(model_p=Predictor_Baseline(), model_g=Generator_DCGAN())
-    train_adv.run()
+    # train_adv = TrainingAdversarial(model_p=Predictor_Baseline(), model_g=Generator_DCGAN())
+    # train_adv.run()
 
     return 0
 
