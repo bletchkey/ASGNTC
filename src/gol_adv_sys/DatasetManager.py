@@ -38,16 +38,16 @@ class DatasetCreator():
 
         self.__simulation_topology = constants.TOPOLOGY_TYPE["toroidal"]
 
-        self.dataset_train_path = os.path.join(constants.fixed_dataset_path, str(constants.fixed_dataset_name+"_train.pt"))
-        self.dataset_val_path = os.path.join(constants.fixed_dataset_path, str(constants.fixed_dataset_name+"_val.pt"))
-        self.dataset_test_path = os.path.join(constants.fixed_dataset_path, str(constants.fixed_dataset_name+"_test.pt"))
+        self.dataset_train_path = os.path.join(constants.dataset_path, str(constants.dataset_name+"_train.pt"))
+        self.dataset_val_path = os.path.join(constants.dataset_path, str(constants.dataset_name+"_val.pt"))
+        self.dataset_test_path = os.path.join(constants.dataset_path, str(constants.dataset_name+"_test.pt"))
 
-        self.metadata_train_path = os.path.join(constants.fixed_dataset_path, str(constants.fixed_dataset_name+"_metadata_train.pt"))
-        self.metadata_val_path = os.path.join(constants.fixed_dataset_path, str(constants.fixed_dataset_name+"_metadata_val.pt"))
-        self.metadata_test_path = os.path.join(constants.fixed_dataset_path, str(constants.fixed_dataset_name+"_metadata_test.pt"))
+        self.metadata_train_path = os.path.join(constants.dataset_path, str(constants.dataset_name+"_metadata_train.pt"))
+        self.metadata_val_path = os.path.join(constants.dataset_path, str(constants.dataset_name+"_metadata_val.pt"))
+        self.metadata_test_path = os.path.join(constants.dataset_path, str(constants.dataset_name+"_metadata_test.pt"))
 
 
-    def create_fixed_dataset(self):
+    def create_dataset(self):
         """
         Generates a fixed dataset if it does not already exist. The dataset consists of initial
         configurations and their corresponding final configurations after simulation, along with
@@ -64,24 +64,24 @@ class DatasetCreator():
         """
 
         # Check if the data already exists, if not create it
-        if os.path.exists(constants.fixed_dataset_path):
+        if os.path.exists(constants.dataset_path):
             pass
         else:
-            os.makedirs(constants.fixed_dataset_path)
+            os.makedirs(constants.dataset_path)
 
         # Check if the data folder is empty
-        if len(os.listdir(constants.fixed_dataset_path)) > 0:
+        if len(os.listdir(constants.dataset_path)) > 0:
             print("data folder is not empty")
 
         else:
 
-            n_batches = constants.fixed_dataset_n_configs // constants.fixed_dataset_bs
+            n_batches = constants.dataset_n_configs // constants.dataset_bs
             n = constants.grid_size ** 2 + 1
             batches_for_n_cells = n_batches // n
             configs = []
             metadata = []
 
-            ids = torch.arange(constants.fixed_dataset_n_configs, dtype=torch.int32, device=self.device_manager.default_device)
+            ids = torch.arange(constants.dataset_n_configs, dtype=torch.int32, device=self.device_manager.default_device)
 
             # Generate the configurations for the fixed dataset
             for n_cells in range(n):
@@ -89,21 +89,21 @@ class DatasetCreator():
                 for i in range(batches_for_n_cells):
                     batch_number = i + n_cells * batches_for_n_cells
                     # Initialize the batch of configurations with all cells dead (0)
-                    initial_config = torch.zeros(constants.fixed_dataset_bs, constants.grid_size, constants.grid_size, dtype=torch.float32,
+                    initial_config = torch.zeros(constants.dataset_bs, constants.grid_size, constants.grid_size, dtype=torch.float32,
                                                  device=self.device_manager.default_device)
 
                     # For each configuration in the batch
-                    for i in range(constants.fixed_dataset_bs):
+                    for i in range(constants.dataset_bs):
                         flat_indices = torch.randperm(constants.grid_size ** 2, device=self.device_manager.default_device)[:n_cells]
                         rows, cols = flat_indices // constants.grid_size, flat_indices % constants.grid_size
                         initial_config[i, rows, cols] = 1.0
 
-                    initial_config = initial_config.view(constants.fixed_dataset_bs, 1, constants.grid_size, constants.grid_size)
+                    initial_config = initial_config.view(constants.dataset_bs, 1, constants.grid_size, constants.grid_size)
 
                     with torch.no_grad():
                         final, metrics, n_cells_init, n_cells_final = simulate_config(
                                                                 config=initial_config, topology=self.__simulation_topology,
-                                                                steps=constants.fixed_dataset_n_simulation_steps, calculate_final_config=True,
+                                                                steps=constants.dataset_n_simulation_steps, calculate_final_config=True,
                                                                 device=self.device_manager.default_device)
 
                     configs.append({
@@ -115,7 +115,7 @@ class DatasetCreator():
                     })
 
                     metadata.append({
-                        "id": ids[batch_number*constants.fixed_dataset_bs: (batch_number+1)*constants.fixed_dataset_bs],
+                        "id": ids[batch_number*constants.dataset_bs: (batch_number+1)*constants.dataset_bs],
                         "n_cells_init": n_cells_init,
                         "n_cells_final": n_cells_final,
                         "period": final["period"],
@@ -143,7 +143,7 @@ class DatasetCreator():
                 metadata_data[key] = torch.cat(tensors, dim=0)
 
             # Generate shuffled indices based on the total number of configurations
-            total_configs = len(configs_data)  # Should be constants.fixed_dataset_n_configs
+            total_configs = len(configs_data)  # Should be constants.dataset_n_configs
             shuffled_indices = torch.randperm(total_configs, device=self.device_manager.default_device)
 
             # Apply the shuffled indices to flatten configs and metadata
@@ -161,8 +161,8 @@ class DatasetCreator():
             data = torch.stack(shuffled_configs, dim=0)
 
             # Divide the data into training, validation, and test sets (use shuffled_metadata for indexing)
-            n_train = int(constants.fixed_dataset_train_ratio * data.size(0))
-            n_val   = int(constants.fixed_dataset_val_ratio * data.size(0))
+            n_train = int(constants.dataset_train_ratio * data.size(0))
+            n_val   = int(constants.dataset_val_ratio * data.size(0))
             train_data = data[:n_train]
             val_data   = data[n_train:n_train + n_val]
             test_data  = data[n_train + n_val:]

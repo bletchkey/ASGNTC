@@ -68,7 +68,9 @@ class Baseline_v2(nn.Module):
         self.conv4 = nn.Conv2d(24, 24, kernel_size=3, padding=0)
         self.conv5 = nn.Conv2d(24, 24, kernel_size=3, padding=0)
 
-        self.output_conv = nn.Conv2d(constants.npf*8, constants.nc, kernel_size=1, padding=0)
+        self.output_conv = nn.Conv2d(24, constants.nc, kernel_size=1, padding=0)
+
+        self.relu = nn.ReLU()
 
 
     def forward(self, x):

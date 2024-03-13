@@ -7,6 +7,7 @@ sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 
 from gol_adv_sys.utils.helper_functions import save_losses_plot
 
+
 def main():
 
     # Initialize lists to hold the loss values

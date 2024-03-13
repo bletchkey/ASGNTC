@@ -1,5 +1,10 @@
 nohup: ignoring input
-Period: 2
-Antiperiod: 1657
-Initial living cells: 512
-Final living cells: 34
+Baseline_v2(
+  (conv1): Conv2d(1, 24, kernel_size=(3, 3), stride=(1, 1))
+  (conv2): Conv2d(24, 24, kernel_size=(3, 3), stride=(1, 1))
+  (conv3): Conv2d(24, 24, kernel_size=(3, 3), stride=(1, 1))
+  (conv4): Conv2d(24, 24, kernel_size=(3, 3), stride=(1, 1))
+  (conv5): Conv2d(24, 24, kernel_size=(3, 3), stride=(1, 1))
+  (output_conv): Conv2d(24, 1, kernel_size=(1, 1), stride=(1, 1))
+  (relu): ReLU()
+)

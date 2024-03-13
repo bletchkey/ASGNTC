@@ -42,10 +42,10 @@ def playground():
 
 def main():
 
-    playground()
+    # playground()
 
-    # train_pred = TrainingPredictor(model=Predictor_Baseline_v2())
-    # train_pred.run()
+    train_pred = TrainingPredictor(model=Predictor_Baseline_v2())
+    train_pred.run()
 
     # train_adv = TrainingAdversarial(model_p=Predictor_Baseline(), model_g=Generator_DCGAN())
     # train_adv.run()

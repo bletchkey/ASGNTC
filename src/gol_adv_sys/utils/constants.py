@@ -1,4 +1,4 @@
-### TRAINING PARAMETERS #############################################################
+### TRAINING PARAMETERS #################################################################
 
 # Number of training epochs
 num_epochs = 200
@@ -24,8 +24,8 @@ num_training_steps = 20
 # Average loss of P threshold before training G
 threshold_avg_loss_p = 0.008
 
-# Base path to the folder where the trainings will be saved
-trainings_folder_path = "../trainings"
+
+### PATHS ###############################################################################
 
 # Path to the folder where the results will be saved
 results_folder_path = "results"
@@ -36,37 +36,40 @@ models_folder_path = "models"
 # Path to the folder where the logs will be saved
 logs_folder_path = "logs"
 
+# Base path to the folder where the trainings will be saved
+trainings_folder_path = "../trainings"
+
 # Path to the folder where the trained predictor is saved
 trained_models_path = "../trained_models"
 
+# Path to the folder where the dataset is saved (absolute path)
+dataset_path = "/media/yui/bletchkey/asgntc/data"
 
-### FIXED DATASET PARAMETERS ##############################################################
 
-# Number of configurations to generate for the fixed dataset
-fixed_dataset_n_configs =  262400
+### DATASET PARAMETERS ############################################################
 
-# Ratio of the fixed dataset to use for training
-fixed_dataset_train_ratio = 0.8
+# Number of configurations to generate for the dataset
+dataset_n_configs =  262400
 
-# Ratio of the fixed dataset to use for validation
-fixed_dataset_val_ratio = 0.1
+# Ratio of the dataset to use for training
+dataset_train_ratio = 0.8
 
-# Ratio of the fixed dataset to use for testing
-fixed_dataset_test_ratio = 0.1
+# Ratio of the dataset to use for validation
+dataset_val_ratio = 0.1
 
-# Path to the folder where the fixed dataset is saved (absolute path)
-fixed_dataset_path = "/media/yui/asgntc/data"
+# Ratio of the dataset to use for testing
+dataset_test_ratio = 0.1
 
-# Batch size for the fixed dataset
-fixed_dataset_bs = 128
+# Batch size for the dataset
+dataset_bs = 128
 
-# Metric steps for the fixed dataset
-fixed_dataset_n_simulation_steps = 1000
+# Metric steps for the dataset
+dataset_n_simulation_steps = 1000
 
-# Fixed dataset name
-fixed_dataset_name = "gol_fixed_dataset"
+# Dataset name
+dataset_name = "gol_dataset"
 
-### SIMULATION PARAMETERS #########################################################
+### SIMULATION PARAMETERS ###############################################################
 
 # Size of the grid
 grid_size = 32
@@ -112,7 +115,7 @@ METRIC_TYPE = {
 }
 
 
-### MODELS PARAMETERS ##############################################################
+### MODELS PARAMETERS ###################################################################
 
 # Number of channels in the grid (input and output)
 nc = 1
@@ -123,7 +126,7 @@ ngf = 32
 # Size of feature maps in the predictor
 npf = 64
 
-# Size of z latent vector (i.e. size of generator input)
+# Size of z latent vector
 nz = 10
 
 # Hyperparameters for Adam optimizer

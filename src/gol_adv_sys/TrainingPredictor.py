@@ -53,7 +53,7 @@ class TrainingPredictor(TrainingBase):
         test_dataloader (DataLoader): The dataloader used for testing the predictor model.
         val_dataloader (DataLoader): The dataloader used for validating the predictor model.
         data_tensor (torch.Tensor): The data tensor used for the simulation.
-        fixed_dataset (dict): The fixed dataset used for the training session.
+        dataset (dict): The fixed dataset used for the training session.
         path_log_file (str): The path to the log file used for the training session.
         path_p (str): The path to the saved predictor model.
 
@@ -85,6 +85,8 @@ class TrainingPredictor(TrainingBase):
         self.n_times_trained_p = 0
         self.step_times_secs = []
 
+        self.learning_rates = []
+
         self.losses = {"predictor_train": [],
                        "predictor_val": [],
                        "predictor_test": [],}
@@ -95,7 +97,7 @@ class TrainingPredictor(TrainingBase):
 
         self.data_tensor = None
 
-        self.fixed_dataset = {"train_data": None, "val_data": None, "test_data": None}
+        self.dataset = {"train_data": None, "val_data": None, "test_data": None}
 
         self.path_log_file = self.__init_log_file()
         self.path_p        = None
@@ -107,17 +109,17 @@ class TrainingPredictor(TrainingBase):
 
         """
 
-        train_path = os.path.join(constants.fixed_dataset_path, str(constants.fixed_dataset_name+"_train.pt"))
-        val_path   = os.path.join(constants.fixed_dataset_path, str(constants.fixed_dataset_name+"_val.pt"))
-        test_path  = os.path.join(constants.fixed_dataset_path, str(constants.fixed_dataset_name+"_test.pt"))
+        train_path = os.path.join(constants.dataset_path, str(constants.dataset_name+"_train.pt"))
+        val_path   = os.path.join(constants.dataset_path, str(constants.dataset_name+"_val.pt"))
+        test_path  = os.path.join(constants.dataset_path, str(constants.dataset_name+"_test.pt"))
 
-        self.fixed_dataset["train_data"] = FixedDataset(train_path)
-        self.fixed_dataset["val_data"]   = FixedDataset(val_path)
-        self.fixed_dataset["test_data"]  = FixedDataset(test_path)
+        self.dataset["train_data"] = FixedDataset(train_path)
+        self.dataset["val_data"]   = FixedDataset(val_path)
+        self.dataset["test_data"]  = FixedDataset(test_path)
 
-        self.train_dataloader = DataLoader(self.fixed_dataset["train_data"], batch_size=constants.bs, shuffle=True)
-        self.val_dataloader   = DataLoader(self.fixed_dataset["val_data"], batch_size=constants.bs, shuffle=True)
-        self.test_dataloader  = DataLoader(self.fixed_dataset["test_data"], batch_size=constants.bs, shuffle=True)
+        self.train_dataloader = DataLoader(self.dataset["train_data"], batch_size=constants.bs, shuffle=True)
+        self.val_dataloader   = DataLoader(self.dataset["val_data"], batch_size=constants.bs, shuffle=True)
+        self.test_dataloader  = DataLoader(self.dataset["test_data"], batch_size=constants.bs, shuffle=True)
 
         self._fit()
 
