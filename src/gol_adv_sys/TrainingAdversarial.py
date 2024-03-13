@@ -25,8 +25,8 @@ from .utils import constants as constants
 from .FolderManager import FolderManager
 from .DeviceManager import DeviceManager
 
-from .utils.helper_functions import test_models, save_progress_plot, get_elapsed_time_str
-from .utils.helper_functions import generate_new_batches, get_data_tensor, get_config_from_batch
+from .utils.helper_functions import test_models, save_progress_plot, get_elapsed_time_str, \
+                                    generate_new_batches, get_data_tensor, get_config_from_batch
 
 from .TrainingBase import TrainingBase
 
@@ -223,81 +223,74 @@ class TrainingAdversarial(TrainingBase):
 
     def __init_log_file(self):
         """
-        Create a log file for the training session.
-        When creating the log file, the training specifications are also written to the file.
+        Create a log file for the training session and write the initial specifications.
 
         Returns:
             path (str): The path to the log file.
-
         """
+        path = os.path.join(self.folders.logs_folder, "training.txt")
 
-        path = os.path.join(self.folders.logs_folder, "asgntc.txt")
+        seed_info = ("Random seed" if self.__seed_type["random"] else
+                     "Fixed seed" if self.__seed_type["fixed"] else
+                     "Unknown seed")
+
+        balanced_gpu_info = (f"Balanced GPU indices: {self.device_manager.balanced_gpu_indices}\n"
+                             if self.device_manager.balanced_gpu_indices else "")
+
+        topology_info = ("Topology: toroidal" if self.simulation_topology == constants.TOPOLOGY_TYPE["toroidal"] else
+                         "Topology: flat" if self.simulation_topology == constants.TOPOLOGY_TYPE["flat"] else
+                         "Topology: unknown")
+
+        init_config_type = self.init_config_type  #
+        init_config_info = ""
+        if init_config_type == constants.INIT_CONFIG_TYPE["threshold"]:
+            init_config_info = (f"Initial configuration type: threshold\n"
+                                f"Threshold for the value of the cells: {constants.threshold_cell_value}\n")
+        elif init_config_type == constants.INIT_CONFIG_TYPE["n_living_cells"]:
+            init_config_info = (f"Initial configuration type: n_living_cells\n"
+                                f"Number of living cells in initial grid: {constants.n_living_cells}\n")
+        else:
+            init_config_info = "Initial configuration type: unknown\n"
+
+        model_loading_info = ""
+        if self.load_models["predictor"]:
+            model_loading_info += "The predictor model has been loaded from a previous training session\n"
+        if self.properties_g["enabled"] and self.load_models["generator"]:
+            model_loading_info += "The generator model has been loaded from a previous training session\n"
+
+        generator_info = ""
+        if self.properties_g["enabled"]:
+            generator_info += (f"Latent space size: {constants.nz}\n"
+                               f"Optimizer G: {self.optimizer_g.__class__.__name__}\n"
+                               f"Criterion G: {self.criterion_g.__class__.__name__}\n")
+
+        log_contents = (
+            f"Training session started at {self.__date.strftime('%d/%m/%Y %H:%M:%S')}\n"
+            f"{seed_info}: {self.seed}\n"
+            f"Default device: {self.device_manager.default_device}\n"
+            f"{balanced_gpu_info}\n"
+            f"Training specs:\n"
+            f"Batch size: {constants.bs}\n"
+            f"Epochs: {constants.num_epochs}\n"
+            f"Number of training steps in each epoch: {constants.num_training_steps}\n"
+            f"Number of batches generated in each epoch: {constants.n_batches} ({constants.n_configs} configs)\n"
+            f"Max number of generated batches in dataset: {constants.n_max_batches} ({constants.n_max_configs} configs)\n"
+            f"\nSimulation specs:\n"
+            f"Grid size: {constants.grid_size}\n"
+            f"Simulation steps: {constants.n_simulation_steps}\n"
+            f"{topology_info}\n"
+            f"{init_config_info}"
+            f"\nPredicting metric type: {self.metric_type}\n"
+            f"\nModel specs:\n"
+            f"Optimizer P: {self.optimizer_p.__class__.__name__}\n"
+            f"Criterion P: {self.criterion_p.__class__.__name__}\n"
+            f"{model_loading_info}"
+            f"{generator_info}"
+            f"\nTraining progress:\n\n"
+        )
 
         with open(path, "w") as log_file:
-            log_file.write(f"Training session started at {self.__date.strftime('%d/%m/%Y %H:%M:%S')}\n\n")
-
-            if self.__seed_type["random"]:
-                log_file.write(f"Random seed: {self.seed}\n")
-            elif self.__seed_type["fixed"]:
-                log_file.write(f"Fixed seed: {self.seed}\n")
-            else:
-                log_file.write(f"Unknown seed\n")
-
-            log_file.write(f"Default device: {self.device_manager.default_device}\n")
-            if len(self.device_manager.balanced_gpu_indices) > 0:
-                log_file.write(f"Balanced GPU indices: {self.device_manager.balanced_gpu_indices}\n")
-
-            log_file.write(f"\nTraining specs:\n")
-            log_file.write(f"Batch size: {constants.bs}\n")
-            log_file.write(f"Epochs: {constants.num_epochs}\n")
-            log_file.write(f"Number of training steps in each epoch: {constants.num_training_steps}\n")
-
-            log_file.write(f"Number of batches generated in each epoch: {constants.n_batches} ({constants.n_configs} configs)\n")
-            log_file.write(f"Max number of generated batches in data set: {constants.n_max_batches} ({constants.n_max_configs} configs)\n")
-
-            log_file.write(f"\nSimulation specs:\n")
-            log_file.write(f"Grid size: {constants.grid_size}\n")
-            log_file.write(f"Simulation steps: {constants.n_simulation_steps}\n")
-
-            if self.simulation_topology == constants.TOPOLOGY_TYPE["toroidal"]:
-                log_file.write(f"Topology: toroidal\n")
-            elif self.simulation_topology == constants.TOPOLOGY_TYPE["flat"]:
-                log_file.write(f"Topology: flat\n")
-            else:
-                log_file.write(f"Topology: unknown\n")
-
-            if self.init_config_type == constants.INIT_CONFIG_TYPE["threshold"]:
-                log_file.write(f"Initial configuration type: threshold\n")
-                log_file.write(f"Threshold for the value of the cells: {constants.threshold_cell_value}\n")
-            elif self.init_config_type == constants.INIT_CONFIG_TYPE["n_living_cells"]:
-                log_file.write(f"Initial configuration type: n_living_cells\n")
-                log_file.write(f"Number of living cells in initial grid: {constants.n_living_cells}\n")
-            else:
-                log_file.write(f"Initial configuration type: unknown\n")
-
-            log_file.write(f"Predicting metric type: {self.metric_type}\n")
-
-            log_file.write(f"\nModel specs:\n")
-            log_file.write(f"Optimizer P: {self.optimizer_p.__class__.__name__}\n")
-            log_file.write(f"Criterion P: {self.criterion_p.__class__.__name__}\n")
-
-            if self.load_models["predictor"]:
-                log_file.write(f"The predictor model has been loaded from a previous training session\n")
-
-            if self.properties_g["enabled"]:
-                if self.load_models["generator"]:
-                    log_file.write(f"The generator model has been loaded from a previous training session\n")
-                log_file.write(f"Latent space size: {constants.nz}\n")
-                log_file.write(f"Optimizer G: {self.optimizer_g.__class__.__name__}\n")
-                log_file.write(f"Criterion G: -{self.criterion_p.__class__.__name__}\n")
-
-                if self.properties_g["can_train"]:
-                    log_file.write(f"\nThe generator model starts to train at the beginning of the training session\n")
-                else:
-                    log_file.write(f"\nAverage loss of P before training G: {constants.threshold_avg_loss_p}\n\n")
-
-            log_file.write(f"\n\nTraining progress:\n\n")
-
+            log_file.write(log_contents.strip())
             log_file.flush()
 
         return path

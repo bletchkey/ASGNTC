@@ -4,7 +4,7 @@ import torch.nn as nn
 from torchsummary import summary
 
 from .utils import constants as constants
-from .predictors.Baseline import Baseline, Baseline_v2, Baseline_v3
+from .predictors.Baseline import Baseline, Baseline_v2, Baseline_v3, Baseline_v4
 from .predictors.UNet import UNet
 from .predictors.ResNet import ResNetConstantChannels
 from .predictors.VisionTransformer import VisionTransformer
@@ -27,6 +27,12 @@ def Predictor_Baseline_v2():
 
 def Predictor_Baseline_v3():
     model = Baseline_v3()
+    print(model)
+    return model
+
+
+def Predictor_Baseline_v4():
+    model = Baseline_v4()
     print(model)
     return model
 

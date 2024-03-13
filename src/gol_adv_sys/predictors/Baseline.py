@@ -6,7 +6,9 @@ from ..utils import constants as constants
 
 
 class Baseline(nn.Module):
-
+    """
+    Works fine on medium metric, but not on hard metric.
+    """
     def __init__(self) -> None:
         super(Baseline, self).__init__()
 
@@ -59,16 +61,16 @@ class Baseline(nn.Module):
 
 
 class Baseline_v2(nn.Module):
+    """
+    It doesn't work neither on medium nor on hard metric.
+    """
     def __init__(self) -> None:
         super(Baseline_v2, self).__init__()
 
-        self.conv1 = nn.Conv2d(constants.nc, 24, kernel_size=3, padding=0)
-        self.conv2 = nn.Conv2d(24, 24, kernel_size=3, padding=0)
-        self.conv3 = nn.Conv2d(24, 24, kernel_size=3, padding=0)
-        self.conv4 = nn.Conv2d(24, 24, kernel_size=3, padding=0)
-        self.conv5 = nn.Conv2d(24, 24, kernel_size=3, padding=0)
+        self.convs = nn.ModuleList([nn.Conv2d(24, 24, kernel_size=3, padding=0) for _ in range(20)])
 
-        self.output_conv = nn.Conv2d(24, constants.nc, kernel_size=1, padding=0)
+        self.in_conv = nn.Conv2d(constants.nc, 24, kernel_size=3, padding=0)
+        self.out_conv = nn.Conv2d(24, constants.nc, kernel_size=1, padding=0)
 
         self.relu = nn.ReLU()
 
@@ -76,20 +78,15 @@ class Baseline_v2(nn.Module):
     def forward(self, x):
 
         # stem
-        x = self._pad_conv(x, 1, self.conv1)
+        x = self._pad_conv(x, padding=1, f=self.in_conv)
         x = self.relu(x)
 
         # stage 1
-        x = self._pad_conv(x, 1, self.conv2)
-        x = self.relu(x)
-        x = self._pad_conv(x, 1, self.conv3)
-        x = self.relu(x)
-        x = self._pad_conv(x, 1, self.conv4)
-        x = self.relu(x)
-        x = self._pad_conv(x, 1, self.conv5)
-        x = self.relu(x)
+        for conv in self.convs:
+            x = self._pad_conv(x, padding=1, f=conv)
+            x = self.relu(x)
 
-        x = self.output_conv(x)
+        x = self.out_conv(x)
 
         return x
 
@@ -102,8 +99,11 @@ class Baseline_v2(nn.Module):
         return x
 
 
-class Baseline_v3(nn.Module):
 
+class Baseline_v3(nn.Module):
+    """
+    Not tested properly yet
+    """
     def __init__(self) -> None:
         super(Baseline_v3, self).__init__()
 
@@ -159,4 +159,39 @@ class Baseline_v3(nn.Module):
 
         return x
 
+
+class Baseline_v4(nn.Module):
+    def __init__(self) -> None:
+        super(Baseline_v4, self).__init__()
+
+        self.in_conv = nn.Conv2d(constants.nc, 32, kernel_size=32, padding=0, stride=2)
+
+        self.convs = nn.ModuleList([nn.Conv2d(32, 32, kernel_size=32, padding=0, stride=2) for _ in range(20)])
+
+        self.out_conv = nn.Conv2d(32, constants.nc, kernel_size=1, padding=0)
+
+        self.relu = nn.ReLU()
+
+
+    def forward(self, x):
+
+        # stem
+        x = self._pad_conv(x, padding=31, f=self.in_conv)
+
+        # stage 1
+        for conv in self.convs:
+            x = self._pad_conv(x, padding=31, f=conv)
+            x = self.relu(x)
+
+        x = self.out_conv(x)
+
+        return x
+
+
+    def _pad_conv(self, x, padding, f):
+        for _ in range(padding):
+            x = add_toroidal_padding(x)
+        x = f(x)
+
+        return x
 

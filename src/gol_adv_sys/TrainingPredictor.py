@@ -26,7 +26,9 @@ from .DeviceManager import DeviceManager
 from .DatasetManager import FixedDataset
 from .ModelManager import ModelManager
 
-from .utils.helper_functions import save_progress_plot, save_losses_plot, test_predictor_model, get_elapsed_time_str, get_config_from_batch
+from .utils.helper_functions import save_progress_plot, save_losses_plot, \
+                                    test_predictor_model, get_elapsed_time_str, \
+                                    get_config_from_batch
 
 from .TrainingBase import TrainingBase
 
@@ -79,7 +81,7 @@ class TrainingPredictor(TrainingBase):
 
         self.simulation_topology = constants.TOPOLOGY_TYPE["toroidal"]
         self.init_config_type = constants.INIT_CONFIG_TYPE["threshold"]
-        self.metric_type = constants.METRIC_TYPE["hard"]
+        self.metric_type = constants.METRIC_TYPE["medium"]
 
         self.current_epoch = 0
         self.n_times_trained_p = 0
@@ -228,44 +230,39 @@ class TrainingPredictor(TrainingBase):
 
             lr = self.learning_rates[self.current_epoch]
 
-            log.write(f"{str_epoch_time} | Epoch: {str_epoch}, Loss P (train): {str_err_p_train}, Loss P (val): {str_err_p_val}, [LR: {lr}]\n")
+            log.write(f"{str_epoch_time} | Epoch: {str_epoch}, Loss P (train): {str_err_p_train}, \
+                        Loss P (val): {str_err_p_val}, [LR: {lr}]\n")
             log.flush()
 
 
     def __init_log_file(self):
         """
-        Create a log file for the training session on the fixed dataset.
-        When creating the log file, the training specifications are also written to the file.
+        Create a log file for the training session and write the initial specifications.
 
         Returns:
             path (str): The path to the log file.
-
         """
+        path = os.path.join(self.folders.logs_folder, "training.txt")
+        seed_info = "Random seed" if self.__seed_type["random"] else \
+                    "Fixed seed" if self.__seed_type["fixed"] else "Unknown seed"
 
-        path = os.path.join(self.folders.logs_folder, "asgntc.txt")
+        balanced_gpu_info = (f"Balanced GPU indices: {self.device_manager.balanced_gpu_indices}\n"
+                             if len(self.device_manager.balanced_gpu_indices) > 0 else "")
+
+        log_contents = (
+            f"Training session started at {self.__date.strftime('%d/%m/%Y %H:%M:%S')}\n"
+            f"{seed_info}: {self.seed}\n"
+            f"Default device: {self.device_manager.default_device}\n"
+            f"{balanced_gpu_info}\n"
+            f"Training specs:\n"
+            f"Batch size: {constants.bs}\n"
+            f"Epochs: {constants.num_epochs}\n"
+            f"Predicting metric type: {self.metric_type}\n\n"
+            f"Training progress:\n\n"
+        )
 
         with open(path, "w") as log_file:
-            log_file.write(f"Training session started at {self.__date.strftime('%d/%m/%Y %H:%M:%S')}\n\n")
-
-            if self.__seed_type["random"]:
-                log_file.write(f"Random seed: {self.seed}\n")
-            elif self.__seed_type["fixed"]:
-                log_file.write(f"Fixed seed: {self.seed}\n")
-            else:
-                log_file.write(f"Unknown seed\n")
-
-            log_file.write(f"Default device: {self.device_manager.default_device}\n")
-            if len(self.device_manager.balanced_gpu_indices) > 0:
-                log_file.write(f"Balanced GPU indices: {self.device_manager.balanced_gpu_indices}\n")
-
-            log_file.write(f"\nTraining specs:\n")
-            log_file.write(f"Batch size: {constants.bs}\n")
-            log_file.write(f"Epochs: {constants.num_epochs}\n")
-
-            log_file.write(f"Predicting metric type: {self.metric_type}\n")
-
-            log_file.write(f"\n\nTraining progress:\n\n")
-
+            log_file.write(log_contents)
             log_file.flush()
 
         return path
