@@ -355,7 +355,7 @@ def get_config_from_batch(batch: torch.Tensor, type: str, device: torch.device) 
     return batch[:, config_index, :, :, :].to(device)
 
 
-def add_toroidal_padding(x: torch.Tensor) -> torch.Tensor:
+def add_toroidal_padding(x: torch.Tensor, padding: int=1) -> torch.Tensor:
     """
     Function for adding toroidal padding
 
@@ -369,8 +369,11 @@ def add_toroidal_padding(x: torch.Tensor) -> torch.Tensor:
     if x.dim() != 4:
         raise RuntimeError(f"Expected 4D tensor, got {x.dim()}")
 
-    x = torch.cat([x[:, :, -1:], x, x[:, :, :1]], dim=2)
-    x = torch.cat([x[:, :, :, -1:], x, x[:, :, :, :1]], dim=3)
+    if padding <= 0:
+        return x
+
+    x = torch.cat([x[:, :, -padding:], x, x[:, :, :padding]], dim=2)
+    x = torch.cat([x[:, :, :, -padding:], x, x[:, :, :, :padding]], dim=3)
 
     return x
 

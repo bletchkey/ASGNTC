@@ -49,7 +49,7 @@ class DatasetCreator():
 
     def create_dataset(self):
         """
-        Generates a fixed dataset if it does not already exist. The dataset consists of initial
+        Generates a dataset if it does not already exist. The dataset consists of initial
         configurations and their corresponding final configurations after simulation, along with
         easy, medium, and hard metrics for each configuration. The dataset is divided into
         training, validation, and test sets.
@@ -83,7 +83,7 @@ class DatasetCreator():
 
             ids = torch.arange(constants.dataset_n_configs, dtype=torch.int32, device=self.device_manager.default_device)
 
-            # Generate the configurations for the fixed dataset
+            # Generate the configurations for the dataset
             for n_cells in range(n):
                 print(f"Generating configurations for n_cells = {n_cells}")
                 for i in range(batches_for_n_cells):
@@ -237,3 +237,4 @@ class FixedDataset(Dataset):
             torch.Tensor: The data sample corresponding to the given index.
         """
         return self.data[idx]
+

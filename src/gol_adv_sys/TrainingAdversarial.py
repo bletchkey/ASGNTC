@@ -1,6 +1,6 @@
 """
 This module contains the Training class.
-This class is used to train the generator and predictor models or only the predictor model on the fixed dataset.
+This class is used to train the generator and predictor models or only the predictor model on the dataset.
 
 When training the generator and predictor models, the training is done using the adversarial training approach.
 
@@ -34,7 +34,7 @@ from .TrainingBase import TrainingBase
 class TrainingAdversarial(TrainingBase):
     """
     Class designed to handle the training of the generator and predictor models in an adversarial training approach.
-    It can also train only the predictor model on the fixed dataset.
+    It can also train only the predictor model on the dataset.
 
     Attributes:
         seed (int): The seed used for random number generation.

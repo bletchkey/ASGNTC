@@ -53,8 +53,9 @@ class Baseline(nn.Module):
 
         return x
 
-    def _pad_conv(self, x, f):
-        x = add_toroidal_padding(x)
+
+    def _pad_conv(self, x, padding=1, f=None):
+        x = add_toroidal_padding(x, padding)
         x = f(x)
 
         return x
@@ -78,12 +79,12 @@ class Baseline_v2(nn.Module):
     def forward(self, x):
 
         # stem
-        x = self._pad_conv(x, padding=1, f=self.in_conv)
+        x = self._pad_conv(x, self.in_conv)
         x = self.relu(x)
 
         # stage 1
         for conv in self.convs:
-            x = self._pad_conv(x, padding=1, f=conv)
+            x = self._pad_conv(x, conv)
             x = self.relu(x)
 
         x = self.out_conv(x)
@@ -91,9 +92,8 @@ class Baseline_v2(nn.Module):
         return x
 
 
-    def _pad_conv(self, x, padding, f):
-        for _ in range(padding):
-            x = add_toroidal_padding(x)
+    def _pad_conv(self, x, padding=1, f=None):
+        x = add_toroidal_padding(x, padding)
         x = f(x)
 
         return x
@@ -126,7 +126,7 @@ class Baseline_v3(nn.Module):
     def forward(self, x):
 
         for _ in range(2):
-            x = self._pad_conv(x, 1, self.in_conv)
+            x = self._pad_conv(x, self.in_conv)
             x = self.relu(x)
 
             parts = [x[:, i:i+16, :, :] for i in range(0, 64, 16)]
@@ -135,13 +135,13 @@ class Baseline_v3(nn.Module):
             x_1x1 = self.conv_1x1(parts[0])
             x_1x1 = self.relu(x_1x1)
 
-            x_3x3 = self._pad_conv(parts[1], 1, self.conv_3x3)
+            x_3x3 = self._pad_conv(parts[1], self.conv_3x3)
             x_3x3 = self.relu(x_3x3)
 
-            x_5x5 = self._pad_conv(parts[2], 2, self.conv_5x5)
+            x_5x5 = self._pad_conv(parts[2], self.conv_5x5)
             x_5x5 = self.relu(x_5x5)
 
-            x_7x7 = self._pad_conv(parts[3], 3, self.conv_7x7)
+            x_7x7 = self._pad_conv(parts[3], self.conv_7x7)
             x_7x7 = self.relu(x_7x7)
 
             x = torch.cat([x_1x1, x_3x3, x_5x5, x_7x7, parts[4]], dim=1)
@@ -152,22 +152,22 @@ class Baseline_v3(nn.Module):
         return x
 
 
-    def _pad_conv(self, x, padding, f):
-        for _ in range(padding):
-            x = add_toroidal_padding(x)
+    def _pad_conv(self, x, padding=1, f=None):
+        x = add_toroidal_padding(x, padding)
         x = f(x)
 
         return x
 
 
 class Baseline_v4(nn.Module):
+    """
+    Pretty bizarre architecture, not tested properly yet
+    """
     def __init__(self) -> None:
         super(Baseline_v4, self).__init__()
 
         self.in_conv = nn.Conv2d(constants.nc, 32, kernel_size=32, padding=0, stride=2)
-
         self.convs = nn.ModuleList([nn.Conv2d(32, 32, kernel_size=32, padding=0, stride=2) for _ in range(20)])
-
         self.out_conv = nn.Conv2d(32, constants.nc, kernel_size=1, padding=0)
 
         self.relu = nn.ReLU()
@@ -188,9 +188,8 @@ class Baseline_v4(nn.Module):
         return x
 
 
-    def _pad_conv(self, x, padding, f):
-        for _ in range(padding):
-            x = add_toroidal_padding(x)
+    def _pad_conv(self, x, padding=1, f=None):
+        x = add_toroidal_padding(x, padding)
         x = f(x)
 
         return x

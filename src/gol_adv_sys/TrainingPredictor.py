@@ -1,7 +1,7 @@
 """
 This module contains the TrainingPredictor class.
 
-This class is used to train the predictor model on the fixed dataset.
+This class is used to train the predictor model on the dataset.
 
 """
 
@@ -35,7 +35,7 @@ from .TrainingBase import TrainingBase
 
 class TrainingPredictor(TrainingBase):
     """
-    Class designed to handle the training of the predictor model on the fixed dataset.
+    Class designed to handle the training of the predictor model on the dataset.
 
     Attributes:
         __date (datetime): The date and time when the training session was started.
@@ -55,7 +55,7 @@ class TrainingPredictor(TrainingBase):
         test_dataloader (DataLoader): The dataloader used for testing the predictor model.
         val_dataloader (DataLoader): The dataloader used for validating the predictor model.
         data_tensor (torch.Tensor): The data tensor used for the simulation.
-        dataset (dict): The fixed dataset used for the training session.
+        dataset (dict): The dataset used for the training session.
         path_log_file (str): The path to the log file used for the training session.
         path_p (str): The path to the saved predictor model.
 
@@ -130,7 +130,7 @@ class TrainingPredictor(TrainingBase):
         """
         Training loop for the predictor model.
 
-        The predictor model is trained on the fixed data set.
+        The predictor model is trained on the dataset.
 
         """
         torch.autograd.set_detect_anomaly(True)

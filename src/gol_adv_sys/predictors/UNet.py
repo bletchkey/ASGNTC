@@ -40,13 +40,11 @@ class UNet(nn.Module):
         return x
 
 
-    def _pad_conv(self, x, f):
-
-        x = add_toroidal_padding(x)
+    def _pad_conv(self, x, padding=1, f=None):
+        x = add_toroidal_padding(x, padding)
         x = f(x)
 
         return x
-
 
     def _u_structure(self, x):
 
