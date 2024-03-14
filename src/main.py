@@ -4,25 +4,25 @@ import json
 from pathlib import Path
 import sys
 import os
-
 import torch
 
-project_root = Path(__file__).resolve().parent.parent
-sys.path.append(str(project_root))
+
+sys.path.append(str(Path(__file__).resolve().parents[1]))
+
 from config.paths import PROJECT_NAME, CONFIG_DIR
 
-from gol_adv_sys.TrainingPredictor import TrainingPredictor
-from gol_adv_sys.TrainingAdversarial import TrainingAdversarial
-from gol_adv_sys.Playground import Playground
+from src.gol_adv_sys.TrainingPredictor import TrainingPredictor
+from src.gol_adv_sys.TrainingAdversarial import TrainingAdversarial
+from src.gol_adv_sys.Playground import Playground
 
-from gol_adv_sys.Predictor import Predictor_Baseline, Predictor_Baseline_v2, \
+from src.gol_adv_sys.Predictor import Predictor_Baseline, Predictor_Baseline_v2, \
                                   Predictor_Baseline_v3, Predictor_Baseline_v4, \
                                   Predictor_ResNet, Predictor_UNet, \
                                   Predictor_GloNet, Predictor_ViT
 
-from gol_adv_sys.Generator import Generator_DCGAN
+from src.gol_adv_sys.Generator import Generator_DCGAN
 
-from gol_adv_sys.utils import constants as constants
+from src.gol_adv_sys.utils import constants as constants
 
 
 def setup_base_dir():

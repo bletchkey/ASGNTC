@@ -9,7 +9,7 @@ sys.path.append(str(Path(__file__).resolve().parents[2]))
 
 from config.paths import TRAININGS_DIR
 
-from gol_adv_sys.utils.helper_functions import save_losses_plot
+from src.gol_adv_sys.utils.helper_functions import save_losses_plot
 
 
 def main():

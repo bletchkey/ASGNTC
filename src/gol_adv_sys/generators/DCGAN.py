@@ -1,7 +1,8 @@
 import torch
 import torch.nn as nn
 
-from ..utils import constants as constants
+from src.gol_adv_sys.utils import constants as constants
+
 
 class DCGAN(nn.Module):
     def __init__(self, noise_std=0) -> None:

@@ -4,8 +4,8 @@ import torch.nn.functional as F
 
 import math
 
-from .utils.toroidal import toroidal_Conv2d
-from ..utils import constants as constants
+from src.gol_adv_sys.predictors.utils.toroidal import toroidal_Conv2d
+from src.gol_adv_sys.utils import constants as constants
 
 
 class PatchEmbedding(nn.Module):

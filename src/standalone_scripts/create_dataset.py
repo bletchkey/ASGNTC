@@ -6,8 +6,8 @@ import matplotlib.pyplot as plt
 
 sys.path.append(str(Path(__file__).resolve().parents[1]))
 
-from gol_adv_sys.DatasetManager import DatasetCreator
-from gol_adv_sys.DeviceManager import DeviceManager
+from src.gol_adv_sys.DatasetManager import DatasetCreator
+from src.gol_adv_sys.DeviceManager import DeviceManager
 
 
 def main():

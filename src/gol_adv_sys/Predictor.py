@@ -1,14 +1,11 @@
-import torch
-import torch.nn as nn
-
 import logging
 
-from .utils import constants as constants
-from .predictors.Baseline import Baseline, Baseline_v2, Baseline_v3, Baseline_v4
-from .predictors.UNet import UNet
-from .predictors.ResNet import ResNetConstantChannels
-from .predictors.VisionTransformer import VisionTransformer
-from .predictors.GloNet import GloNet
+from src.gol_adv_sys.utils import constants as constants
+from src.gol_adv_sys.predictors.Baseline import Baseline, Baseline_v2, Baseline_v3, Baseline_v4
+from src.gol_adv_sys.predictors.UNet import UNet
+from src.gol_adv_sys.predictors.ResNet import ResNetConstantChannels
+from src.gol_adv_sys.predictors.VisionTransformer import VisionTransformer
+from src.gol_adv_sys.predictors.GloNet import GloNet
 
 def Predictor_Baseline():
     model = Baseline()

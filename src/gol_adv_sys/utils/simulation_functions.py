@@ -1,7 +1,7 @@
-import torch
 from typing import Tuple, Union
+import torch
 
-from . import constants as constants
+from src.gol_adv_sys.utils import constants as constants
 
 
 def simulate_config(config: torch.Tensor, topology: str, steps: int,

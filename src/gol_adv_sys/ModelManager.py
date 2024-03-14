@@ -1,15 +1,9 @@
-import numpy as np
-
-import sys
-import os
-
 import torch
 import torch.nn as nn
 import torch.optim as optim
 
-from .DeviceManager import DeviceManager
-
-from .utils import constants as constants
+from src.gol_adv_sys.DeviceManager import DeviceManager
+from src.gol_adv_sys.utils import constants as constants
 
 
 class ModelManager:

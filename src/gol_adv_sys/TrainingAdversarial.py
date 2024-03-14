@@ -18,20 +18,20 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 
-from torch.utils.data import Dataset, DataLoader
+from torch.utils.data import DataLoader
 
 import datetime
 
 from config.paths import TRAINED_MODELS_DIR
-from .utils import constants as constants
+from src.gol_adv_sys.utils import constants as constants
 
-from .FolderManager import FolderManager
-from .DeviceManager import DeviceManager
+from src.gol_adv_sys.FolderManager import FolderManager
+from src.gol_adv_sys.DeviceManager import DeviceManager
+from src.gol_adv_sys.TrainingBase import TrainingBase
 
-from .utils.helper_functions import test_models, save_progress_plot, get_elapsed_time_str, \
-                                    generate_new_batches, get_data_tensor, get_config_from_batch
 
-from .TrainingBase import TrainingBase
+from src.gol_adv_sys.utils.helper_functions import test_models, save_progress_plot, get_elapsed_time_str, \
+                                                   generate_new_batches, get_data_tensor, get_config_from_batch
 
 
 class TrainingAdversarial(TrainingBase):

@@ -1,20 +1,8 @@
-import numpy as np
-
-import os
-import random
-import time
-
 import torch
-import torch.nn as nn
-import torch.optim as optim
 
-from torch.utils.data import Dataset, DataLoader
+from src.gol_adv_sys.DeviceManager import DeviceManager
+from src.gol_adv_sys.utils.simulation_functions import simulate_config
 
-from .utils import constants as constants
-
-from .DeviceManager import DeviceManager
-
-from .utils.simulation_functions import simulate_config
 
 class Playground():
 

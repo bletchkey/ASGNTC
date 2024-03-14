@@ -1,7 +1,6 @@
 import numpy as np
 from pathlib import Path
 import sys
-import os
 import matplotlib.pyplot as plt
 import torch
 
@@ -11,8 +10,8 @@ sys.path.append(str(Path(__file__).resolve().parents[2]))
 
 from config.paths import DATASET_DIR
 
-from gol_adv_sys.DeviceManager import DeviceManager
-import gol_adv_sys.utils.constants as constants
+from src.gol_adv_sys.DeviceManager import DeviceManager
+from src.gol_adv_sys.utils import constants as constants
 
 
 def check_dataset_distribution(device, saving_path):

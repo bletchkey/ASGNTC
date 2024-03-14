@@ -4,10 +4,10 @@ import logging
 import torch
 from torch.utils.data import Dataset
 
-from .utils import constants as constants
-from config.paths import DATASET_DIR
 
-from .utils.simulation_functions import simulate_config
+from config.paths import DATASET_DIR
+from src.gol_adv_sys.utils import constants as constants
+from src.gol_adv_sys.utils.simulation_functions import simulate_config
 
 
 class DatasetCreator():

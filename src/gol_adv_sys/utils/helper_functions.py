@@ -1,14 +1,12 @@
-import os
 import matplotlib.pyplot as plt
-
 import numpy as np
-import torch
-
 from pathlib import Path
 import logging
+import torch
 
-from . import constants as constants
-from .simulation_functions import simulate_config
+
+from src.gol_adv_sys.utils import constants as constants
+from src.gol_adv_sys.utils.simulation_functions import simulate_config
 
 
 def get_data_tensor(data_tensor: torch.Tensor, model_g: torch.nn.Module,

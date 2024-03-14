@@ -11,13 +11,12 @@ import sys
 sys.path.append(str(Path(__file__).resolve().parents[1]))
 sys.path.append(str(Path(__file__).resolve().parents[2]))
 
-
 from config.paths import DATASET_DIR
 
-from gol_adv_sys.DatasetManager import FixedDataset
-from gol_adv_sys.DeviceManager import DeviceManager
-from gol_adv_sys.utils.helper_functions import get_config_from_batch
-from gol_adv_sys.utils import constants as constants
+from src.gol_adv_sys.DatasetManager import FixedDataset
+from src.gol_adv_sys.DeviceManager import DeviceManager
+from src.gol_adv_sys.utils.helper_functions import get_config_from_batch
+from src.gol_adv_sys.utils import constants as constants
 
 
 def gaussian_window(size, sigma):

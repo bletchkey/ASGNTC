@@ -4,36 +4,29 @@ This module contains the TrainingPredictor class.
 This class is used to train the predictor model on the dataset.
 
 """
-import logging
-
 import numpy as np
-
-import os
 import random
 import time
+import datetime
 from pathlib import Path
-
+import logging
 import torch
 import torch.nn as nn
 import torch.optim as optim
-
 from torch.utils.data import DataLoader
 
-import datetime
-
 from config.paths import DATASET_DIR, TRAINED_MODELS_DIR
-from .utils import constants as constants
+from src.gol_adv_sys.utils import constants as constants
 
-from .FolderManager import FolderManager
-from .DeviceManager import DeviceManager
-from .DatasetManager import FixedDataset
-from .ModelManager import ModelManager
+from src.gol_adv_sys.FolderManager import FolderManager
+from src.gol_adv_sys.DeviceManager import DeviceManager
+from src.gol_adv_sys.DatasetManager import FixedDataset
+from src.gol_adv_sys.ModelManager import ModelManager
+from src.gol_adv_sys.TrainingBase import TrainingBase
 
-from .utils.helper_functions import save_progress_plot, save_losses_plot, \
-                                    test_predictor_model, get_elapsed_time_str, \
-                                    get_config_from_batch
-
-from .TrainingBase import TrainingBase
+from src.gol_adv_sys.utils.helper_functions import save_progress_plot, save_losses_plot, \
+                                                   test_predictor_model, get_elapsed_time_str, \
+                                                   get_config_from_batch
 
 
 class TrainingPredictor(TrainingBase):
