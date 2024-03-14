@@ -12,6 +12,7 @@ import os
 import random
 import time
 from pathlib import Path
+import logging
 
 import torch
 import torch.nn as nn
@@ -670,5 +671,5 @@ class TrainingAdversarial(TrainingBase):
             np.random.seed(self.seed)
             torch.cuda.manual_seed(self.seed)
         except Exception as e:
-            print(e)
+            logging.error(f"Error setting the seed: {e}")
 

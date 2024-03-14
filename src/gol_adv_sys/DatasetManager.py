@@ -1,5 +1,5 @@
 import os
-import datetime
+import logging
 
 import torch
 from torch.utils.data import Dataset
@@ -71,8 +71,8 @@ class DatasetCreator():
             DATASET_DIR.mkdir(parents=True, exist_ok=True)
 
         # Check if the data folder is empty
-        if len(os.listdir(DATASET_DIR)) > 0:
-            print("data folder is not empty")
+        if len(list(DATASET_DIR.iterdir())) > 0:
+            logging.warning("Data folder is not empty. Skipping dataset generation.")
 
         else:
 
@@ -86,7 +86,7 @@ class DatasetCreator():
 
             # Generate the configurations for the dataset
             for n_cells in range(n):
-                print(f"Generating configurations for n_cells = {n_cells}")
+                logging.info(f"Generating configurations for {n_cells} living cells")
                 for i in range(batches_for_n_cells):
                     batch_number = i + n_cells * batches_for_n_cells
                     # Initialize the batch of configurations with all cells dead (0)
