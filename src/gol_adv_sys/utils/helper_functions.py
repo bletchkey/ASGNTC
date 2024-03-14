@@ -1,7 +1,6 @@
 import os
 import matplotlib.pyplot as plt
 
-import math
 import numpy as np
 import torch
 
@@ -353,29 +352,6 @@ def get_config_from_batch(batch: torch.Tensor, type: str, device: torch.device) 
 
     # Extract and return the configuration
     return batch[:, config_index, :, :, :].to(device)
-
-
-def add_toroidal_padding(x: torch.Tensor, padding: int=1) -> torch.Tensor:
-    """
-    Function for adding toroidal padding
-
-    Args:
-        x (torch.Tensor): The tensor to add padding to
-
-    Returns:
-        x (torch.Tensor): The tensor with toroidal padding
-
-    """
-    if x.dim() != 4:
-        raise RuntimeError(f"Expected 4D tensor, got {x.dim()}")
-
-    if padding <= 0:
-        return x
-
-    x = torch.cat([x[:, :, -padding:], x, x[:, :, :padding]], dim=2)
-    x = torch.cat([x[:, :, :, -padding:], x, x[:, :, :, :padding]], dim=3)
-
-    return x
 
 
 def __get_init_config_n_living_cells(config: torch.Tensor) -> torch.Tensor:

@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 
-from ..utils.helper_functions import add_toroidal_padding
+from .utils.toroidal import toroidal_Conv2d
 from ..utils import constants as constants
 
 
@@ -40,38 +40,32 @@ class UNet(nn.Module):
         return x
 
 
-    def _pad_conv(self, x, padding=1, f=None):
-        x = add_toroidal_padding(x, padding)
-        x = f(x)
-
-        return x
-
     def _u_structure(self, x):
 
         # Encoder
         x = self.relu(x)
 
-        enc_1 = self._pad_conv(x, self.enc_conv1)
+        enc_1 = toroidal_Conv2d(x, self.enc_conv1)
         x = self.avgpool(enc_1)
         x = self.relu(x)
 
-        enc_2 = self._pad_conv(x, self.enc_conv2)
+        enc_2 = toroidal_Conv2d(x, self.enc_conv2)
         x = self.avgpool(enc_2)
         x = self.relu(x)
 
         # Bottleneck
-        x = self._pad_conv(x, self.bottleneck_conv)
+        x = toroidal_Conv2d(x, self.bottleneck_conv)
 
         # Decoder
         dec_1 = self.up_conv1(x)
         x = torch.cat((dec_1, enc_2), dim=1)
         x = self.relu(x)
-        x = self._pad_conv(x, self.dec_conv1)
+        x = toroidal_Conv2d(x, self.dec_conv1)
 
         dec_2 = self.up_conv2(x)
         x = torch.cat((dec_2, enc_1), dim=1)
         x = self.relu(x)
-        x = self._pad_conv(x, self.dec_conv2)
+        x = toroidal_Conv2d(x, self.dec_conv2)
 
         # Output
         out = self.output_conv(x)

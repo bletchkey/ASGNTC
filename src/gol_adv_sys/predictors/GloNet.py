@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 
-from ..utils.helper_functions import add_toroidal_padding
+from .utils.toroidal import toroidal_Conv2d
 from ..utils import constants as constants
 
 
@@ -36,25 +36,25 @@ class GloNet(nn.Module):
 
     def forward(self, x):
 
-        x = self._pad_conv(x, self.conv1)
+        x = toroidal_Conv2d(x, self.conv1)
         x = self.relu(x)
-        x = self._pad_conv(x, self.conv2)
+        x = toroidal_Conv2d(x, self.conv2)
         x = self.relu(x)
 
         x1 = x
 
-        x = self._pad_conv(x, self.conv3)
+        x = toroidal_Conv2d(x, self.conv3)
         x = self.relu(x)
-        x = self._pad_conv(x, self.conv4)
+        x = toroidal_Conv2d(x, self.conv4)
         x = self.relu(x)
 
         x2 = x
 
-        x = self._pad_conv(x, self.conv5)
+        x = toroidal_Conv2d(x, self.conv5)
         x = self.relu(x)
-        x = self._pad_conv(x, self.conv6)
+        x = toroidal_Conv2d(x, self.conv6)
         x = self.relu(x)
-        x = self._pad_conv(x, self.conv6)
+        x = toroidal_Conv2d(x, self.conv6)
         x = self.relu(x)
 
         x3 = x
@@ -66,13 +66,6 @@ class GloNet(nn.Module):
         x = x1 + x2 + x3
 
         x = self.output_conv(x)
-
-        return x
-
-
-    def _pad_conv(self, x, padding=1, f=None):
-        x = add_toroidal_padding(x, padding)
-        x = f(x)
 
         return x
 

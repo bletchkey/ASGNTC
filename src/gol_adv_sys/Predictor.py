@@ -9,8 +9,6 @@ from .predictors.UNet import UNet
 from .predictors.ResNet import ResNetConstantChannels
 from .predictors.VisionTransformer import VisionTransformer
 from .predictors.GloNet import GloNet
-from .predictors.GoogLeNet import GoogLeNet
-
 
 def Predictor_Baseline():
     model = Baseline()
@@ -51,12 +49,6 @@ def Predictor_GloNet():
 
 def Predictor_UNet():
     model = UNet()
-    print(model)
-    return model
-
-
-def Predictor_GoogLeNet():
-    model = GoogLeNet()
     print(model)
     return model
 

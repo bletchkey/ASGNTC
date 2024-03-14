@@ -8,9 +8,9 @@ from gol_adv_sys.TrainingAdversarial import TrainingAdversarial
 from gol_adv_sys.Playground import Playground
 
 from gol_adv_sys.Predictor import Predictor_Baseline, Predictor_Baseline_v2, \
-                                  Predictor_Baseline_v3, Predictor_Baseline_v4
-from gol_adv_sys.Predictor import Predictor_ResNet, Predictor_GoogLeNet, Predictor_UNet
-from gol_adv_sys.Predictor import Predictor_GloNet, Predictor_ViT
+                                  Predictor_Baseline_v3, Predictor_Baseline_v4, \
+                                  Predictor_ResNet, Predictor_UNet, \
+                                  Predictor_GloNet, Predictor_ViT
 
 from gol_adv_sys.Generator import Generator_DCGAN
 
@@ -45,7 +45,7 @@ def main():
 
     # playground()
 
-    train_pred = TrainingPredictor(model=Predictor_Baseline_v4())
+    train_pred = TrainingPredictor(model=Predictor_Baseline())
     train_pred.run()
 
     # train_adv = TrainingAdversarial(model_p=Predictor_Baseline(), model_g=Generator_DCGAN())

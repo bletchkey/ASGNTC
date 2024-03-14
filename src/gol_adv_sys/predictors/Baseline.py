@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 
-from ..utils.helper_functions import add_toroidal_padding
+from .utils.toroidal import toroidal_Conv2d
 from ..utils import constants as constants
 
 
@@ -32,31 +32,24 @@ class Baseline(nn.Module):
 
     def forward(self, x):
 
-        x = self._pad_conv(x, self.conv1)
+        x = toroidal_Conv2d(x, self.conv1)
         x = self.relu(x)
-        x = self._pad_conv(x, self.conv2)
-        x = self.relu(x)
-
-        x = self._pad_conv(x, self.conv3)
-        x = self.relu(x)
-        x = self._pad_conv(x, self.conv4)
+        x = toroidal_Conv2d(x, self.conv2)
         x = self.relu(x)
 
-        x = self._pad_conv(x, self.conv5)
+        x = toroidal_Conv2d(x, self.conv3)
         x = self.relu(x)
-        x = self._pad_conv(x, self.conv6)
+        x = toroidal_Conv2d(x, self.conv4)
         x = self.relu(x)
-        x = self._pad_conv(x, self.conv6)
+
+        x = toroidal_Conv2d(x, self.conv5)
+        x = self.relu(x)
+        x = toroidal_Conv2d(x, self.conv6)
+        x = self.relu(x)
+        x = toroidal_Conv2d(x, self.conv6)
         x = self.relu(x)
 
         x = self.output_conv(x)
-
-        return x
-
-
-    def _pad_conv(self, x, padding=1, f=None):
-        x = add_toroidal_padding(x, padding)
-        x = f(x)
 
         return x
 
@@ -79,22 +72,15 @@ class Baseline_v2(nn.Module):
     def forward(self, x):
 
         # stem
-        x = self._pad_conv(x, self.in_conv)
+        x = toroidal_Conv2d(x, self.in_conv)
         x = self.relu(x)
 
         # stage 1
         for conv in self.convs:
-            x = self._pad_conv(x, conv)
+            x = toroidal_Conv2d(x, conv)
             x = self.relu(x)
 
         x = self.out_conv(x)
-
-        return x
-
-
-    def _pad_conv(self, x, padding=1, f=None):
-        x = add_toroidal_padding(x, padding)
-        x = f(x)
 
         return x
 
@@ -126,7 +112,7 @@ class Baseline_v3(nn.Module):
     def forward(self, x):
 
         for _ in range(2):
-            x = self._pad_conv(x, self.in_conv)
+            x = toroidal_Conv2d(x, self.in_conv)
             x = self.relu(x)
 
             parts = [x[:, i:i+16, :, :] for i in range(0, 64, 16)]
@@ -135,26 +121,19 @@ class Baseline_v3(nn.Module):
             x_1x1 = self.conv_1x1(parts[0])
             x_1x1 = self.relu(x_1x1)
 
-            x_3x3 = self._pad_conv(parts[1], self.conv_3x3)
+            x_3x3 = toroidal_Conv2d(parts[1], self.conv_3x3)
             x_3x3 = self.relu(x_3x3)
 
-            x_5x5 = self._pad_conv(parts[2], self.conv_5x5)
+            x_5x5 = toroidal_Conv2d(parts[2], self.conv_5x5)
             x_5x5 = self.relu(x_5x5)
 
-            x_7x7 = self._pad_conv(parts[3], self.conv_7x7)
+            x_7x7 = toroidal_Conv2d(parts[3], self.conv_7x7)
             x_7x7 = self.relu(x_7x7)
 
             x = torch.cat([x_1x1, x_3x3, x_5x5, x_7x7, parts[4]], dim=1)
 
             x = self.out_conv(x)
             x = self.relu(x)
-
-        return x
-
-
-    def _pad_conv(self, x, padding=1, f=None):
-        x = add_toroidal_padding(x, padding)
-        x = f(x)
 
         return x
 
@@ -176,21 +155,14 @@ class Baseline_v4(nn.Module):
     def forward(self, x):
 
         # stem
-        x = self._pad_conv(x, padding=31, f=self.in_conv)
+        x = toroidal_Conv2d(x, self.in_conv, padding=31)
 
         # stage 1
         for conv in self.convs:
-            x = self._pad_conv(x, padding=31, f=conv)
+            x = toroidal_Conv2d(x, conv, padding=31)
             x = self.relu(x)
 
         x = self.out_conv(x)
-
-        return x
-
-
-    def _pad_conv(self, x, padding=1, f=None):
-        x = add_toroidal_padding(x, padding)
-        x = f(x)
 
         return x
 

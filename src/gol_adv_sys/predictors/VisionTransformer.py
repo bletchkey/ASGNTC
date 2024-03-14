@@ -4,7 +4,7 @@ import torch.nn.functional as F
 
 import math
 
-from ..utils.helper_functions import add_toroidal_padding
+from .utils.toroidal import toroidal_Conv2d
 from ..utils import constants as constants
 
 
