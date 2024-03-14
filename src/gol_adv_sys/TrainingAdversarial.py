@@ -646,6 +646,10 @@ class TrainingAdversarial(TrainingBase):
         if self.properties_g["enabled"] and not self.properties_g["can_train"]:
             self.properties_g["can_train"] = self.__get_loss_avg_p_last_epoch() < constants.threshold_avg_loss_p
 
+            if self.properties_g["can_train"]:
+                # +1 because the current epoch is 0-based, +2 because the generator can be trained from the next epoch
+                logging.info(f"Generator can start training from next epoch. The next epoch is number {self.current_epoch + 2}")
+
         return self.properties_g["can_train"]
 
 

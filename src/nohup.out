@@ -42,3 +42,31 @@
   (output_conv): Conv2d(256, 1, kernel_size=(1, 1), stride=(1, 1))
   (relu): ReLU()
 )
+2024-03-14 14:05:56,309 - root - INFO - Logging configuration loaded from /home/bletchkey/ASGNTC/config/logging.json
+2024-03-14 14:05:56,345 - root - INFO - Baseline(
+  (conv1): Conv2d(1, 64, kernel_size=(3, 3), stride=(1, 1))
+  (conv2): Conv2d(64, 64, kernel_size=(3, 3), stride=(1, 1))
+  (conv3): Conv2d(64, 128, kernel_size=(3, 3), stride=(1, 1))
+  (conv4): Conv2d(128, 128, kernel_size=(3, 3), stride=(1, 1))
+  (conv5): Conv2d(128, 256, kernel_size=(3, 3), stride=(1, 1))
+  (conv6): Conv2d(256, 256, kernel_size=(3, 3), stride=(1, 1))
+  (output_conv): Conv2d(256, 1, kernel_size=(1, 1), stride=(1, 1))
+  (relu): ReLU()
+)
+2024-03-14 14:05:58,132 - root - INFO - Data tensor shape: torch.Size([16384, 5, 1, 32, 32]), used for creating the dataloader.
+2024-03-14 14:11:18,210 - root - INFO - Data tensor shape: torch.Size([32768, 5, 1, 32, 32]), used for creating the dataloader.
+2024-03-14 14:17:03,250 - root - INFO - Logging configuration loaded from /home/bletchkey/ASGNTC/config/logging.json
+2024-03-14 14:17:03,285 - root - INFO - Baseline(
+  (conv1): Conv2d(1, 64, kernel_size=(3, 3), stride=(1, 1))
+  (conv2): Conv2d(64, 64, kernel_size=(3, 3), stride=(1, 1))
+  (conv3): Conv2d(64, 128, kernel_size=(3, 3), stride=(1, 1))
+  (conv4): Conv2d(128, 128, kernel_size=(3, 3), stride=(1, 1))
+  (conv5): Conv2d(128, 256, kernel_size=(3, 3), stride=(1, 1))
+  (conv6): Conv2d(256, 256, kernel_size=(3, 3), stride=(1, 1))
+  (output_conv): Conv2d(256, 1, kernel_size=(1, 1), stride=(1, 1))
+  (relu): ReLU()
+)
+2024-03-14 14:17:05,042 - root - INFO - Data tensor shape: torch.Size([16384, 5, 1, 32, 32]), used for creating the dataloader.
+2024-03-14 14:22:18,378 - root - INFO - Generator can be trained from epoch 1 onwards
+2024-03-14 14:22:22,273 - root - INFO - Data tensor shape: torch.Size([32768, 5, 1, 32, 32]), used for creating the dataloader.
+2024-03-14 14:38:45,131 - root - INFO - Data tensor shape: torch.Size([49152, 5, 1, 32, 32]), used for creating the dataloader.

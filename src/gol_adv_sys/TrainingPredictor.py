@@ -55,11 +55,10 @@ class TrainingPredictor(TrainingBase):
     def __init__(self, model=None) -> None:
 
         self.__date = datetime.datetime.now()
-
         self.__logger = logging.getLogger(self.__class__.__name__)
-
         self.__initialize_seed()
         self.__folders = FolderManager(self.__date)
+
         self.device_manager = DeviceManager()
 
         optimizer = optim.SGD(model.parameters(),

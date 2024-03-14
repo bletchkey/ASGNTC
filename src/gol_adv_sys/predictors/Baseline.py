@@ -85,7 +85,6 @@ class Baseline_v2(nn.Module):
         return x
 
 
-
 class Baseline_v3(nn.Module):
     """
     Not tested properly yet

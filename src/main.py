@@ -73,7 +73,7 @@ def playground():
     print(f"Final living cells: {results['n_cells_final'].item()}")
 
 
-def adversarial():
+def train_adversarial():
     train_adv = TrainingAdversarial(model_p=Predictor_Baseline(),
                                     model_g=Generator_DCGAN())
     train_adv.run()
@@ -89,7 +89,8 @@ def main():
     setup_base_dir()
     setup_logging(path=CONFIG_DIR / "logging.json")
 
-    train_predictor()
+    # train_predictor()
+    train_adversarial()
 
     return 0
 
