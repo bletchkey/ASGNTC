@@ -1,0 +1,11 @@
+nohup: ignoring input
+Baseline(
+  (conv1): Conv2d(1, 64, kernel_size=(3, 3), stride=(1, 1))
+  (conv2): Conv2d(64, 64, kernel_size=(3, 3), stride=(1, 1))
+  (conv3): Conv2d(64, 128, kernel_size=(3, 3), stride=(1, 1))
+  (conv4): Conv2d(128, 128, kernel_size=(3, 3), stride=(1, 1))
+  (conv5): Conv2d(128, 256, kernel_size=(3, 3), stride=(1, 1))
+  (conv6): Conv2d(256, 256, kernel_size=(3, 3), stride=(1, 1))
+  (output_conv): Conv2d(256, 1, kernel_size=(1, 1), stride=(1, 1))
+  (relu): ReLU()
+)
