@@ -22,7 +22,7 @@ n_max_configs = n_max_batches*bs
 num_training_steps = 20
 
 # Average loss of P threshold before training G
-threshold_avg_loss_p = 0.008
+threshold_avg_loss_p = 0.05
 
 
 ### PATHS ###############################################################################

@@ -230,8 +230,9 @@ class TrainingPredictor(TrainingBase):
 
             lr = self.learning_rates[self.current_epoch]
 
-            log.write(f"{str_epoch_time} | Epoch: {str_epoch}, Loss P (train): {str_err_p_train}, \
-                        Loss P (val): {str_err_p_val}, [LR: {lr}]\n")
+            log.write(f"{str_epoch_time} | Epoch: {str_epoch}, Loss P (train): {str_err_p_train}, "
+                      f"Loss P (val): {str_err_p_val}, [LR: {lr}]\n"
+            )
             log.flush()
 
 
