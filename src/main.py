@@ -1,51 +1,95 @@
+import logging
+import logging.config
+import json
+from pathlib import Path
 import sys
-import numpy as np
+import os
 
-from games import GameOfLife
-from games.gameoflife.utils.types import GameOfLifeGrid
-from games.gameoflife.utils.patterns import spaceships, oscillators, still_lifes
+import torch
 
-from utils.graphics import Image, UI
-import utils.constants as constants
+project_root = Path(__file__).resolve().parent.parent
+sys.path.append(str(project_root))
+from config.paths import PROJECT_NAME, CONFIG_DIR
 
-from advsys.training import Training
+from gol_adv_sys.TrainingPredictor import TrainingPredictor
+from gol_adv_sys.TrainingAdversarial import TrainingAdversarial
+from gol_adv_sys.Playground import Playground
+
+from gol_adv_sys.Predictor import Predictor_Baseline, Predictor_Baseline_v2, \
+                                  Predictor_Baseline_v3, Predictor_Baseline_v4, \
+                                  Predictor_ResNet, Predictor_UNet, \
+                                  Predictor_GloNet, Predictor_ViT
+
+from gol_adv_sys.Generator import Generator_DCGAN
+
+from gol_adv_sys.utils import constants as constants
 
 
-def test_game_of_life():
+def setup_base_dir():
 
-    # Initialize the grid
-    initial_grid = GameOfLifeGrid(np.zeros((constants.DEFAULT_GRID_SIZE, constants.DEFAULT_GRID_SIZE), dtype=int), constants.TOPOLOGY["toroidal"])
-    initial_grid.load(spaceships["glider"], (2, 2))
-    initial_grid.load(spaceships["glider"], (2, 10))
-    initial_grid.load(spaceships["glider"], (2, 18))
-    initial_grid.load(spaceships["glider"], (10, 2))
-    initial_grid.load(oscillators["pulsar"], (10, 10))
+    dir = Path(__file__).resolve().parent.parent
 
-    # Initialize random grid
-    random_grid = GameOfLifeGrid(np.random.randint(2, size=(constants.DEFAULT_GRID_SIZE, constants.DEFAULT_GRID_SIZE)),
-                                 constants.TOPOLOGY["toroidal"])
+    if dir.name != PROJECT_NAME:
+        print(f"Error: The base directory is not set correctly. Expected: {PROJECT_NAME}, got: {dir.name}")
+        sys.exit(1)
 
-    random_grid_flat = GameOfLifeGrid(np.random.randint(2, size=(constants.DEFAULT_GRID_SIZE, constants.DEFAULT_GRID_SIZE)),
-                                 constants.TOPOLOGY["flat"])
+    os.chdir(dir)
+    sys.path.append(str(dir))
 
-    # Create a new simulation
-    # game = GameOfLife(initial_grid)
-    game = GameOfLife(random_grid_flat)
 
-    # Run the simulation
-    game.update(steps=1000)
+def setup_logging(path, default_level=logging.INFO):
+    try:
+        with open(path, 'rt') as file:
+            config = json.load(file)
+        logging.config.dictConfig(config)
+        logging.info(f"Logging configuration loaded from {path}")
+    except Exception as e:
+        logging.error(f"Error in logging configuration (using default settings): {e}")
+        logging.basicConfig(level=default_level)
 
-    # Print the statistics
-    print(game.statistics())
 
-    image_slider = UI(game.all_grids, game.all_weights)
-    image_slider.show()
+def playground():
+    # init_config = torch.zeros(1, 1, 32, 32, dtype=torch.float32)
+    # Set the cells for a glider
+    # init_config[0, 0, 15, 16] = 1
+    # init_config[0, 0, 16, 17] = 1
+    # init_config[0, 0, 17, 15] = 1
+    # init_config[0, 0, 17, 16] = 1
+    # init_config[0, 0, 17, 17] = 1
+
+    init_config = torch.zeros(1, 1, 32, 32, dtype=torch.float32)
+    n_init_cells = 512
+    indices = torch.randperm(32*32)[:n_init_cells]
+    rows, cols = indices // 32, indices % 32
+    init_config[0, 0, rows, cols] = 1
+
+    pg = Playground(topology=constants.TOPOLOGY_TYPE["toroidal"])
+
+    results = pg.simulate(init_config, steps=10)
+
+    print(f"Period: {results['period'].item()}")
+    print(f"Antiperiod: {results['antiperiod'].item()}")
+    print(f"Initial living cells: {results['n_cells_init'].item()}")
+    print(f"Final living cells: {results['n_cells_final'].item()}")
+
+
+def adversarial():
+    train_adv = TrainingAdversarial(model_p=Predictor_Baseline(),
+                                    model_g=Generator_DCGAN())
+    train_adv.run()
+
+
+def train_predictor():
+    train_pred = TrainingPredictor(model=Predictor_Baseline())
+    train_pred.run()
 
 
 def main():
 
-    train = Training()
-    train.run()
+    setup_base_dir()
+    setup_logging(path=CONFIG_DIR / "logging.json")
+
+    train_predictor()
 
     return 0
 
