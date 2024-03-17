@@ -120,17 +120,18 @@ class TrainingPredictor(TrainingBase):
         torch.autograd.set_detect_anomaly(True)
 
         # Learning rate scheduler
-        lr_scheduler = optim.lr_scheduler.ReduceLROnPlateau(self.predictor.optimizer, mode="min", factor=0.1,
-                                                            patience=2, verbose=True, threshold=1e-4,
-                                                            threshold_mode="rel", cooldown=2, min_lr=0, eps=1e-8)
+        lr_scheduler = optim.lr_scheduler.ReduceLROnPlateau(
+            self.predictor.optimizer, mode="min", factor=0.1,
+            patience=2, verbose=True, threshold=1e-4,
+            threshold_mode="rel", cooldown=2, min_lr=0, eps=1e-8
+        )
 
         # Warmup scheduler
-        warmup_scheduler = optim.lr_scheduler.LambdaLR(self.predictor.optimizer,
-                                                       lr_lambda=lambda step: \
-                                                       min(1.0, step / constants.warmup_total_steps) \
-                                                          * (constants.warmup_target_lr - 1e-6) + 1e-6)
+        warmup_lr_values = np.linspace(constants.warmup_initial_lr, constants.warmup_target_lr, constants.warmup_total_steps).tolist()
 
         total_steps = 0
+
+        self.predictor.set_learning_rate(constants.warmup_initial_lr)
 
         # Training loop
         for epoch in range(constants.num_epochs):
@@ -155,9 +156,9 @@ class TrainingPredictor(TrainingBase):
                 total_steps += 1
                 logging.debug(f"Batches processed: {total_steps}")
 
-                # Update warm-up scheduler during the warm-up phase
+                # Updates during the warm-up phase
                 if total_steps <= constants.warmup_total_steps:
-                    warmup_scheduler.step()
+                    self.predictor.set_learning_rate(warmup_lr_values[total_steps-1])
                     logging.debug(f"Warm-up phase")
                     logging.debug(f"Learning rate: {self.predictor.get_learning_rate()}")
 

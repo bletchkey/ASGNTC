@@ -138,7 +138,8 @@ p_sgd_momentum=0.9
 p_sgd_wd=1e-4
 
 
-# Warmup scheduler parameters
+# Warmup phase parameters
 warmup_total_steps = 1000
 warmup_target_lr = 0.1
+warmup_initial_lr = 1e-6
 

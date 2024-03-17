@@ -67,3 +67,16 @@ class ModelManager:
 
         return self.__optimizer.param_groups[0]["lr"]
 
+
+    def set_learning_rate(self, lr: float) -> None:
+        """
+        Function for setting the learning rate.
+
+        Args:
+            lr (float): The learning rate.
+
+        """
+
+        for param_group in self.__optimizer.param_groups:
+            param_group["lr"] = lr
+
