@@ -42,7 +42,7 @@ def setup_logging(path, default_level=logging.INFO):
         with open(path, 'rt') as file:
             config = json.load(file)
         logging.config.dictConfig(config)
-        logging.info(f"Logging configuration loaded from {path}")
+        logging.debug(f"Logging configuration loaded from {path}")
     except Exception as e:
         logging.error(f"Error in logging configuration (using default settings): {e}")
         logging.basicConfig(level=default_level)

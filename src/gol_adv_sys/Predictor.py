@@ -9,43 +9,43 @@ from src.gol_adv_sys.predictors.GloNet import GloNet
 
 def Predictor_Baseline():
     model = Baseline()
-    logging.info(model)
+    logging.debug(model)
     return model
 
 
 def Predictor_Baseline_v2():
     model = Baseline_v2()
-    logging.info(model)
+    logging.debug(model)
     return model
 
 
 def Predictor_Baseline_v3():
     model = Baseline_v3()
-    logging.info(model)
+    logging.debug(model)
     return model
 
 
 def Predictor_Baseline_v4():
     model = Baseline_v4()
-    logging.info(model)
+    logging.debug(model)
     return model
 
 
 def Predictor_ResNet():
     module = ResNetConstantChannels([2, 2, 2, 2], constants.grid_size)
-    logging.info(module)
+    logging.debug(module)
     return module
 
 
 def Predictor_GloNet():
     model = GloNet()
-    logging.info(model)
+    logging.debug(model)
     return model
 
 
 def Predictor_UNet():
     model = UNet()
-    logging.info(model)
+    logging.debug(model)
     return model
 
 
@@ -61,6 +61,6 @@ def Predictor_ViT():
     model = VisionTransformer(img_size=img_size, patch_size=patch_size, in_channels=in_channels,
                               embed_dim=embed_dim, num_heads=num_heads, num_layers=num_layers, ff_dim=ff_dim)
 
-    logging.info(model)
+    logging.debug(model)
     return model
 

@@ -69,7 +69,7 @@ class TrainingPredictor(TrainingBase):
 
         self.simulation_topology = constants.TOPOLOGY_TYPE["toroidal"]
         self.init_config_type = constants.INIT_CONFIG_TYPE["threshold"]
-        self.metric_type = constants.METRIC_TYPE["hard"]
+        self.metric_type = constants.METRIC_TYPE["medium"]
 
         self.current_epoch = 0
         self.n_times_trained_p = 0
@@ -108,6 +108,9 @@ class TrainingPredictor(TrainingBase):
 
 
     def _fit(self):
+
+        logging.info(f"Training started at {datetime.datetime.now().strftime('%d/%m/%Y %H:%M:%S')}")
+
         """
         Training loop for the predictor model.
 
@@ -117,14 +120,15 @@ class TrainingPredictor(TrainingBase):
         torch.autograd.set_detect_anomaly(True)
 
         # Learning rate scheduler
-        lr_scheduler = optim.lr_scheduler.ReduceLROnPlateau(self.predictor.optimizer, mode="min", factor=0.1, patience=2, verbose=True,
-                                                         threshold=1e-4, threshold_mode="rel", cooldown=2, min_lr=0, eps=1e-8)
+        lr_scheduler = optim.lr_scheduler.ReduceLROnPlateau(self.predictor.optimizer, mode="min", factor=0.1,
+                                                            patience=2, verbose=True, threshold=1e-4,
+                                                            threshold_mode="rel", cooldown=2, min_lr=0, eps=1e-8)
 
         # Warmup scheduler
-        warmup_scheduler = torch.optim.lr_scheduler.LambdaLR(self.predictor.optimizer,
-                                                             lr_lambda=lambda step: \
-                                                             min(1.0, step / constants.warmup_total_steps) * \
-                                                                (constants.warmup_target_lr - 1e-6) + 1e-6)
+        warmup_scheduler = optim.lr_scheduler.LambdaLR(self.predictor.optimizer,
+                                                       lr_lambda=lambda step: \
+                                                       min(1.0, step / constants.warmup_total_steps) \
+                                                          * (constants.warmup_target_lr - 1e-6) + 1e-6)
 
         total_steps = 0
 
@@ -132,6 +136,9 @@ class TrainingPredictor(TrainingBase):
         for epoch in range(constants.num_epochs):
             self.current_epoch = epoch
             self.learning_rates.append(self.predictor.get_learning_rate())
+
+            logging.debug(f"Epoch: {epoch+1}/{constants.num_epochs}")
+            logging.debug(f"Learning rate: {self.predictor.get_learning_rate()}")
 
             epoch_start_time = time.time()
 
@@ -146,16 +153,18 @@ class TrainingPredictor(TrainingBase):
                 self.predictor.optimizer.step()
                 train_loss += errP.item()
                 total_steps += 1
+                logging.debug(f"Batches processed: {total_steps}")
 
                 # Update warm-up scheduler during the warm-up phase
                 if total_steps <= constants.warmup_total_steps:
                     warmup_scheduler.step()
-                    logging.debug(f"Warm-up phase: {total_steps}/{constants.warmup_total_steps} steps")
+                    logging.debug(f"Warm-up phase")
                     logging.debug(f"Learning rate: {self.predictor.get_learning_rate()}")
 
             self.n_times_trained_p += 1
             train_loss /= len(self.dataloader["train"])
             self.losses["predictor_train"].append(train_loss)
+            logging.debug(f"Predictor loss on train data: {train_loss}")
 
             # Check the validation loss
             val_loss = 0
@@ -168,19 +177,23 @@ class TrainingPredictor(TrainingBase):
 
             val_loss /= len(self.dataloader["val"])
             self.losses["predictor_val"].append(val_loss)
+            logging.debug(f"Predictor loss on validation data: {val_loss}")
 
             # Update the learning rate
             if total_steps > constants.warmup_total_steps:
                 lr_scheduler.step(val_loss)
-                logging.debug(f"Reduce On Plateau phase - Learning rate: {self.predictor.get_learning_rate()}")
+                logging.debug(f"Reduce On Plateau phase")
+                logging.debug(f"Learning rate: {self.predictor.get_learning_rate()}")
 
             epoch_end_time = time.time()
             epoch_elapsed_time = epoch_end_time - epoch_start_time
+            logging.debug(f"Epoch elapsed time: {get_elapsed_time_str(epoch_elapsed_time)}")
 
             # Log the training epoch progress
             self.__log_training_epoch(epoch_elapsed_time)
 
             # Test the predictor model
+            logging.debug(f"Testing Predictor model")
             data = self.__test_predictor_model()
             self.__save_progress_plot(data)
             self.__save_losses_plot()
@@ -189,6 +202,7 @@ class TrainingPredictor(TrainingBase):
             if (epoch > 0) and (epoch % 10 == 0) and (self.n_times_trained_p > 0):
                 path = self.__folders.models_folder / f"predictor_{epoch}.pth.tar"
                 self.predictor.save(path)
+                logging.debug(f"Predictor model saved at {path}")
 
             self.device_manager.clear_resources()
 
@@ -202,8 +216,10 @@ class TrainingPredictor(TrainingBase):
                 test_loss += errP.item()
 
         test_loss /= len(self.dataloader["test"])
-
         self.losses["predictor_test"].append(test_loss)
+        logging.debug(f"Predictor loss on test data: {test_loss}")
+
+
         str_err_p_test = f"{self.losses['predictor_test'][-1]}"
 
         with open(self.path_log_file, "a") as log:
@@ -212,6 +228,8 @@ class TrainingPredictor(TrainingBase):
             log.write(f"\n\nTraining ended at {datetime.datetime.now().strftime('%d/%m/%Y %H:%M:%S')}\n")
             log.write(f"Number of times P was trained: {self.n_times_trained_p}\n")
             log.flush()
+
+        logging.info(f"Training ended at {datetime.datetime.now().strftime('%d/%m/%Y %H:%M:%S')}")
 
 
     def __log_training_epoch(self, time):
