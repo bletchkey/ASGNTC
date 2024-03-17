@@ -58,32 +58,43 @@ def ssim(img1, img2, window_size=11, size_average=False):
 def main():
     device_manager = DeviceManager()
     train_path = DATASET_DIR / f"{constants.dataset_name}_train.pt"
-    dataset_train = FixedDataset(train_path)
-    train_dataloader = DataLoader(dataset_train, batch_size=constants.bs, shuffle=True)
+    # dataset_train = FixedDataset(train_path)
+    # train_dataloader = DataLoader(dataset_train, batch_size=constants.bs, shuffle=True)
 
-    config = None
-    for batch in train_dataloader:
-        config = batch
-        break
+    # config = None
+    # for batch in train_dataloader:
+    #     config = batch
+    #     break
 
-    # Get configs from batch
-    initial_config = get_config_from_batch(config, constants.CONFIG_NAMES["initial"], device_manager.default_device)
-    final_config = get_config_from_batch(config, constants.CONFIG_NAMES["final"], device_manager.default_device)
-    easy_metric = get_config_from_batch(config, constants.CONFIG_NAMES["metric_easy"], device_manager.default_device)
-    medium_metric = get_config_from_batch(config, constants.CONFIG_NAMES["metric_medium"], device_manager.default_device)
-    hard_metric = get_config_from_batch(config, constants.CONFIG_NAMES["metric_hard"], device_manager.default_device)
+    # # Get configs from batch
+    # initial_config = get_config_from_batch(config, constants.CONFIG_NAMES["initial"], device_manager.default_device)
+    # final_config = get_config_from_batch(config, constants.CONFIG_NAMES["final"], device_manager.default_device)
+    # easy_metric = get_config_from_batch(config, constants.CONFIG_NAMES["metric_easy"], device_manager.default_device)
+    # medium_metric = get_config_from_batch(config, constants.CONFIG_NAMES["metric_medium"], device_manager.default_device)
+    # hard_metric = get_config_from_batch(config, constants.CONFIG_NAMES["metric_hard"], device_manager.default_device)
+
+    # zeros = torch.zeros(128, 1, 32, 32).to(device_manager.default_device)
+    # ones = torch.ones(128, 1, 32, 32).to(device_manager.default_device)
+
+    # # Calculate SSIM
+    # score = ssim(easy_metric, medium_metric)
+    # score_2 = ssim(easy_metric, hard_metric)
+    # score_3 = ssim(zeros, ones)
+    # score_4 = ssim(zeros, zeros)
+
+    # print("SSIM score easy-medium:\n", score)
+    # print("SSIM score easy-hard:\n", score_2)
+    # print("SSIM score zeros-ones:\n", score_3)
+    # print("SSIM score zeros-zeros:\n", score_4)
 
     zeros = torch.zeros(128, 1, 32, 32).to(device_manager.default_device)
     ones = torch.ones(128, 1, 32, 32).to(device_manager.default_device)
 
     # Calculate SSIM
-    score = ssim(easy_metric, medium_metric)
-    score_2 = ssim(easy_metric, hard_metric)
     score_3 = ssim(zeros, ones)
     score_4 = ssim(zeros, zeros)
 
-    print("SSIM score easy-medium:\n", score)
-    print("SSIM score easy-hard:\n", score_2)
+
     print("SSIM score zeros-ones:\n", score_3)
     print("SSIM score zeros-zeros:\n", score_4)
 

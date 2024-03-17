@@ -55,7 +55,6 @@ class TrainingPredictor(TrainingBase):
     def __init__(self, model=None) -> None:
 
         self.__date = datetime.datetime.now()
-        self.__logger = logging.getLogger(self.__class__.__name__)
         self.__initialize_seed()
         self.__folders = FolderManager(self.__date)
 
@@ -70,7 +69,7 @@ class TrainingPredictor(TrainingBase):
 
         self.simulation_topology = constants.TOPOLOGY_TYPE["toroidal"]
         self.init_config_type = constants.INIT_CONFIG_TYPE["threshold"]
-        self.metric_type = constants.METRIC_TYPE["medium"]
+        self.metric_type = constants.METRIC_TYPE["hard"]
 
         self.current_epoch = 0
         self.n_times_trained_p = 0
@@ -118,8 +117,16 @@ class TrainingPredictor(TrainingBase):
         torch.autograd.set_detect_anomaly(True)
 
         # Learning rate scheduler
-        scheduler = optim.lr_scheduler.ReduceLROnPlateau(self.predictor.optimizer, mode="min", factor=0.1, patience=2, verbose=True,
+        lr_scheduler = optim.lr_scheduler.ReduceLROnPlateau(self.predictor.optimizer, mode="min", factor=0.1, patience=2, verbose=True,
                                                          threshold=1e-4, threshold_mode="rel", cooldown=2, min_lr=0, eps=1e-8)
+
+        # Warmup scheduler
+        warmup_scheduler = torch.optim.lr_scheduler.LambdaLR(self.predictor.optimizer,
+                                                             lr_lambda=lambda step: \
+                                                             min(1.0, step / constants.warmup_total_steps) * \
+                                                                (constants.warmup_target_lr - 1e-6) + 1e-6)
+
+        total_steps = 0
 
         # Training loop
         for epoch in range(constants.num_epochs):
@@ -138,6 +145,13 @@ class TrainingPredictor(TrainingBase):
                 errP.backward()
                 self.predictor.optimizer.step()
                 train_loss += errP.item()
+                total_steps += 1
+
+                # Update warm-up scheduler during the warm-up phase
+                if total_steps <= constants.warmup_total_steps:
+                    warmup_scheduler.step()
+                    logging.debug(f"Warm-up phase: {total_steps}/{constants.warmup_total_steps} steps")
+                    logging.debug(f"Learning rate: {self.predictor.get_learning_rate()}")
 
             self.n_times_trained_p += 1
             train_loss /= len(self.dataloader["train"])
@@ -156,7 +170,9 @@ class TrainingPredictor(TrainingBase):
             self.losses["predictor_val"].append(val_loss)
 
             # Update the learning rate
-            scheduler.step(val_loss)
+            if total_steps > constants.warmup_total_steps:
+                lr_scheduler.step(val_loss)
+                logging.debug(f"Reduce On Plateau phase - Learning rate: {self.predictor.get_learning_rate()}")
 
             epoch_end_time = time.time()
             epoch_elapsed_time = epoch_end_time - epoch_start_time
@@ -317,7 +333,7 @@ class TrainingPredictor(TrainingBase):
             np.random.seed(self.__seed)
             torch.cuda.manual_seed(self.__seed)
         except Exception as e:
-            self.__logger.error(f"Error initializing the seed: {e}")
+            logging.error(f"Error initializing the seed: {e}")
 
 
     # TODO: This function needs to be implemented properly

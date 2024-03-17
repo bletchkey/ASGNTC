@@ -136,32 +136,43 @@ class Baseline_v3(nn.Module):
 
         return x
 
-
 class Baseline_v4(nn.Module):
     """
-    Pretty bizarre architecture, not tested properly yet
+    Not tested properly yet.
     """
     def __init__(self) -> None:
         super(Baseline_v4, self).__init__()
 
-        self.in_conv = nn.Conv2d(constants.nc, 32, kernel_size=32, padding=0, stride=2)
-        self.convs = nn.ModuleList([nn.Conv2d(32, 32, kernel_size=32, padding=0, stride=2) for _ in range(20)])
-        self.out_conv = nn.Conv2d(32, constants.nc, kernel_size=1, padding=0)
+        self.in_conv = nn.Conv2d(constants.nc, 32, kernel_size=3, stride=1, padding=0)
+        self.convs = nn.ModuleList([
+            nn.Conv2d(32, 32, kernel_size=3, stride=1, padding=0) for _ in range(40)
+        ])
+        self.bn_layers = nn.ModuleList([nn.BatchNorm2d(32) for _ in range(40)])
+        self.out_conv = nn.Conv2d(32, constants.nc, kernel_size=1, stride=1, padding=0)
 
         self.relu = nn.ReLU()
 
 
     def forward(self, x):
 
-        # stem
-        x = toroidal_Conv2d(x, self.in_conv, padding=31)
+        # Stem - First convolution and identity
+        identity = x = toroidal_Conv2d(x, self.in_conv, padding=1)
 
-        # stage 1
-        for conv in self.convs:
-            x = toroidal_Conv2d(x, conv, padding=31)
-            x = self.relu(x)
+        # Stage 1 - Applying convolutions with skip connections
+        for i, (conv, bn) in enumerate(zip(self.convs, self.bn_layers[1:])):
+            out = toroidal_Conv2d(x, conv, padding=1)
+            out = bn(out)
+            out = self.relu(out)
 
+            # Skip connection and identity update every N layers (e.g., every 2 layers)
+            if (i + 1) % 1 == 0:
+                out = out + identity  # Element-wise addition without modifying identity in-place
+                identity = out # Update identity to the latest output for the next skip connection
+
+            x = out
+
+        # Final output convolution
         x = self.out_conv(x)
-
         return x
+
 

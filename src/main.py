@@ -80,7 +80,7 @@ def train_adversarial():
 
 
 def train_predictor():
-    train_pred = TrainingPredictor(model=Predictor_Baseline())
+    train_pred = TrainingPredictor(model=Predictor_Baseline_v4())
     train_pred.run()
 
 
@@ -89,8 +89,8 @@ def main():
     setup_base_dir()
     setup_logging(path=CONFIG_DIR / "logging.json")
 
-    # train_predictor()
-    train_adversarial()
+    train_predictor()
+    # train_adversarial()
 
     return 0
 

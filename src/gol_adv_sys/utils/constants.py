@@ -137,3 +137,9 @@ p_sgd_lr=0.01
 p_sgd_momentum=0.9
 p_sgd_wd=1e-4
 
+
+# Warmup scheduler
+
+warmup_total_steps = 1000
+warmup_target_lr = 0.1
+
