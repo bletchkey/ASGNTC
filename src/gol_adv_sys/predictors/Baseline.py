@@ -159,13 +159,13 @@ class Baseline_v4(nn.Module):
         identity = x = toroidal_Conv2d(x, self.in_conv, padding=1)
 
         # Stage 1 - Applying convolutions with skip connections
-        for i, (conv, bn) in enumerate(zip(self.convs, self.bn_layers[1:])):
+        for i, (conv, bn) in enumerate(zip(self.convs, self.bn_layers)):
             out = toroidal_Conv2d(x, conv, padding=1)
             out = bn(out)
             out = self.relu(out)
 
             # Skip connection and identity update every N layers (e.g., every 2 layers)
-            if (i + 1) % 1 == 0:
+            if (i + 2) % 1 == 0:
                 out = out + identity  # Element-wise addition without modifying identity in-place
                 identity = out # Update identity to the latest output for the next skip connection
 
