@@ -72,6 +72,11 @@ def playground():
     print(f"Initial living cells: {results['n_cells_init'].item()}")
     print(f"Final living cells: {results['n_cells_final'].item()}")
 
+    data = pg.get_config_id(131072)
+
+    for k, v in data.items():
+        print(f"{k}: {v}")
+
 
 def train_adversarial():
     train_adv = TrainingAdversarial(model_p=Predictor_Baseline(),
@@ -89,7 +94,9 @@ def main():
     setup_base_dir()
     setup_logging(path=CONFIG_DIR / "logging.json")
 
-    train_predictor()
+    playground()
+
+    # train_predictor()
     # train_adversarial()
 
     return 0
