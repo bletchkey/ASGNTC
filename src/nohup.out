@@ -1036,3 +1036,202 @@ hard_metric: tensor([[[0.1685, 0.0834, 0.0475,  ..., 0.1023, 0.0599, 0.1283],
        device='cuda:0')
   0.422981858253479
   0.02702675200998783
+2024-03-20 02:55:46,925 - root - INFO - Training started at 20/03/2024 02:55:46
+Epoch 00044: reducing learning rate of group 0 to 1.0000e-02.
+Traceback (most recent call last):
+  File "main.py", line 16, in <module>
+    from src.gol_adv_sys.Playground import Playground
+  File "/home/bletchkey/ASGNTC/src/gol_adv_sys/Playground.py", line 126
+    plt.savefig(f"record_{record["id"]}.png")
+                                  ^
+SyntaxError: invalid syntax
+Period: 2
+Antiperiod: 224
+Initial living cells: 512
+Final living cells: 50
+  0.9818977117538452
+  1.8598904880870474e-33
+  0.9065380096435547
+  2.1579461350503784e-17
+  0.422981858253479
+  0.02702675200998783
+Traceback (most recent call last):
+  File "main.py", line 116, in <module>
+    RETCODE = main()
+  File "main.py", line 108, in main
+    playground()
+  File "main.py", line 82, in playground
+    pg.plot_record(data)
+  File "/home/bletchkey/ASGNTC/src/gol_adv_sys/Playground.py", line 109, in plot_record
+    axs[0, 0].imshow(record["initial_config"])
+  File "/home/bletchkey/.local/lib/python3.8/site-packages/matplotlib/__init__.py", line 1446, in inner
+    return func(ax, *map(sanitize_sequence, args), **kwargs)
+  File "/home/bletchkey/.local/lib/python3.8/site-packages/matplotlib/axes/_axes.py", line 5663, in imshow
+    im.set_data(X)
+  File "/home/bletchkey/.local/lib/python3.8/site-packages/matplotlib/image.py", line 697, in set_data
+    self._A = cbook.safe_masked_invalid(A, copy=True)
+  File "/home/bletchkey/.local/lib/python3.8/site-packages/matplotlib/cbook/__init__.py", line 719, in safe_masked_invalid
+    x = np.array(x, subok=True, copy=copy)
+  File "/home/bletchkey/.local/lib/python3.8/site-packages/torch/_tensor.py", line 1030, in __array__
+    return self.numpy()
+TypeError: can't convert cuda:0 device type tensor to numpy. Use Tensor.cpu() to copy the tensor to host memory first.
+Period: 2
+Antiperiod: 203
+Initial living cells: 512
+Final living cells: 35
+  0.9818977117538452
+  1.8598904880870474e-33
+  0.9065380096435547
+  2.1579461350503784e-17
+  0.422981858253479
+  0.02702675200998783
+Traceback (most recent call last):
+  File "main.py", line 116, in <module>
+    RETCODE = main()
+  File "main.py", line 108, in main
+    playground()
+  File "main.py", line 84, in playground
+    pg.load_predictor("predictor_medium_metric.pt")
+  File "/home/bletchkey/ASGNTC/src/gol_adv_sys/Playground.py", line 92, in load_predictor
+    raise ValueError(f"Model {name} does not exist")
+ValueError: Model predictor_medium_metric.pt does not exist
+Period: 2
+Antiperiod: 2389
+Initial living cells: 512
+Final living cells: 33
+  0.9818977117538452
+  1.8598904880870474e-33
+  0.9065380096435547
+  2.1579461350503784e-17
+  0.422981858253479
+  0.02702675200998783
+Traceback (most recent call last):
+  File "main.py", line 116, in <module>
+    RETCODE = main()
+  File "main.py", line 108, in main
+    playground()
+  File "main.py", line 85, in playground
+    pred = pg.predict(data["initial_config"])
+  File "/home/bletchkey/ASGNTC/src/gol_adv_sys/Playground.py", line 103, in predict
+    return self.__predictor["model"](config)
+TypeError: 'dict' object is not callable
+Period: 2
+Antiperiod: 791
+Initial living cells: 512
+Final living cells: 28
+EASY MAX: 0.9818977117538452
+EASY MIN: 1.8598904880870474e-33
+MEDIUM MAX: 0.9065380096435547
+MEDIUM MIN: 2.1579461350503784e-17
+HARD MAX: 0.422981858253479
+HARD MIN: 0.02702675200998783
+Traceback (most recent call last):
+  File "main.py", line 122, in <module>
+    RETCODE = main()
+  File "main.py", line 114, in main
+    playground()
+  File "main.py", line 91, in playground
+    pred = pg.predict(data["initial_config"])
+  File "/home/bletchkey/ASGNTC/src/gol_adv_sys/Playground.py", line 103, in predict
+    return self.__predictor["model"](config)
+TypeError: 'dict' object is not callable
+Period: 2
+Antiperiod: 411
+Initial living cells: 512
+Final living cells: 37
+EASY MAX: 0.9818977117538452
+EASY MIN: 1.8598904880870474e-33
+MEDIUM MAX: 0.9065380096435547
+MEDIUM MIN: 2.1579461350503784e-17
+HARD MAX: 0.422981858253479
+HARD MIN: 0.02702675200998783
+Traceback (most recent call last):
+  File "main.py", line 122, in <module>
+    RETCODE = main()
+  File "main.py", line 114, in main
+    playground()
+  File "main.py", line 91, in playground
+    pred = pg.predict(data["initial_config"])
+  File "/home/bletchkey/ASGNTC/src/gol_adv_sys/Playground.py", line 103, in predict
+    self.__predictor["model"].eval()
+AttributeError: 'dict' object has no attribute 'eval'
+Period: 2
+Antiperiod: 247
+Initial living cells: 512
+Final living cells: 45
+EASY MAX: 0.9818977117538452
+EASY MIN: 1.8598904880870474e-33
+MEDIUM MAX: 0.9065380096435547
+MEDIUM MIN: 2.1579461350503784e-17
+HARD MAX: 0.422981858253479
+HARD MIN: 0.02702675200998783
+Period: 2
+Antiperiod: 116
+Initial living cells: 512
+Final living cells: 31
+EASY MAX: 0.9818977117538452
+EASY MIN: 1.8598904880870474e-33
+MEDIUM MAX: 0.9065380096435547
+MEDIUM MIN: 2.1579461350503784e-17
+HARD MAX: 0.422981858253479
+HARD MIN: 0.02702675200998783
+Period: 1
+Antiperiod: 772
+Initial living cells: 512
+Final living cells: 17
+EASY MAX: 0.9818977117538452
+EASY MIN: 1.8598904880870474e-33
+MEDIUM MAX: 0.9065380096435547
+MEDIUM MIN: 2.1579461350503784e-17
+HARD MAX: 0.422981858253479
+HARD MIN: 0.02702675200998783
+Traceback (most recent call last):
+  File "main.py", line 122, in <module>
+    RETCODE = main()
+  File "main.py", line 114, in main
+    playground()
+  File "main.py", line 88, in playground
+    pg.plot_record(data)
+  File "/home/bletchkey/ASGNTC/src/gol_adv_sys/Playground.py", line 111, in plot_record
+    gs = GridSpec(2, 5, figure=fig)
+NameError: name 'GridSpec' is not defined
+Period: 2
+Antiperiod: 1184
+Initial living cells: 512
+Final living cells: 26
+EASY MAX: 0.9818977117538452
+EASY MIN: 1.8598904880870474e-33
+MEDIUM MAX: 0.9065380096435547
+MEDIUM MIN: 2.1579461350503784e-17
+HARD MAX: 0.422981858253479
+HARD MIN: 0.02702675200998783
+Traceback (most recent call last):
+  File "main.py", line 122, in <module>
+    RETCODE = main()
+  File "main.py", line 114, in main
+    playground()
+  File "main.py", line 88, in playground
+    pg.plot_record(data)
+  File "/home/bletchkey/ASGNTC/src/gol_adv_sys/Playground.py", line 111, in plot_record
+    gs = GridSpec(2, 5, figure=fig)
+NameError: name 'GridSpec' is not defined
+Period: 2
+Antiperiod: 982
+Initial living cells: 512
+Final living cells: 50
+EASY MAX: 0.9818977117538452
+EASY MIN: 1.8598904880870474e-33
+MEDIUM MAX: 0.9065380096435547
+MEDIUM MIN: 2.1579461350503784e-17
+HARD MAX: 0.422981858253479
+HARD MIN: 0.02702675200998783
+Period: 1
+Antiperiod: 279
+Initial living cells: 512
+Final living cells: 14
+EASY MAX: 0.9818977117538452
+EASY MIN: 1.8598904880870474e-33
+MEDIUM MAX: 0.9065380096435547
+MEDIUM MIN: 2.1579461350503784e-17
+HARD MAX: 0.422981858253479
+HARD MIN: 0.02702675200998783

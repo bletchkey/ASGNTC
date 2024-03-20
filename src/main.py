@@ -72,16 +72,27 @@ def playground():
     print(f"Initial living cells: {results['n_cells_init'].item()}")
     print(f"Final living cells: {results['n_cells_final'].item()}")
 
-    data = pg.get_config_id(131072)
+    data = pg.get_record_from_id(131072)
 
     for k, v in data.items():
+        if k == "easy_metric":
+            print(f"EASY MAX: {v.max()}")
+            print(f"EASY MIN: {v.min()}")
+        if k == "medium_metric":
+            print(f"MEDIUM MAX: {v.max()}")
+            print(f"MEDIUM MIN: {v.min()}")
+        if k == "hard_metric":
+            print(f"HARD MAX: {v.max()}")
+            print(f"HARD MIN: {v.min()}")
 
-        print(f"{k}: {v}")
-        if k == "easy_metric" or k == "medium_metric" or k == "hard_metric":
-            print(f"  {v.max()}")
-            print(f"  {v.min()}")
+    pg.plot_record(data)
 
-    pg.plot_antiperiods()
+    # pg.load_predictor("predictor_medium_metric.tar")
+    # pred = pg.predict(data["initial_config"])
+
+    # print(pred.max())
+    # print(pred.min())
+
 
 
 def train_adversarial():

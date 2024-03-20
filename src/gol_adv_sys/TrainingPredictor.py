@@ -69,7 +69,7 @@ class TrainingPredictor(TrainingBase):
 
         self.simulation_topology = constants.TOPOLOGY_TYPE["toroidal"]
         self.init_config_type = constants.INIT_CONFIG_TYPE["threshold"]
-        self.metric_type = constants.METRIC_TYPE["hard"]
+        self.metric_type = constants.METRIC_TYPE["medium"]
 
         self.current_epoch = 0
         self.n_times_trained_p = 0
