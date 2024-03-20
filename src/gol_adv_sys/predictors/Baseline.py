@@ -145,9 +145,9 @@ class Baseline_v4(nn.Module):
 
         self.in_conv = nn.Conv2d(constants.nc, 32, kernel_size=3, stride=1, padding=0)
         self.convs = nn.ModuleList([
-            nn.Conv2d(32, 32, kernel_size=3, stride=1, padding=0) for _ in range(30)
+            nn.Conv2d(32, 32, kernel_size=3, stride=1, padding=0) for _ in range(20)
         ])
-        self.bn_layers = nn.ModuleList([nn.BatchNorm2d(32) for _ in range(31)])
+        self.bn_layers = nn.ModuleList([nn.BatchNorm2d(32) for _ in range(21)])
         self.out_conv = nn.Conv2d(32, constants.nc, kernel_size=1, stride=1, padding=0)
         self.relu = nn.ReLU()
 

@@ -63,7 +63,7 @@ def playground():
     rows, cols = indices // 32, indices % 32
     init_config[0, 0, rows, cols] = 1
 
-    pg = Playground(topology=constants.TOPOLOGY_TYPE["toroidal"])
+    pg = Playground()
 
     results = pg.simulate(init_config, steps=10)
 
@@ -75,7 +75,13 @@ def playground():
     data = pg.get_config_id(131072)
 
     for k, v in data.items():
+
         print(f"{k}: {v}")
+        if k == "easy_metric" or k == "medium_metric" or k == "hard_metric":
+            print(f"  {v.max()}")
+            print(f"  {v.min()}")
+
+    pg.plot_antiperiods()
 
 
 def train_adversarial():
@@ -95,7 +101,6 @@ def main():
     setup_logging(path=CONFIG_DIR / "logging.json")
 
     playground()
-
     # train_predictor()
     # train_adversarial()
 

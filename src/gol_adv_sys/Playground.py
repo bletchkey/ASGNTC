@@ -1,4 +1,5 @@
 import typing
+import matplotlib.pyplot as plt
 
 import torch
 from torch.utils.data import DataLoader
@@ -13,8 +14,7 @@ from config.paths import DATASET_DIR
 
 class Playground():
 
-    def __init__(self, topology: int):
-        self.__topology = topology
+    def __init__(self):
         self.__device_manager = DeviceManager()
         self.__dataset = {"train_data": None, "train_meta": None}
 
@@ -51,7 +51,7 @@ class Playground():
 
         config = config.to(self.__device_manager.default_device)
 
-        final, metrics, n_cells_init, n_cells_final = simulate_config(config, self.__topology, steps=steps,
+        final, metrics, n_cells_init, n_cells_final = simulate_config(config, constants.TOPOLOGY_TYPE["toroidal"], steps=steps,
                                                         calculate_final_config=calc_final, device=self.__device_manager.default_device)
 
 
@@ -84,6 +84,31 @@ class Playground():
         raise ValueError(f"Could not find the data for id {id}")
 
 
+    def plot_antiperiods(self) -> None:
+
+        if self.__dataset["train_meta"] is None:
+            self.__load_train_metadata()
+
+        pairs = []
+        for meta in self.__dataset["train_meta"]:
+            id = meta["id"]
+            antiperiod = meta["antiperiod"]
+            pairs.append((id, antiperiod))
+
+        pairs.sort(key=lambda x: x[1])
+
+        ids, antiperiods = zip(*pairs)
+
+        plt.figure(figsize=(10, 6))
+        plt.bar(ids, antiperiods)
+        plt.xlabel("ID")
+        plt.ylabel("Antiperiod")
+        plt.title("Antiperiods")
+        plt.grid(True)
+        plt.savefig("antiperiods_bar_graph.png", dpi=300)
+        plt.close()
+
+
     def __load_train_dataset(self):
 
         train_data_path = DATASET_DIR / f"{constants.dataset_name}_train.pt"
@@ -112,3 +137,4 @@ class Playground():
         }
 
         return informations
+
