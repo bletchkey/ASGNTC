@@ -16,6 +16,7 @@ def main():
     device_manager = DeviceManager()
     dataset = DatasetCreator(device_manager=device_manager)
     dataset.create_dataset()
+    dataset.save_tensors()
 
 
 if __name__ == "__main__":

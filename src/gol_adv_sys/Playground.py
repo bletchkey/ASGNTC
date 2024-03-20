@@ -64,10 +64,10 @@ class Playground():
             "n_cells_init": n_cells_init,
             "n_cells_final": n_cells_final,
             "final_config": final["config"],
-            "easy_metric": metrics["easy"]["config"],
-            "medium_metric": metrics["medium"]["config"],
-            "hard_metric": metrics["hard"]["config"],
-            "stable_metric": metrics["stable"]["config"]
+            "easy": metrics["easy"]["config"],
+            "medium": metrics["medium"]["config"],
+            "hard": metrics["hard"]["config"],
+            "stable": metrics["stable"]["config"]
 
         }
 
@@ -111,34 +111,53 @@ class Playground():
 
 
     def plot_record(self, record: dict) -> None:
-        fig = plt.figure(figsize=(30, 10))
-        gs = GridSpec(2, 6, figure=fig)
+        fig = plt.figure(figsize=(24, 12))
+        gs = GridSpec(3, 6, figure=fig, height_ratios=[6, 6, 1])
 
         imshow_kwargs = {'cmap': 'gray', 'vmin': 0, 'vmax': 1}
 
-        axs = [fig.add_subplot(gs[0, i]) for i in range(5)]
-        axs.append(fig.add_subplot(gs[1, :]))
+        titles = ["Initial Configuration", "Final Configuration", "Easy Metric",
+                  "Medium Metric", "Hard Metric", "Stable Metric"]
 
-        axs[0].imshow(record["initial_config"].detach().cpu().numpy().squeeze(), **imshow_kwargs)
-        axs[0].set_title(f"Initial Configuration - {record['n_cells_init']} cells")
-        axs[1].imshow(record["final_config"].detach().cpu().numpy().squeeze(), **imshow_kwargs)
-        axs[1].set_title(f"Final Configuration - {record['n_cells_final']} cells")
-        axs[2].imshow(record["easy_metric"].detach().cpu().numpy().squeeze(), **imshow_kwargs)
-        axs[2].set_title("Easy Metric")
-        axs[3].imshow(record["medium_metric"].detach().cpu().numpy().squeeze(), **imshow_kwargs)
-        axs[3].set_title("Medium Metric")
-        axs[4].imshow(record["hard_metric"].detach().cpu().numpy().squeeze(), **imshow_kwargs)
-        axs[4].set_title("Hard Metric")
-        axs[5].imshow(record["stable_metric"].detach().cpu().numpy().squeeze(), **imshow_kwargs)
-        axs[5].set_title("Stable Metric")
+        # Image plots in the first row
+        for i, config in enumerate(["initial_config", "final_config", "easy", "medium", "hard", "stable"]):
+            if i == 0:
+                ax = fig.add_subplot(gs[0, i])
+                ax.imshow(record[f"{config}"].detach().cpu().numpy().squeeze(), **imshow_kwargs)
+                ax.set_title(f"Initial - {record['n_cells_init']} cells", fontsize=16)
+                ax.axis('off')
+                continue
+            if i == 1:
+                ax = fig.add_subplot(gs[0, i])
+                ax.imshow(record[f"{config}"].detach().cpu().numpy().squeeze(), **imshow_kwargs)
+                ax.set_title(f"Final - {record['n_cells_final']} cells", fontsize=16)
+                ax.axis('off')
+                continue
+            ax = fig.add_subplot(gs[0, i])
+            ax.imshow(record[f"{config}"]["config"].detach().cpu().numpy().squeeze(), **imshow_kwargs)
+            ax.set_title(f"{titles[i]}", fontsize=16)
+            ax.axis('off')
 
+        # Text plot for metrics in the first row
+        for i, metric in enumerate(["easy", "medium", "hard", "stable"]):
+            ax = fig.add_subplot(gs[1, i+1])
+            metric_info = record[f"{metric}"]
+            ax.text(0.5, 0.5, f"Min: {metric_info['minimum']}\nMax: {metric_info['maximum']}\n"
+                                f"Q1: {metric_info['q1']}\nQ2: {metric_info['q2']}\nQ3: {metric_info['q3']}",
+                    ha="center", va="center", fontsize=12, wrap=True)
+            ax.axis('off')
+
+        # Text plot spanning all columns in the second row
+        ax_text = fig.add_subplot(gs[2, :])
         text_str = f"ID: {record['id']}\nPeriod: {record['period']}\nTransient phase: {record['transient_phase']}"
-        axs[6].text(0.5, 0.5, text_str, ha="center", va="center", fontsize=30, wrap=True)
-        axs[6].axis("off")
+        ax_text.text(0.5, 0.5, text_str, ha="center", va="center", fontsize=20, wrap=True)
+        ax_text.axis('off')
 
-        plt.tight_layout(pad=1.0)
+        # Adjust layout for padding and spacing
+        plt.subplots_adjust(left=0.05, right=0.95, top=0.9, bottom=0.1, wspace=0.1, hspace=0)
 
-        plt.savefig(f"record_{record['id']}.png")
+        # Save and close
+        plt.savefig(f"record_{record['id']}.png", dpi = 600, bbox_inches='tight')
         plt.close(fig)
 
 
@@ -164,10 +183,38 @@ class Playground():
             "transient_phase" : metadata["transient_phase"],
             "initial_config"  : data[0, :, :, :],
             "final_config"    : data[1, :, :, :],
-            "easy_metric"     : data[2, :, :, :],
-            "medium_metric"   : data[3, :, :, :],
-            "hard_metric"     : data[4, :, :, :],
-            "stable_metric"   : data[5, :, :, :]
+            "easy"     : {
+                "config"  : data[2, :, :, :],
+                "minimum" : metadata["easy_minimum"],
+                "maximum" : metadata["easy_maximum"],
+                "q1"      : metadata["easy_q1"],
+                "q2"      : metadata["easy_q2"],
+                "q3"      : metadata["easy_q3"],
+            },
+            "medium"  : {
+                "config"  : data[3, :, :, :],
+                "minimum" : metadata["medium_minimum"],
+                "maximum" : metadata["medium_maximum"],
+                "q1"      : metadata["medium_q1"],
+                "q2"      : metadata["medium_q2"],
+                "q3"      : metadata["medium_q3"],
+            },
+            "hard"    : {
+                "config"  : data[4, :, :, :],
+                "minimum" : metadata["hard_minimum"],
+                "maximum" : metadata["hard_maximum"],
+                "q1"      : metadata["hard_q1"],
+                "q2"      : metadata["hard_q2"],
+                "q3"      : metadata["hard_q3"],
+            },
+            "stable"  : {
+                "config"  : data[5, :, :, :],
+                "minimum" : metadata["stable_minimum"],
+                "maximum" : metadata["stable_maximum"],
+                "q1"      : metadata["stable_q1"],
+                "q2"      : metadata["stable_q2"],
+                "q3"      : metadata["stable_q3"],
+            }
         }
 
         return informations

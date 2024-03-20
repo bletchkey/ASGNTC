@@ -1,228 +1,50 @@
 Traceback (most recent call last):
-  File "create_dataset.py", line 9, in <module>
-    from src.gol_adv_sys.DatasetManager import DatasetCreator
-ModuleNotFoundError: No module named 'src'
-Traceback (most recent call last):
-  File "create_dataset.py", line 21, in <module>
-    return_code = main()
-  File "create_dataset.py", line 17, in main
-    dataset.create_dataset()
-  File "/home/bletchkey/ASGNTC/src/gol_adv_sys/DatasetManager.py", line 105, in create_dataset
-    final, metrics, n_cells_init, n_cells_final = simulate_config(
-  File "/home/bletchkey/ASGNTC/src/gol_adv_sys/utils/simulation_functions.py", line 52, in simulate_config
-    final_config, stable_config, period, transient_phase = __calculate_final_configuration(config, _simulation_function, kernel, device)
-  File "/home/bletchkey/ASGNTC/src/gol_adv_sys/utils/simulation_functions.py", line 128, in __calculate_final_configuration
-    accumulated_state = simulation_function(accumulated_state, kernel, device)
-  File "/home/bletchkey/ASGNTC/src/gol_adv_sys/utils/simulation_functions.py", line 303, in __simulate_config_toroidal
-    config = torch.cat([config[:, :, :, -1:], config, config[:, :, :, :1]], dim=3)
-IndexError: too many indices for tensor of dimension 3
-Traceback (most recent call last):
   File "create_dataset.py", line 22, in <module>
     return_code = main()
   File "create_dataset.py", line 18, in main
     dataset.create_dataset()
-  File "/home/bletchkey/ASGNTC/src/gol_adv_sys/DatasetManager.py", line 105, in create_dataset
-    final, metrics, n_cells_init, n_cells_final = simulate_config(
-  File "/home/bletchkey/ASGNTC/src/gol_adv_sys/utils/simulation_functions.py", line 52, in simulate_config
-    final_config, stable_config, period, transient_phase = __calculate_final_configuration(config, _simulation_function, kernel, device)
-  File "/home/bletchkey/ASGNTC/src/gol_adv_sys/utils/simulation_functions.py", line 129, in __calculate_final_configuration
-    stable_config[i] += accumulated_state
-RuntimeError: output with shape [1, 32, 32] doesn't match the broadcast shape [1, 1, 32, 32]
+  File "/home/bletchkey/ASGNTC/src/gol_adv_sys/DatasetManager.py", line 182, in create_dataset
+    data = torch.stack(shuffled_configs, dim=0)
+torch.cuda.OutOfMemoryError: CUDA out of memory. Tried to allocate 6.01 GiB. GPU 0 has a total capacty of 23.67 GiB of which 3.79 GiB is free. Including non-PyTorch memory, this process has 19.80 GiB memory in use. Of the allocated memory 18.08 GiB is allocated by PyTorch, and 1.48 GiB is reserved by PyTorch but unallocated. If reserved but unallocated memory is large try setting max_split_size_mb to avoid fragmentation.  See documentation for Memory Management and PYTORCH_CUDA_ALLOC_CONF
 Traceback (most recent call last):
-  File "create_dataset.py", line 22, in <module>
+  File "plot_dataset_info.py", line 178, in <module>
     return_code = main()
-  File "create_dataset.py", line 18, in main
-    dataset.create_dataset()
-  File "/home/bletchkey/ASGNTC/src/gol_adv_sys/DatasetManager.py", line 105, in create_dataset
-    final, metrics, n_cells_init, n_cells_final = simulate_config(
-  File "/home/bletchkey/ASGNTC/src/gol_adv_sys/utils/simulation_functions.py", line 52, in simulate_config
-    final_config, stable_config, period, transient_phase = __calculate_final_configuration(config, _simulation_function, kernel, device)
-  File "/home/bletchkey/ASGNTC/src/gol_adv_sys/utils/simulation_functions.py", line 129, in __calculate_final_configuration
-    stable_config[i] += accumulated_state
-RuntimeError: output with shape [1, 32, 32] doesn't match the broadcast shape [1, 1, 32, 32]
-Traceback (most recent call last):
-  File "create_dataset.py", line 22, in <module>
-    return_code = main()
-  File "create_dataset.py", line 18, in main
-    dataset.create_dataset()
-  File "/home/bletchkey/ASGNTC/src/gol_adv_sys/DatasetManager.py", line 105, in create_dataset
-    final, metrics, n_cells_init, n_cells_final = simulate_config(
-  File "/home/bletchkey/ASGNTC/src/gol_adv_sys/utils/simulation_functions.py", line 52, in simulate_config
-    final_config, stable_config, period, transient_phase = __calculate_final_configuration(config, _simulation_function, kernel, device)
-  File "/home/bletchkey/ASGNTC/src/gol_adv_sys/utils/simulation_functions.py", line 127, in __calculate_final_configuration
-    conf = simulation_function(conf, kernel, device)
-UnboundLocalError: local variable 'conf' referenced before assignment
-Traceback (most recent call last):
-  File "create_dataset.py", line 22, in <module>
-    return_code = main()
-  File "create_dataset.py", line 18, in main
-    dataset.create_dataset()
-  File "/home/bletchkey/ASGNTC/src/gol_adv_sys/DatasetManager.py", line 105, in create_dataset
-    final, metrics, n_cells_init, n_cells_final = simulate_config(
-  File "/home/bletchkey/ASGNTC/src/gol_adv_sys/utils/simulation_functions.py", line 67, in simulate_config
-    metrics = __calculate_metrics(sim_configs, stable_config, device)
-  File "/home/bletchkey/ASGNTC/src/gol_adv_sys/utils/simulation_functions.py", line 231, in __calculate_metrics
-    sim_metrics[difficulty]["config"]  = sim_metrics[difficulty].sum(dim=1)
-AttributeError: 'dict' object has no attribute 'sum'
-Traceback (most recent call last):
-  File "create_dataset.py", line 22, in <module>
-    return_code = main()
-  File "create_dataset.py", line 18, in main
-    dataset.create_dataset()
-  File "/home/bletchkey/ASGNTC/src/gol_adv_sys/DatasetManager.py", line 162, in create_dataset
-    tensors = [batch[key].to(self.device_manager.default_device) for batch in metadata]
-  File "/home/bletchkey/ASGNTC/src/gol_adv_sys/DatasetManager.py", line 162, in <listcomp>
-    tensors = [batch[key].to(self.device_manager.default_device) for batch in metadata]
-AttributeError: 'dict' object has no attribute 'to'
-/home/bletchkey/ASGNTC/src/gol_adv_sys/DatasetManager.py:161: UserWarning: To copy construct from a tensor, it is recommended to use sourceTensor.clone().detach() or sourceTensor.clone().detach().requires_grad_(True), rather than torch.tensor(sourceTensor).
-  tensors = [torch.tensor(batch[key], device=self.device_manager.default_device) for batch in metadata]
-Traceback (most recent call last):
-  File "create_dataset.py", line 22, in <module>
-    return_code = main()
-  File "create_dataset.py", line 18, in main
-    dataset.create_dataset()
-  File "/home/bletchkey/ASGNTC/src/gol_adv_sys/DatasetManager.py", line 161, in create_dataset
-    tensors = [torch.tensor(batch[key], device=self.device_manager.default_device) for batch in metadata]
-  File "/home/bletchkey/ASGNTC/src/gol_adv_sys/DatasetManager.py", line 161, in <listcomp>
-    tensors = [torch.tensor(batch[key], device=self.device_manager.default_device) for batch in metadata]
-RuntimeError: Could not infer dtype of dict
-Traceback (most recent call last):
-  File "create_dataset.py", line 22, in <module>
-    return_code = main()
-  File "create_dataset.py", line 18, in main
-    dataset.create_dataset()
-  File "/home/bletchkey/ASGNTC/src/gol_adv_sys/DatasetManager.py", line 164, in create_dataset
-    if isinstance(batch[key], (list, np.ndarray, torch.Tensor)):  # Check if the data type is directly convertible
-NameError: name 'np' is not defined
-/home/bletchkey/ASGNTC/src/gol_adv_sys/DatasetManager.py:165: UserWarning: To copy construct from a tensor, it is recommended to use sourceTensor.clone().detach() or sourceTensor.clone().detach().requires_grad_(True), rather than torch.tensor(sourceTensor).
-  tensor = torch.tensor(batch[key], device=self.device_manager.default_device)
-Traceback (most recent call last):
-  File "create_dataset.py", line 22, in <module>
-    return_code = main()
-  File "create_dataset.py", line 18, in main
-    dataset.create_dataset()
-  File "/home/bletchkey/ASGNTC/src/gol_adv_sys/DatasetManager.py", line 168, in create_dataset
-    raise TypeError(f"Unsupported type for tensor conversion: {type(batch[key])}")
-TypeError: Unsupported type for tensor conversion: <class 'dict'>
-Traceback (most recent call last):
-  File "create_dataset.py", line 22, in <module>
-    return_code = main()
-  File "create_dataset.py", line 18, in main
-    dataset.create_dataset()
-  File "/home/bletchkey/ASGNTC/src/gol_adv_sys/DatasetManager.py", line 168, in create_dataset
-    if all(isinstance(value, (int, float)) for value in batch[key].values()):
-RuntimeError: values expected sparse tensor layout but got Strided
-/home/bletchkey/ASGNTC/src/gol_adv_sys/DatasetManager.py:167: UserWarning: To copy construct from a tensor, it is recommended to use sourceTensor.clone().detach() or sourceTensor.clone().detach().requires_grad_(True), rather than torch.tensor(sourceTensor).
-  tensor = torch.tensor(dict_values, device=self.device_manager.default_device)
-Traceback (most recent call last):
-  File "create_dataset.py", line 22, in <module>
-    return_code = main()
-  File "create_dataset.py", line 18, in main
-    dataset.create_dataset()
-  File "/home/bletchkey/ASGNTC/src/gol_adv_sys/DatasetManager.py", line 171, in create_dataset
-    tensor = torch.tensor(dict_values, device=self.device_manager.default_device)
-ValueError: only one element tensors can be converted to Python scalars
-Traceback (most recent call last):
-  File "create_dataset.py", line 22, in <module>
-    return_code = main()
-  File "create_dataset.py", line 18, in main
-    dataset.create_dataset()
-  File "/home/bletchkey/ASGNTC/src/gol_adv_sys/DatasetManager.py", line 173, in create_dataset
-    tensor = torch.tensor(dict_values, dtype=torch.float32, device=self.device_manager.default_device)
-ValueError: only one element tensors can be converted to Python scalars
-Traceback (most recent call last):
-  File "create_dataset.py", line 22, in <module>
-    return_code = main()
-  File "create_dataset.py", line 18, in main
-    dataset.create_dataset()
-  File "/home/bletchkey/ASGNTC/src/gol_adv_sys/DatasetManager.py", line 165, in create_dataset
-    metadata_data[key] = torch.cat(tensors, dim=0)
-TypeError: expected Tensor as element 0 in argument 0, but got dict
-Traceback (most recent call last):
-  File "plot_dataset_info.py", line 132, in <module>
-    return_code = main()
-  File "plot_dataset_info.py", line 128, in main
-    check_transient_phases(saving_path, dataset, metadata)
-TypeError: check_transient_phases() takes 2 positional arguments but 3 were given
-Traceback (most recent call last):
-  File "plot_dataset_info.py", line 132, in <module>
-    return_code = main()
-  File "plot_dataset_info.py", line 128, in main
-    check_transient_phases(saving_path, metadata)
-  File "plot_dataset_info.py", line 91, in check_transient_phases
-    antiperiod = meta["transient phase"]
-KeyError: 'transient phase'
-Traceback (most recent call last):
-  File "plot_dataset_info.py", line 132, in <module>
-    return_code = main()
-  File "plot_dataset_info.py", line 128, in main
-    check_transient_phases(saving_path, metadata)
-  File "plot_dataset_info.py", line 91, in check_transient_phases
-    transient_phase = meta["transient_phase"]
-KeyError: 'transient phase'
-Traceback (most recent call last):
-  File "plot_dataset_info.py", line 132, in <module>
-    return_code = main()
-  File "plot_dataset_info.py", line 127, in main
+  File "plot_dataset_info.py", line 173, in main
     check_dataset_configs(saving_path, dataset, metadata)
-  File "plot_dataset_info.py", line 82, in check_dataset_configs
-    plt.savefig(Path(saving_path) / f"configs_{png_idx+1}.png", bbox_inches='tight')
-  File "/home/bletchkey/.local/lib/python3.8/site-packages/matplotlib/pyplot.py", line 1023, in savefig
-    res = fig.savefig(*args, **kwargs)
-  File "/home/bletchkey/.local/lib/python3.8/site-packages/matplotlib/figure.py", line 3378, in savefig
-    self.canvas.print_figure(fname, **kwargs)
-  File "/home/bletchkey/.local/lib/python3.8/site-packages/matplotlib/backend_bases.py", line 2366, in print_figure
-    result = print_method(
-  File "/home/bletchkey/.local/lib/python3.8/site-packages/matplotlib/backend_bases.py", line 2232, in <lambda>
-    print_method = functools.wraps(meth)(lambda *args, **kwargs: meth(
-  File "/home/bletchkey/.local/lib/python3.8/site-packages/matplotlib/backends/backend_agg.py", line 509, in print_png
-    self._print_pil(filename_or_obj, "png", pil_kwargs, metadata)
-  File "/home/bletchkey/.local/lib/python3.8/site-packages/matplotlib/backends/backend_agg.py", line 458, in _print_pil
-    mpl.image.imsave(
-  File "/home/bletchkey/.local/lib/python3.8/site-packages/matplotlib/image.py", line 1689, in imsave
-    image.save(fname, **pil_kwargs)
-  File "/usr/lib/python3/dist-packages/PIL/Image.py", line 2099, in save
-    fp = builtins.open(filename, "w+b")
-FileNotFoundError: [Errno 2] No such file or directory: '/media/yui/bletchkey/ASGNTC/data/plots/val/configs_8.png'
+  File "plot_dataset_info.py", line 118, in check_dataset_configs
+    ax.imshow(config[img_idx].cpu(), cmap='gray')
+  File "/home/bletchkey/.local/lib/python3.8/site-packages/matplotlib/__init__.py", line 1446, in inner
+    return func(ax, *map(sanitize_sequence, args), **kwargs)
+  File "/home/bletchkey/.local/lib/python3.8/site-packages/matplotlib/axes/_axes.py", line 5663, in imshow
+    im.set_data(X)
+  File "/home/bletchkey/.local/lib/python3.8/site-packages/matplotlib/image.py", line 710, in set_data
+    raise TypeError("Invalid shape {} for image data"
+TypeError: Invalid shape (1, 32, 32) for image data
 Traceback (most recent call last):
-  File "plot_dataset_info.py", line 134, in <module>
+  File "plot_dataset_info.py", line 177, in <module>
     return_code = main()
-  File "plot_dataset_info.py", line 129, in main
+  File "plot_dataset_info.py", line 172, in main
     check_dataset_configs(saving_path, dataset, metadata)
-  File "plot_dataset_info.py", line 84, in check_dataset_configs
-    plt.savefig(Path(saving_path) / f"configs_{png_idx+1}.png", bbox_inches='tight')
-  File "/home/bletchkey/.local/lib/python3.8/site-packages/matplotlib/pyplot.py", line 1023, in savefig
-    res = fig.savefig(*args, **kwargs)
-  File "/home/bletchkey/.local/lib/python3.8/site-packages/matplotlib/figure.py", line 3378, in savefig
-    self.canvas.print_figure(fname, **kwargs)
-  File "/home/bletchkey/.local/lib/python3.8/site-packages/matplotlib/backend_bases.py", line 2342, in print_figure
-    self.figure.draw(renderer)
-  File "/home/bletchkey/.local/lib/python3.8/site-packages/matplotlib/artist.py", line 95, in draw_wrapper
-    result = draw(artist, renderer, *args, **kwargs)
-  File "/home/bletchkey/.local/lib/python3.8/site-packages/matplotlib/artist.py", line 72, in draw_wrapper
-    return draw(artist, renderer)
-  File "/home/bletchkey/.local/lib/python3.8/site-packages/matplotlib/figure.py", line 3175, in draw
-    mimage._draw_list_compositing_images(
-  File "/home/bletchkey/.local/lib/python3.8/site-packages/matplotlib/image.py", line 131, in _draw_list_compositing_images
-    a.draw(renderer)
-  File "/home/bletchkey/.local/lib/python3.8/site-packages/matplotlib/artist.py", line 72, in draw_wrapper
-    return draw(artist, renderer)
-  File "/home/bletchkey/.local/lib/python3.8/site-packages/matplotlib/axes/_base.py", line 3015, in draw
-    self.apply_aspect(locator(self, renderer) if locator else None)
-  File "/home/bletchkey/.local/lib/python3.8/site-packages/matplotlib/axes/_base.py", line 1924, in apply_aspect
-    box_aspect = aspect * self.get_data_ratio()
-  File "/home/bletchkey/.local/lib/python3.8/site-packages/matplotlib/axes/_base.py", line 1871, in get_data_ratio
-    tymin, tymax = self.yaxis.get_transform().transform(self.get_ybound())
-  File "/home/bletchkey/.local/lib/python3.8/site-packages/matplotlib/axes/_base.py", line 3747, in get_ybound
-    bottom, top = self.get_ylim()
-  File "/home/bletchkey/.local/lib/python3.8/site-packages/matplotlib/axes/_base.py", line 3805, in get_ylim
-    return tuple(self.viewLim.intervaly)
-  File "/home/bletchkey/.local/lib/python3.8/site-packages/matplotlib/axes/_base.py", line 857, in viewLim
-    self._unstale_viewLim()
-  File "/home/bletchkey/.local/lib/python3.8/site-packages/matplotlib/axes/_base.py", line 844, in _unstale_viewLim
-    need_scale = {
-  File "/home/bletchkey/.local/lib/python3.8/site-packages/matplotlib/axes/_base.py", line 846, in <dictcomp>
-    for ax in self._shared_axes[name].get_siblings(self))
-  File "/home/bletchkey/.local/lib/python3.8/site-packages/matplotlib/cbook/__init__.py", line 894, in get_siblings
-    return [x() for x in siblings]
+  File "plot_dataset_info.py", line 115, in check_dataset_configs
+    ax = axs[config_idx, img_idx]
+IndexError: index 10 is out of bounds for axis 0 with size 10
+plot_dataset_info.py:126: UserWarning: Tight layout not applied. tight_layout cannot make axes width small enough to accommodate all axes decorations
+  plt.tight_layout()
+Traceback (most recent call last):
+  File "plot_dataset_info.py", line 222, in <module>
+    return_code = main()
+  File "plot_dataset_info.py", line 218, in main
+    check_transient_phases(saving_path, metadata)
+  File "plot_dataset_info.py", line 189, in check_transient_phases
+    plt.bar(ids, transient_phases, color='blue')
+  File "/home/bletchkey/.local/lib/python3.8/site-packages/matplotlib/pyplot.py", line 2439, in bar
+    return gca().bar(
+  File "/home/bletchkey/.local/lib/python3.8/site-packages/matplotlib/__init__.py", line 1446, in inner
+    return func(ax, *map(sanitize_sequence, args), **kwargs)
+  File "/home/bletchkey/.local/lib/python3.8/site-packages/matplotlib/axes/_axes.py", line 2486, in bar
+    self.add_patch(r)
+  File "/home/bletchkey/.local/lib/python3.8/site-packages/matplotlib/axes/_base.py", line 2379, in add_patch
+    self._update_patch_limits(p)
+  File "/home/bletchkey/.local/lib/python3.8/site-packages/matplotlib/axes/_base.py", line 2405, in _update_patch_limits
+    vertices.append(curve([0, *dzeros, 1]))
 KeyboardInterrupt

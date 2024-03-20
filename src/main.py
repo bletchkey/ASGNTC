@@ -15,10 +15,8 @@ from src.gol_adv_sys.TrainingPredictor import TrainingPredictor
 from src.gol_adv_sys.TrainingAdversarial import TrainingAdversarial
 from src.gol_adv_sys.Playground import Playground
 
-from src.gol_adv_sys.Predictor import Predictor_Baseline, Predictor_Baseline_v2, \
-                                  Predictor_Baseline_v3, Predictor_Baseline_v4, \
-                                  Predictor_ResNet, Predictor_UNet, \
-                                  Predictor_GloNet, Predictor_ViT
+from src.gol_adv_sys.Predictor import Predictor_Baseline, Predictor_ResNet, \
+                                      Predictor_UNet, Predictor_GloNet \
 
 from src.gol_adv_sys.Generator import Generator_DCGAN
 
@@ -73,7 +71,7 @@ def playground():
     # print(f"Final living cells: {results
     # ['n_cells_final'].item()}")
 
-    data = pg.get_record_from_id(200000)
+    data = pg.get_record_from_id(100000)
 
     pg.plot_record(data)
 
@@ -91,7 +89,7 @@ def train_adversarial():
 
 
 def train_predictor():
-    train_pred = TrainingPredictor(model=Predictor_Baseline_v4())
+    train_pred = TrainingPredictor(model=Predictor_Baseline())
     train_pred.run()
 
 
