@@ -98,3 +98,5 @@ Traceback (most recent call last):
   File "/home/bletchkey/.local/lib/python3.8/site-packages/matplotlib/gridspec.py", line 133, in set_height_ratios
     raise ValueError('Expected the given number of height ratios to '
 ValueError: Expected the given number of height ratios to match the number of rows of the grid
+Stable min: 0.0
+Stable max: 1.0

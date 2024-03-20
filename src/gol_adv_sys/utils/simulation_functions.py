@@ -127,7 +127,7 @@ def __calculate_final_configuration(config_batch: torch.Tensor, simulation_funct
                     config = simulation_function(config, kernel, device)
                     accumulated_state += config
 
-                stable_config[i] = accumulated_state.mean(dim=0)
+                stable_config[i] = accumulated_state / period[i]
 
             else:
                 config_hashes[i][current_hash] = step

@@ -63,7 +63,10 @@ def playground():
 
     pg = Playground()
 
-    #results = pg.simulate(init_config, steps=10)
+    results = pg.simulate(init_config, steps=10)
+
+    print(f"Stable min: {results['stable'].min()}")
+    print(f"Stable max: {results['stable'].max()}")
 
     # print(f"Period: {results['period'].item()}")
     # print(f"Transient phase: {results['transient_phase'].item()}")
@@ -72,7 +75,6 @@ def playground():
     # ['n_cells_final'].item()}")
 
     data = pg.get_record_from_id(100000)
-
     pg.plot_record(data)
 
     # pg.load_predictor("predictor_medium_metric.tar")

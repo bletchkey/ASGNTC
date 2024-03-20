@@ -48,3 +48,27 @@ Traceback (most recent call last):
   File "/home/bletchkey/.local/lib/python3.8/site-packages/matplotlib/axes/_base.py", line 2405, in _update_patch_limits
     vertices.append(curve([0, *dzeros, 1]))
 KeyboardInterrupt
+Traceback (most recent call last):
+  File "plot_dataset_info.py", line 222, in <module>
+    return_code = main()
+  File "plot_dataset_info.py", line 217, in main
+    check_dataset_configs(saving_path, dataset, metadata)
+  File "plot_dataset_info.py", line 172, in check_dataset_configs
+    plt.savefig(Path(saving_path) / f"configs_{png_idx+1}.png", bbox_inches='tight')
+  File "/home/bletchkey/.local/lib/python3.8/site-packages/matplotlib/pyplot.py", line 1023, in savefig
+    res = fig.savefig(*args, **kwargs)
+  File "/home/bletchkey/.local/lib/python3.8/site-packages/matplotlib/figure.py", line 3378, in savefig
+    self.canvas.print_figure(fname, **kwargs)
+  File "/home/bletchkey/.local/lib/python3.8/site-packages/matplotlib/backend_bases.py", line 2366, in print_figure
+    result = print_method(
+  File "/home/bletchkey/.local/lib/python3.8/site-packages/matplotlib/backend_bases.py", line 2232, in <lambda>
+    print_method = functools.wraps(meth)(lambda *args, **kwargs: meth(
+  File "/home/bletchkey/.local/lib/python3.8/site-packages/matplotlib/backends/backend_agg.py", line 509, in print_png
+    self._print_pil(filename_or_obj, "png", pil_kwargs, metadata)
+  File "/home/bletchkey/.local/lib/python3.8/site-packages/matplotlib/backends/backend_agg.py", line 458, in _print_pil
+    mpl.image.imsave(
+  File "/home/bletchkey/.local/lib/python3.8/site-packages/matplotlib/image.py", line 1689, in imsave
+    image.save(fname, **pil_kwargs)
+  File "/usr/lib/python3/dist-packages/PIL/Image.py", line 2099, in save
+    fp = builtins.open(filename, "w+b")
+FileNotFoundError: [Errno 2] No such file or directory: '/media/yui/bletchkey/ASGNTC/data/plots/test/configs_8.png'
