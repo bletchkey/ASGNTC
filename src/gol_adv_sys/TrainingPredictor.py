@@ -69,7 +69,7 @@ class TrainingPredictor(TrainingBase):
 
         self.simulation_topology = constants.TOPOLOGY_TYPE["toroidal"]
         self.init_config_type = constants.INIT_CONFIG_TYPE["threshold"]
-        self.metric_type = constants.METRIC_TYPE["medium"]
+        self.metric_type = constants.CONFIG_TYPE["medium"]
 
         self.current_epoch = 0
         self.n_times_trained_p = 0
@@ -292,7 +292,7 @@ class TrainingPredictor(TrainingBase):
 
         """
 
-        return get_config_from_batch(batch, constants.CONFIG_NAMES["initial"], self.device_manager.default_device)
+        return get_config_from_batch(batch, constants.CONFIG_TYPE["initial"], self.device_manager.default_device)
 
 
     def __get_metric_config(self, batch, metric_type):

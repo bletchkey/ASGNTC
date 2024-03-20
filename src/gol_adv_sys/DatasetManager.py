@@ -1,4 +1,4 @@
-import os
+import numpy as np
 import logging
 
 import torch
@@ -110,19 +110,39 @@ class DatasetCreator():
                     configs.append({
                         "initial": initial_config,
                         "final": final["config"],
-                        "metric_easy": metrics["easy"],
-                        "metric_medium": metrics["medium"],
-                        "metric_hard": metrics["hard"],
+                        "metric_easy": metrics["easy"]["config"],
+                        "metric_medium": metrics["medium"]["config"],
+                        "metric_hard": metrics["hard"]["config"],
+                        "metric_stable": metrics["stable"]["config"]
                     })
 
                     metadata.append({
                         "id": ids[batch_number*constants.dataset_bs: (batch_number+1)*constants.dataset_bs],
                         "n_cells_init": n_cells_init,
                         "n_cells_final": n_cells_final,
+                        "transient_phase": final["transient_phase"],
                         "period": final["period"],
-                        "antiperiod": final["antiperiod"]
+                        "easy_minimum": metrics["easy"]["minimum"],
+                        "easy_maximum": metrics["easy"]["maximum"],
+                        "easy_q1": metrics["easy"]["q1"],
+                        "easy_q2": metrics["easy"]["q2"],
+                        "easy_q3": metrics["easy"]["q3"],
+                        "medium_minimum": metrics["medium"]["minimum"],
+                        "medium_maximum": metrics["medium"]["maximum"],
+                        "medium_q1": metrics["medium"]["q1"],
+                        "medium_q2": metrics["medium"]["q2"],
+                        "medium_q3": metrics["medium"]["q3"],
+                        "hard_minimum": metrics["hard"]["minimum"],
+                        "hard_maximum": metrics["hard"]["maximum"],
+                        "hard_q1": metrics["hard"]["q1"],
+                        "hard_q2": metrics["hard"]["q2"],
+                        "hard_q3": metrics["hard"]["q3"],
+                        "stable_minimum": metrics["stable"]["minimum"],
+                        "stable_maximum": metrics["stable"]["maximum"],
+                        "stable_q1": metrics["stable"]["q1"],
+                        "stable_q2": metrics["stable"]["q2"],
+                        "stable_q3": metrics["stable"]["q3"]
                     })
-
 
             # Configs
             concatenated_configs_tensor = []

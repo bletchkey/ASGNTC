@@ -50,23 +50,25 @@ class Playground():
         return self.__dataloader["test"]
 
 
-    def simulate(self, config: torch.Tensor, steps: int, calc_final: bool=True) -> torch.Tensor:
+    def simulate(self, config: torch.Tensor, steps: int) -> torch.Tensor:
 
         config = config.to(self.__device_manager.default_device)
 
         final, metrics, n_cells_init, n_cells_final = simulate_config(config, constants.TOPOLOGY_TYPE["toroidal"], steps=steps,
-                                                        calculate_final_config=calc_final, device=self.__device_manager.default_device)
+                                                        calculate_final_config=True, device=self.__device_manager.default_device)
 
 
         results = {
             "period": final["period"],
-            "antiperiod": final["antiperiod"],
+            "transient_phase": final["transient_phase"],
             "n_cells_init": n_cells_init,
             "n_cells_final": n_cells_final,
             "final_config": final["config"],
-            "easy_metric": metrics["easy"],
-            "medium_metric": metrics["medium"],
-            "hard_metric": metrics["hard"]
+            "easy_metric": metrics["easy"]["config"],
+            "medium_metric": metrics["medium"]["config"],
+            "hard_metric": metrics["hard"]["config"],
+            "stable_metric": metrics["stable"]["config"]
+
         }
 
         return results
@@ -110,7 +112,7 @@ class Playground():
 
     def plot_record(self, record: dict) -> None:
         fig = plt.figure(figsize=(30, 10))
-        gs = GridSpec(2, 5, figure=fig)
+        gs = GridSpec(2, 6, figure=fig)
 
         imshow_kwargs = {'cmap': 'gray', 'vmin': 0, 'vmax': 1}
 
@@ -127,40 +129,17 @@ class Playground():
         axs[3].set_title("Medium Metric")
         axs[4].imshow(record["hard_metric"].detach().cpu().numpy().squeeze(), **imshow_kwargs)
         axs[4].set_title("Hard Metric")
+        axs[5].imshow(record["stable_metric"].detach().cpu().numpy().squeeze(), **imshow_kwargs)
+        axs[5].set_title("Stable Metric")
 
-        text_str = f"ID: {record['id']}\nPeriod: {record['period']}\nAntiperiod: {record['antiperiod']}"
-        axs[5].text(0.5, 0.5, text_str, ha="center", va="center", fontsize=30, wrap=True)
-        axs[5].axis("off")
+        text_str = f"ID: {record['id']}\nPeriod: {record['period']}\nTransient phase: {record['transient_phase']}"
+        axs[6].text(0.5, 0.5, text_str, ha="center", va="center", fontsize=30, wrap=True)
+        axs[6].axis("off")
 
         plt.tight_layout(pad=1.0)
 
         plt.savefig(f"record_{record['id']}.png")
         plt.close(fig)
-
-
-    def plot_antiperiods(self) -> None:
-
-        if self.__dataset["train_meta"] is None:
-            self.__load_train_metadata()
-
-        pairs = []
-        for meta in self.__dataset["train_meta"]:
-            id = meta["id"]
-            antiperiod = meta["antiperiod"]
-            pairs.append((id, antiperiod))
-
-        pairs.sort(key=lambda x: x[1])
-
-        ids, antiperiods = zip(*pairs)
-
-        plt.figure(figsize=(10, 6))
-        plt.bar(ids, antiperiods)
-        plt.xlabel("ID")
-        plt.ylabel("Antiperiod")
-        plt.title("Antiperiods")
-        plt.grid(True)
-        plt.savefig("antiperiods_bar_graph.png", dpi=300)
-        plt.close()
 
 
     def __load_train_dataset(self):
@@ -178,16 +157,17 @@ class Playground():
     def __create_record_dict(self, data: torch.Tensor, metadata: dict) -> typing.Tuple[torch.Tensor, dict]:
 
         informations = {
-            "id"            : metadata["id"],
-            "n_cells_init"  : metadata["n_cells_init"],
-            "n_cells_final" : metadata["n_cells_final"],
-            "period"        : metadata["period"],
-            "antiperiod"    : metadata["antiperiod"],
-            "initial_config": data[0, :, :, :],
-            "final_config"  : data[1, :, :, :],
-            "easy_metric"   : data[2, :, :, :],
-            "medium_metric" : data[3, :, :, :],
-            "hard_metric"   : data[4, :, :, :]
+            "id"              : metadata["id"],
+            "n_cells_init"    : metadata["n_cells_init"],
+            "n_cells_final"   : metadata["n_cells_final"],
+            "period"          : metadata["period"],
+            "transient_phase" : metadata["transient_phase"],
+            "initial_config"  : data[0, :, :, :],
+            "final_config"    : data[1, :, :, :],
+            "easy_metric"     : data[2, :, :, :],
+            "medium_metric"   : data[3, :, :, :],
+            "hard_metric"     : data[4, :, :, :],
+            "stable_metric"   : data[5, :, :, :]
         }
 
         return informations

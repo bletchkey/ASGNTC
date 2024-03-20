@@ -81,7 +81,7 @@ class TrainingAdversarial(TrainingBase):
         self.simulation_topology = constants.TOPOLOGY_TYPE["toroidal"]
         self.init_config_type = constants.INIT_CONFIG_TYPE["threshold"]
 
-        self.metric_type = constants.METRIC_TYPE["medium"]
+        self.metric_type = constants.CONFIG_TYPE["medium"]
 
         self.current_epoch = 0
         self.step_times_secs = []
@@ -244,7 +244,7 @@ class TrainingAdversarial(TrainingBase):
                          "Topology: flat" if self.simulation_topology == constants.TOPOLOGY_TYPE["flat"] else
                          "Topology: unknown")
 
-        init_config_type = self.init_config_type  #
+        init_config_type = self.init_config_type
         init_config_info = ""
         if init_config_type == constants.INIT_CONFIG_TYPE["threshold"]:
             init_config_info = (f"Initial configuration type: threshold\n"
@@ -360,7 +360,7 @@ class TrainingAdversarial(TrainingBase):
 
         """
 
-        return get_config_from_batch(batch, constants.CONFIG_NAMES["initial"], self.device_manager.default_device)
+        return get_config_from_batch(batch, constants.CONFIG_TYPE["initial"], self.device_manager.default_device)
 
 
     def __get_metric_config(self, batch, metric_type):

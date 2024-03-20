@@ -25,6 +25,7 @@ def simulate_config(config: torch.Tensor, topology: str, steps: int,
         If calculate_final_config is False, the first element of the tuple is the simulated configuration (torch.Tensor).
 
         The initial and final number of living cells are also returned.
+
     """
     # count living cells in the initial configuration
     n_cells_init = torch.sum(config, dim=[2, 3], dtype=torch.int32)
@@ -48,12 +49,12 @@ def simulate_config(config: torch.Tensor, topology: str, steps: int,
     # Optionally calculate the final configuration
     final_config = None
     if calculate_final_config == True:
-        final_config, period, antiperiod = __calculate_final_configuration(config, _simulation_function, kernel, device)
+        final_config, stable_config, period, transient_phase = __calculate_final_configuration(config, _simulation_function, kernel, device)
 
         final = {
             "config": final_config,
             "period": period,
-            "antiperiod": antiperiod
+            "transient_phase": transient_phase
         }
 
     # Simulate the configuration for the given number of steps
@@ -62,8 +63,8 @@ def simulate_config(config: torch.Tensor, topology: str, steps: int,
         config = _simulation_function(config, kernel, device)
         sim_configs.append(config)
 
-    # Calculate metrics from the simulated configurations
-    metrics = __calculate_metrics(sim_configs, device)
+    # Calculate metrics from the simulated configurations and add stable metric to the dictionary
+    metrics = __calculate_metrics(sim_configs, stable_config, device)
 
     # Return the appropriate tuple based on whether the final configuration was calculated
     if final_config is not None:
@@ -81,7 +82,7 @@ def __calculate_final_configuration(config_batch: torch.Tensor, simulation_funct
     Function for calculating the final configuration
     The final configuration is the last configuration before a cycle is detected
     The period is the length of the repeating cycle
-    The antiperiod is the number of steps before the cycle starts
+    The transient phase is the number of steps before the cycle starts
 
     Args:
         config: Initial configuration
@@ -90,17 +91,20 @@ def __calculate_final_configuration(config_batch: torch.Tensor, simulation_funct
         device: Device used for computation
 
     Returns:
-        The final configuration, period length, and antiperiod length for each configuration in the batch
+        The final configuration, stable configuration, period length, and transient phase length
+        for each configuration in the batch
 
     """
-    batch_size = config_batch.size(0)
-    final_config = torch.zeros_like(config_batch)
-    period = torch.full((batch_size,), -1, dtype=torch.int32, device=device) # Initialize with -1 to indicate unfinished
-    antiperiod = torch.full((batch_size,), -1, dtype=torch.int32, device=device)  # Initialize with -1 to indicate unfinished
-    active = torch.ones(batch_size, dtype=torch.bool)  # Track active (unfinished) configurations
+    batch_size      = config_batch.size(0)
+    final_config    = torch.zeros_like(config_batch, dtype=torch.float32, device=device)
+    stable_config   = torch.zeros_like(config_batch, dtype=torch.float32, device=device)
+    period          = torch.full((batch_size,), -1, dtype=torch.int32, device=device) # Initialize with -1 to indicate unfinished
+    transient_phase = torch.full((batch_size,), -1, dtype=torch.int32, device=device)  # Initialize with -1 to indicate unfinished
+    active          = torch.ones(batch_size, dtype=torch.bool)  # Track active (unfinished) configurations
 
     step = 0
     config_hashes = [{} for _ in range(batch_size)]  # Separate hash tracker for each configuration
+
 
     while active.any():
         config_batch = simulation_function(config_batch, kernel, device)
@@ -113,28 +117,38 @@ def __calculate_final_configuration(config_batch: torch.Tensor, simulation_funct
             current_hash = hash(config.cpu().numpy().tobytes())
 
             if current_hash in config_hashes[i]:
-                antiperiod[i] = config_hashes[i][current_hash]
-                period[i] = step - antiperiod[i]
+                transient_phase[i] = config_hashes[i][current_hash]
+                period[i] = step - transient_phase[i]
                 final_config[i] = config.squeeze(0)
                 active[i] = False
+
+                accumulated_state = torch.zeros_like(config, dtype=torch.float32, device=device)
+                for _ in range(period[i]):
+                    config = simulation_function(config, kernel, device)
+                    accumulated_state += config
+
+                stable_config[i] = accumulated_state.mean(dim=0)
+
             else:
                 config_hashes[i][current_hash] = step
 
         step += 1
 
-    return final_config, period, antiperiod
+
+    return final_config, stable_config, period, transient_phase
 
 
-def __calculate_metrics(configs: list, device: torch.device) -> dict:
+def __calculate_metrics(configs: list, stable_config: torch.Tensor, device: torch.device) -> dict:
     """
     Function for calculating the metrics from the simulated configurations
 
     Args:
         configs (list): List of simulated configurations
+        stable_config (torch.Tensor): Stable configuration
         device (torch.device): Device used for computation
 
     Returns:
-        Dictionary containing the metrics for the easy, medium, and hard levels.
+        Dictionary containing the metrics for the stable, easy, medium, and hard levels.
 
     Infos:
     For numerical stability: (not used in the current implementation)
@@ -153,30 +167,59 @@ def __calculate_metrics(configs: list, device: torch.device) -> dict:
     stacked_configs = stacked_configs.permute(1, 0, 2, 3, 4)
 
     sim_metrics = {
-        constants.METRIC_TYPE["easy"]:   stacked_configs.clone(),
-        constants.METRIC_TYPE["medium"]: stacked_configs.clone(),
-        constants.METRIC_TYPE["hard"]:   stacked_configs.clone()
+        constants.CONFIG_TYPE["stable"]: {
+            "config": stable_config,
+            "maximum": None,
+            "minimum": None,
+            "q1": None,
+            "q2": None,
+            "q3": None
+        },
+        constants.CONFIG_TYPE["easy"]: {
+            "config": stacked_configs.clone(),
+            "maximum": None,
+            "minimum": None,
+            "q1": None,
+            "q2": None,
+            "q3": None
+        },
+        constants.CONFIG_TYPE["medium"]: {
+            "config": stacked_configs.clone(),
+            "maximum": None,
+            "minimum": None,
+            "q1": None,
+            "q2": None,
+            "q3": None
+        },
+        constants.CONFIG_TYPE["hard"]: {
+            "config": stacked_configs.clone(),
+            "maximum": None,
+            "minimum": None,
+            "q1": None,
+            "q2": None,
+            "q3": None
+        }
     }
 
     eps = {
-        constants.METRIC_TYPE["easy"]:   __calculate_eps(half_step=2),
-        constants.METRIC_TYPE["medium"]: __calculate_eps(half_step=4),
-        constants.METRIC_TYPE["hard"]:   __calculate_eps(half_step=1000)
+        constants.CONFIG_TYPE["easy"]:   __calculate_eps(half_step=constants.METRIC_EASY_HALF_STEP),
+        constants.CONFIG_TYPE["medium"]: __calculate_eps(half_step=constants.METRIC_MEDIUM_HALF_STEP),
+        constants.CONFIG_TYPE["hard"]:   __calculate_eps(half_step=constants.METRIC_HARD_HALF_STEP)
     }
 
-    correction_factor_easy   = eps[constants.METRIC_TYPE["easy"]] / (1 - ((1 - eps[constants.METRIC_TYPE["easy"]]) ** steps))
-    correction_factor_medium = eps[constants.METRIC_TYPE["medium"]] / (1 - ((1 - eps[constants.METRIC_TYPE["medium"]]) ** steps))
-    correction_factor_hard   = eps[constants.METRIC_TYPE["hard"]] / (1 - ((1 - eps[constants.METRIC_TYPE["hard"]]) ** steps))
+    correction_factor_easy   = eps[constants.CONFIG_TYPE["easy"]] / (1 - ((1 - eps[constants.CONFIG_TYPE["easy"]]) ** steps))
+    correction_factor_medium = eps[constants.CONFIG_TYPE["medium"]] / (1 - ((1 - eps[constants.CONFIG_TYPE["medium"]]) ** steps))
+    correction_factor_hard   = eps[constants.CONFIG_TYPE["hard"]] / (1 - ((1 - eps[constants.CONFIG_TYPE["hard"]]) ** steps))
 
     # Combine the correction factors into a dictionary
     correction_factors = {
-        constants.METRIC_TYPE["easy"]:   correction_factor_easy,
-        constants.METRIC_TYPE["medium"]: correction_factor_medium,
-        constants.METRIC_TYPE["hard"]:   correction_factor_hard,
+        constants.CONFIG_TYPE["easy"]:   correction_factor_easy,
+        constants.CONFIG_TYPE["medium"]: correction_factor_medium,
+        constants.CONFIG_TYPE["hard"]:   correction_factor_hard,
     }
 
     # Apply decay and correction for each difficulty level
-    for difficulty in [constants.METRIC_TYPE["easy"], constants.METRIC_TYPE["medium"], constants.METRIC_TYPE["hard"]]:
+    for difficulty in [constants.CONFIG_TYPE["easy"], constants.CONFIG_TYPE["medium"], constants.CONFIG_TYPE["hard"]]:
 
         # Efficient decay rates calculation
         step_indices = torch.arange(steps, dtype=torch.float32, device=device)
@@ -184,9 +227,26 @@ def __calculate_metrics(configs: list, device: torch.device) -> dict:
         decay_tensor = decay_rates.view(1, steps, 1, 1, 1)
 
         # Apply decay, sum, and correct
-        sim_metrics[difficulty] *= decay_tensor
-        sim_metrics[difficulty]  = sim_metrics[difficulty].sum(dim=1)
-        sim_metrics[difficulty] *= correction_factors[difficulty]
+        sim_metrics[difficulty]["config"] *= decay_tensor
+        sim_metrics[difficulty]["config"]  = sim_metrics[difficulty]["config"].sum(dim=1)
+        sim_metrics[difficulty]["config"] *= correction_factors[difficulty]
+
+        # Calculate quantiles
+        results = __calculate_quantiles(sim_metrics[difficulty]["config"])
+
+        sim_metrics[difficulty]["maximum"] = results[0]
+        sim_metrics[difficulty]["minimum"] = results[1]
+        sim_metrics[difficulty]["q1"]      = results[2]
+        sim_metrics[difficulty]["q2"]      = results[3]
+        sim_metrics[difficulty]["q3"]      = results[4]
+
+    # Calculate quantiles for the stable configuration
+    results = __calculate_quantiles(sim_metrics[constants.CONFIG_TYPE["stable"]]["config"])
+    sim_metrics[constants.CONFIG_TYPE["stable"]]["maximum"] = results[0]
+    sim_metrics[constants.CONFIG_TYPE["stable"]]["minimum"] = results[1]
+    sim_metrics[constants.CONFIG_TYPE["stable"]]["q1"]      = results[2]
+    sim_metrics[constants.CONFIG_TYPE["stable"]]["q2"]      = results[3]
+    sim_metrics[constants.CONFIG_TYPE["stable"]]["q3"]      = results[4]
 
     return sim_metrics
 
@@ -203,6 +263,22 @@ def __calculate_eps(half_step: int) -> float:
 
     """
     return 1 - (0.5 ** (1 / half_step))
+
+
+def __calculate_quantiles(tensor):
+
+    if len(tensor.shape) != 4:
+        raise ValueError(f"Input tensor must be 4D, but got {len(tensor.shape)}D")
+
+    flat_tensor = tensor.view(128, -1)
+    maximum, _ = torch.max(flat_tensor, dim=1)
+    minimum, _ = torch.min(flat_tensor, dim=1)
+
+    q1 = torch.quantile(flat_tensor, 0.25, dim=1)
+    q2 = torch.quantile(flat_tensor, 0.50, dim=1)
+    q3 = torch.quantile(flat_tensor, 0.75, dim=1)
+
+    return maximum, minimum, q1, q2, q3
 
 
 def __simulate_config_toroidal(config: torch.Tensor, kernel: torch.Tensor, device: torch.device) -> torch.Tensor:

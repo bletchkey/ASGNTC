@@ -85,9 +85,10 @@ def generate_new_batches(model_g: torch.nn.Module, n_batches: int, topology: str
         configs.append({
             "initial": initial_config,
             "simulated":  simulated_config,
-            "metric_easy": simulated_metrics["easy"],
-            "metric_medium": simulated_metrics["medium"],
-            "metric_hard": simulated_metrics["hard"],
+            "easy": simulated_metrics["easy"]["config"],
+            "medium": simulated_metrics["medium"]["config"],
+            "hard": simulated_metrics["hard"]["config"],
+            "stable": simulated_metrics["stable"]["config"]
         })
 
     # Create a tensor from the list of configurations
@@ -141,7 +142,7 @@ def test_models(model_g: torch.nn.Module, model_p: torch.nn.Module, topology: st
         data["simulated"], sim_metrics, _, _ = simulate_config(config=data["initial"], topology=topology,
                                                          steps=constants.n_simulation_steps, calculate_final_config=False,
                                                          device=device)
-        data["metric"] = sim_metrics[metric_type]
+        data["metric"] = sim_metrics[metric_type]["config"]
         data["predicted_metric"] = model_p(data["initial"])
 
     return data
@@ -338,11 +339,13 @@ def get_config_from_batch(batch: torch.Tensor, type: str, device: torch.device) 
 
     # Mapping from type to index in the batch
     config_indices = {
-        constants.CONFIG_NAMES["initial"]: 0,
-        constants.CONFIG_NAMES["final"]: 1,
-        constants.CONFIG_NAMES["metric_easy"]: 2,
-        constants.CONFIG_NAMES["metric_medium"]: 3,
-        constants.CONFIG_NAMES["metric_hard"]: 4
+        constants.CONFIG_TYPE["initial"]: 0,
+        constants.CONFIG_TYPE["final"]: 1,
+        constants.CONFIG_TYPE["simulated"]: 1,
+        constants.CONFIG_TYPE["easy"]: 2,
+        constants.CONFIG_TYPE["medium"]: 3,
+        constants.CONFIG_TYPE["hard"]: 4,
+        constants.CONFIG_TYPE["stable"]: 5,
     }
 
     # Validate and retrieve the configuration index

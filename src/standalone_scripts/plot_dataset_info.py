@@ -55,19 +55,20 @@ def check_dataset_distribution(device, saving_path):
 def check_dataset_configs(saving_path, dataset, metadata, total_indices=200, n_per_png=20):
     indices = np.random.randint(0, len(dataset), total_indices)
     for png_idx in range(total_indices // n_per_png):
-        fig, axs = plt.subplots(n_per_png, 6, figsize=(24, 4 * n_per_png))
+        fig, axs = plt.subplots(n_per_png, 7, figsize=(24, 4 * n_per_png))
         plt.subplots_adjust(left=0.05, right=0.95, top=0.95, bottom=0.05, wspace=0.05, hspace=0.1)
 
-        titles = ["Metadata", "Initial", "Final", "Easy", "Medium", "Hard"]
+        titles = ["Metadata", "Initial", "Final", "Easy", "Medium", "Hard", "Stable"]
         for config_idx in range(n_per_png):
             global_idx = png_idx * n_per_png + config_idx
             config = dataset[indices[global_idx]]
             meta = metadata[indices[global_idx]]
 
-            for img_idx in range(6):
+            for img_idx in range(7):
                 ax = axs[config_idx, img_idx]
                 if img_idx == 0:
-                    ax.text(0, 0.5, f"ID: {meta['id']}\nInitial cells: {meta['n_cells_init']}\nFinal cells: {meta['n_cells_final']}\nPeriod: {meta['period']}\nAntiperiod: {meta['antiperiod']}",
+                    ax.text(0, 0.5,
+                            f"ID: {meta['id']}\nInitial cells: {meta['n_cells_init']}\nFinal cells: {meta['n_cells_final']}\nPeriod: {meta['period']}\nTransient phase: {meta['transient_phase']}",
                             ha='left', va='center', fontsize=24)
                     ax.axis('off')
                     if config_idx == 0:  # Set titles only for the first row
@@ -78,10 +79,32 @@ def check_dataset_configs(saving_path, dataset, metadata, total_indices=200, n_p
                     if config_idx == 0:  # Set titles only for the first row
                         ax.set_title(titles[img_idx], loc='center', fontsize=24)
 
-        plt.tight_layout()
+        plt.tight_layout(pad=2, w_pad=0.5, h_pad=1.0)
+
         plt.savefig(Path(saving_path) / f"configs_{png_idx+1}.png", bbox_inches='tight')
         plt.close(fig)
 
+
+def check_transient_phases(saving_path, metadata):
+
+    pairs = []
+    for meta in metadata:
+        id = meta["id"]
+        transient_phase = meta["transient_phase"]
+        pairs.append((id, transient_phase))
+
+    pairs.sort(key=lambda x: x[1])
+
+    ids, transient_phases = zip(*pairs)
+
+    plt.figure(figsize=(10, 6))
+    plt.bar(ids, transient_phases, color='blue')
+    plt.xlabel("ID")
+    plt.ylabel("Transient phase length")
+    plt.title("Transient phases")
+    plt.grid(True)
+    plt.savefig(Path(saving_path) / f"transient_phases.png", bbox_inches='tight')
+    plt.close()
 
 def main():
     device_manager = DeviceManager()
@@ -104,6 +127,7 @@ def main():
         metadata = torch.load(metadata_path)
 
         check_dataset_configs(saving_path, dataset, metadata)
+        check_transient_phases(saving_path, metadata)
 
 
 if __name__ == "__main__":

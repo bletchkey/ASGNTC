@@ -407,7 +407,7 @@ AttributeError: 'TrainingPredictor' object has no attribute 'test_dataloader'
   File "/home/bletchkey/ASGNTC/src/gol_adv_sys/TrainingPredictor.py", line 108, in run
     self._fit()
   File "/home/bletchkey/ASGNTC/src/gol_adv_sys/TrainingPredictor.py", line 137, in _fit
-    errP = self.predictor.criterion(predicted_metric, self.__get_metric_config(batch, self.metric_type))
+    errP = self.predictor.criterion(predicted_metric, self.__get_metric_config(batch, self.CONFIG_TYPE))
   File "/home/bletchkey/.local/lib/python3.8/site-packages/torch/nn/modules/module.py", line 1518, in _wrapped_call_impl
     return self._call_impl(*args, **kwargs)
   File "/home/bletchkey/.local/lib/python3.8/site-packages/torch/nn/modules/module.py", line 1527, in _call_impl
@@ -453,7 +453,7 @@ RuntimeError: Function 'MseLossBackward0' returned nan values in its 0th output.
   File "/home/bletchkey/ASGNTC/src/gol_adv_sys/TrainingPredictor.py", line 108, in run
     self._fit()
   File "/home/bletchkey/ASGNTC/src/gol_adv_sys/TrainingPredictor.py", line 137, in _fit
-    errP = self.predictor.criterion(predicted_metric, self.__get_metric_config(batch, self.metric_type))
+    errP = self.predictor.criterion(predicted_metric, self.__get_metric_config(batch, self.CONFIG_TYPE))
   File "/home/bletchkey/.local/lib/python3.8/site-packages/torch/nn/modules/module.py", line 1518, in _wrapped_call_impl
     return self._call_impl(*args, **kwargs)
   File "/home/bletchkey/.local/lib/python3.8/site-packages/torch/nn/modules/module.py", line 1527, in _call_impl
@@ -640,7 +640,7 @@ Traceback (most recent call last):
   File "/home/bletchkey/.local/lib/python3.8/site-packages/torch/optim/lr_scheduler.py", line 264, in <listcomp>
     return [base_lr * lmbda(self.last_epoch)
   File "/home/bletchkey/ASGNTC/src/gol_adv_sys/TrainingPredictor.py", line 135, in <lambda>
-    
+
 IndexError: list index out of range
 2024-03-17 19:03:54,629 - root - INFO - Training started at 17/03/2024 19:03:54
 Epoch 00031: reducing learning rate of group 0 to 1.0000e-02.
@@ -1235,3 +1235,85 @@ MEDIUM MAX: 0.9065380096435547
 MEDIUM MIN: 2.1579461350503784e-17
 HARD MAX: 0.422981858253479
 HARD MIN: 0.02702675200998783
+EASY MAX: 0.9716711044311523
+EASY MIN: 0.0
+MEDIUM MAX: 0.8647335171699524
+MEDIUM MIN: 0.0
+HARD MAX: 0.9944725632667542
+HARD MIN: 0.0
+EASY MAX: 0.0
+EASY MIN: 0.0
+MEDIUM MAX: 0.0
+MEDIUM MIN: 0.0
+HARD MAX: 0.0
+HARD MIN: 0.0
+id: 140000
+n_cells_init: 546
+n_cells_final: 15
+period: 1
+antiperiod: 682
+initial_config: tensor([[[0., 1., 1.,  ..., 0., 0., 1.],
+         [0., 1., 0.,  ..., 1., 0., 1.],
+         [0., 1., 1.,  ..., 1., 0., 0.],
+         ...,
+         [1., 1., 1.,  ..., 1., 1., 0.],
+         [0., 0., 0.,  ..., 1., 1., 0.],
+         [1., 1., 0.,  ..., 0., 1., 0.]]], device='cuda:0')
+final_config: tensor([[[0., 0., 0.,  ..., 0., 0., 0.],
+         [0., 0., 0.,  ..., 0., 0., 0.],
+         [0., 0., 0.,  ..., 0., 0., 0.],
+         ...,
+         [0., 0., 0.,  ..., 0., 0., 0.],
+         [0., 0., 0.,  ..., 0., 0., 0.],
+         [0., 0., 0.,  ..., 0., 0., 0.]]], device='cuda:0')
+easy_metric: tensor([[[2.1401e-01, 4.0787e-01, 3.7802e-01,  ..., 3.9465e-03,
+          2.4362e-04, 5.0052e-01],
+         [1.4919e-01, 1.4122e-02, 2.6016e-02,  ..., 2.9292e-01,
+          6.8922e-05, 1.2797e-03],
+         [1.5653e-04, 5.9103e-03, 7.6294e-06,  ..., 3.2794e-06,
+          5.9723e-04, 9.1505e-04],
+         ...,
+         [4.5636e-01, 5.0023e-01, 8.5447e-01,  ..., 8.4276e-02,
+          1.9660e-01, 2.2559e-01],
+         [3.0899e-01, 1.6407e-01, 3.8134e-01,  ..., 5.9481e-01,
+          5.8663e-02, 2.0881e-01],
+         [5.0723e-01, 5.9007e-01, 8.3824e-01,  ..., 7.6595e-01,
+          5.0330e-01, 2.0743e-01]]], device='cuda:0')
+EASY MAX: 0.9809582829475403
+EASY MIN: 0.0
+medium_metric: tensor([[[1.8766e-01, 4.1376e-01, 4.5582e-01,  ..., 3.0144e-02,
+          1.0990e-02, 3.0623e-01],
+         [1.5236e-01, 9.3613e-02, 1.1283e-01,  ..., 1.6268e-01,
+          5.6673e-03, 2.3311e-02],
+         [9.5803e-03, 4.9318e-02, 1.1441e-03,  ..., 6.6877e-04,
+          1.0303e-02, 1.5929e-02],
+         ...,
+         [3.9801e-01, 4.2362e-01, 6.5281e-01,  ..., 1.2412e-01,
+          2.4400e-01, 2.0081e-01],
+         [3.0386e-01, 2.5074e-01, 3.5203e-01,  ..., 6.5813e-01,
+          1.0414e-01, 1.5146e-01],
+         [3.3773e-01, 4.8875e-01, 7.1838e-01,  ..., 6.8828e-01,
+          3.1487e-01, 1.4559e-01]]], device='cuda:0')
+MEDIUM MAX: 0.8881304264068604
+MEDIUM MIN: 3.716243527389415e-42
+hard_metric: tensor([[[0.0885, 0.0629, 0.0577,  ..., 0.0490, 0.0697, 0.0536],
+         [0.0865, 0.0751, 0.0521,  ..., 0.0521, 0.0687, 0.0558],
+         [0.0632, 0.1822, 0.0434,  ..., 0.0458, 0.0487, 0.0489],
+         ...,
+         [0.0862, 0.0731, 0.0600,  ..., 0.0815, 0.1029, 0.0796],
+         [0.0927, 0.0825, 0.0683,  ..., 0.1018, 0.0692, 0.0649],
+         [0.0927, 0.0964, 0.0637,  ..., 0.0695, 0.0736, 0.0741]]],
+       device='cuda:0')
+HARD MAX: 0.5726179480552673
+HARD MIN: 0.001377195818349719
+Traceback (most recent call last):
+  File "main.py", line 124, in <module>
+    if __name__ == '__main__':
+  File "main.py", line 116, in main
+
+  File "main.py", line 75, in playground
+
+  File "/home/bletchkey/ASGNTC/src/gol_adv_sys/Playground.py", line 87, in get_record_from_id
+    raise ValueError(f"Could not find the data for id {id}")
+ValueError: Could not find the data for id 200000
+2024-03-20 09:53:40,048 - root - INFO - Training started at 20/03/2024 09:53:40

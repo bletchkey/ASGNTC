@@ -65,25 +65,15 @@ def playground():
 
     pg = Playground()
 
-    results = pg.simulate(init_config, steps=10)
+    #results = pg.simulate(init_config, steps=10)
 
-    print(f"Period: {results['period'].item()}")
-    print(f"Antiperiod: {results['antiperiod'].item()}")
-    print(f"Initial living cells: {results['n_cells_init'].item()}")
-    print(f"Final living cells: {results['n_cells_final'].item()}")
+    # print(f"Period: {results['period'].item()}")
+    # print(f"Transient phase: {results['transient_phase'].item()}")
+    # print(f"Initial living cells: {results['n_cells_init'].item()}")
+    # print(f"Final living cells: {results
+    # ['n_cells_final'].item()}")
 
-    data = pg.get_record_from_id(131072)
-
-    for k, v in data.items():
-        if k == "easy_metric":
-            print(f"EASY MAX: {v.max()}")
-            print(f"EASY MIN: {v.min()}")
-        if k == "medium_metric":
-            print(f"MEDIUM MAX: {v.max()}")
-            print(f"MEDIUM MIN: {v.min()}")
-        if k == "hard_metric":
-            print(f"HARD MAX: {v.max()}")
-            print(f"HARD MIN: {v.min()}")
+    data = pg.get_record_from_id(200000)
 
     pg.plot_record(data)
 
@@ -92,7 +82,6 @@ def playground():
 
     # print(pred.max())
     # print(pred.min())
-
 
 
 def train_adversarial():

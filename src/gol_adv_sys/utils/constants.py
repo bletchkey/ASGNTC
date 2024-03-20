@@ -65,33 +65,33 @@ n_living_cells = 2 * grid_size
 # Threshold for the value of the cells in the generated configurations
 threshold_cell_value = 0.5
 
-# Names for each configuration
-CONFIG_NAMES = {
+# Types for each configuration
+CONFIG_TYPE = {
     "initial": "initial",
     "final": "final",
-    "metric_easy": "easy",
-    "metric_medium": "medium",
-    "metric_hard": "hard"
+    "simulated": "simulated",
+    "easy": "easy",
+    "medium": "medium",
+    "hard": "hard",
+    "stable": "stable"
 }
 
-# Type of topology for the grid
+# Types of topology for the grid
 TOPOLOGY_TYPE = {
     "toroidal": "toroidal",
     "flat": "flat"
 }
 
-# Type of intialization for the grid
+# Types of intialization for the grid
 INIT_CONFIG_TYPE = {
     "n_living_cells": "n_living_cells",
     "threshold": "threshold"
 }
 
-# Type of metric for the grid
-METRIC_TYPE = {
-    "easy": CONFIG_NAMES["metric_easy"],
-    "medium": CONFIG_NAMES["metric_medium"],
-    "hard": CONFIG_NAMES["metric_hard"]
-}
+
+METRIC_EASY_HALF_STEP   = 2
+METRIC_MEDIUM_HALF_STEP = 8
+METRIC_HARD_HALF_STEP   = 100
 
 
 ### MODELS PARAMETERS ###################################################################
