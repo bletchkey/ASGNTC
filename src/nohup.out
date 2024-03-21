@@ -100,3 +100,41 @@ Traceback (most recent call last):
 ValueError: Expected the given number of height ratios to match the number of rows of the grid
 Stable min: 0.0
 Stable max: 1.0
+Stable min: 0.0
+Stable max: 1.0
+Stable min: 0.0
+Stable max: 1.0
+Stable min: 0.0
+Stable max: 1.0
+Stable min: 0.0
+Stable max: 1.0
+Stable min: 0.0
+Stable max: 1.0
+Stable min: 0.0
+Stable max: 1.0
+Stable min: 0.0
+Stable max: 1.0
+Traceback (most recent call last):
+  File "main.py", line 111, in <module>
+    RETCODE = main()
+  File "main.py", line 103, in main
+    playground()
+  File "main.py", line 78, in playground
+    pg.plot_record(data)
+  File "/home/bletchkey/ASGNTC/src/gol_adv_sys/Playground.py", line 165, in plot_record
+    plt.subplots_adjust(left=0.05, right=0.95, top=0.1, bottom=0.1, wspace=0.1, hspace=0)
+  File "/home/bletchkey/.local/lib/python3.8/site-packages/matplotlib/pyplot.py", line 2335, in subplots_adjust
+    return gcf().subplots_adjust(
+  File "/home/bletchkey/.local/lib/python3.8/site-packages/matplotlib/figure.py", line 1353, in subplots_adjust
+    self.subplotpars.update(left, bottom, right, top, wspace, hspace)
+  File "/home/bletchkey/.local/lib/python3.8/site-packages/matplotlib/figure.py", line 166, in update
+    raise ValueError('bottom cannot be >= top')
+ValueError: bottom cannot be >= top
+Stable min: 0.0
+Stable max: 1.0
+Stable min: 0.0
+Stable max: 1.0
+Stable min: 0.0
+Stable max: 1.0
+Stable min: 0.0
+Stable max: 1.0

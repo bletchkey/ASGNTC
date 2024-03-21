@@ -112,7 +112,8 @@ class Playground():
 
     def plot_record(self, record: dict) -> None:
         fig = plt.figure(figsize=(24, 12))
-        gs = GridSpec(3, 6, figure=fig, height_ratios=[6, 6, 1])
+
+        gs = GridSpec(2, 6, figure=fig, height_ratios=[6, 1], hspace=0.1, wspace=0.1)
 
         imshow_kwargs = {'cmap': 'gray', 'vmin': 0, 'vmax': 1}
 
@@ -139,22 +140,30 @@ class Playground():
             ax.axis('off')
 
         # Text plot for metrics in the first row
-        for i, metric in enumerate(["easy", "medium", "hard", "stable"]):
-            ax = fig.add_subplot(gs[1, i+1])
-            metric_info = record[f"{metric}"]
-            ax.text(0.5, 0.5, f"Min: {metric_info['minimum']}\nMax: {metric_info['maximum']}\n"
-                                f"Q1: {metric_info['q1']}\nQ2: {metric_info['q2']}\nQ3: {metric_info['q3']}",
-                    ha="center", va="center", fontsize=12, wrap=True)
+        for i, config in enumerate(["initial","final","easy", "medium", "hard", "stable"]):
+            ax = fig.add_subplot(gs[1, i])
+            if config == "initial":
+                text_str = f"ID: {record['id']}"
+                ax.text(0.1, 0, text_str, ha="left", va="center", fontsize=14, wrap=True)
+                ax.axis('off')
+                continue
+
+            if config == "final":
+                text_str = f"Transient phase: {record['transient_phase']}\nPeriod: {record['period']}"
+                ax.text(0.1, 0, text_str, ha="left", va="center", fontsize=14, wrap=True)
+                ax.axis('off')
+                continue
+
+            text_str = record[f"{config}"]
+            ax.text(0.1, 0, f"Min: {text_str['minimum']}\nMax: {text_str['maximum']}\n"
+                                f"Q1: {text_str['q1']}\nQ2: {text_str['q2']}\nQ3: {text_str['q3']}",
+                    ha="left", va="center", fontsize=14, wrap=True)
             ax.axis('off')
 
-        # Text plot spanning all columns in the second row
-        ax_text = fig.add_subplot(gs[2, :])
-        text_str = f"ID: {record['id']}\nPeriod: {record['period']}\nTransient phase: {record['transient_phase']}"
-        ax_text.text(0.5, 0.5, text_str, ha="center", va="center", fontsize=20, wrap=True)
-        ax_text.axis('off')
 
         # Adjust layout for padding and spacing
-        plt.subplots_adjust(left=0.05, right=0.95, top=0.9, bottom=0.1, wspace=0.1, hspace=0)
+
+        plt.subplots_adjust(left=0.05, right=0.95, top=0.5, bottom=0.1, wspace=0.1, hspace=0)
 
         # Save and close
         plt.savefig(f"record_{record['id']}.png", dpi = 600, bbox_inches='tight')
