@@ -231,8 +231,8 @@ def __calculate_metrics(configs: list, stable_config: torch.Tensor, device: torc
         sim_metrics[difficulty]["config"]  = sim_metrics[difficulty]["config"].sum(dim=1)
         sim_metrics[difficulty]["config"] *= correction_factors[difficulty]
 
-        # Calculate quantiles
-        results = __calculate_quantiles(sim_metrics[difficulty]["config"])
+        # Calculate quartiles
+        results = __calculate_quartiles(sim_metrics[difficulty]["config"])
 
         sim_metrics[difficulty]["maximum"] = results[0]
         sim_metrics[difficulty]["minimum"] = results[1]
@@ -240,8 +240,8 @@ def __calculate_metrics(configs: list, stable_config: torch.Tensor, device: torc
         sim_metrics[difficulty]["q2"]      = results[3]
         sim_metrics[difficulty]["q3"]      = results[4]
 
-    # Calculate quantiles for the stable configuration
-    results = __calculate_quantiles(sim_metrics[constants.CONFIG_TYPE["stable"]]["config"])
+    # Calculate quartiles for the stable configuration
+    results = __calculate_quartiles(sim_metrics[constants.CONFIG_TYPE["stable"]]["config"])
     sim_metrics[constants.CONFIG_TYPE["stable"]]["maximum"] = results[0]
     sim_metrics[constants.CONFIG_TYPE["stable"]]["minimum"] = results[1]
     sim_metrics[constants.CONFIG_TYPE["stable"]]["q1"]      = results[2]
@@ -265,7 +265,7 @@ def __calculate_eps(half_step: int) -> float:
     return 1 - (0.5 ** (1 / half_step))
 
 
-def __calculate_quantiles(tensor):
+def __calculate_quartiles(tensor):
 
     if len(tensor.shape) != 4:
         raise ValueError(f"Input tensor must be 4D, but got {len(tensor.shape)}D")

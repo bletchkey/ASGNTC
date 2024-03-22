@@ -74,7 +74,7 @@ def playground():
     # print(f"Final living cells: {results
     # ['n_cells_final'].item()}")
 
-    data = pg.get_record_from_id(100000)
+    data = pg.get_record_from_id(200000)
     pg.plot_record(data)
 
     # pg.load_predictor("predictor_medium_metric.tar")
