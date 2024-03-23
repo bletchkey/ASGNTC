@@ -26,7 +26,6 @@ def metric_prediction_accuracy(target: torch.Tensor, prediction: torch.Tensor) -
     if target.size() != prediction.size() or target.dim() != 4:
         raise ValueError("Target and prediction tensors must have the same 4-dimensional shape.")
 
-    # Define bin edges for the range of pixel values (0 to 1)
     bin_edges = torch.tensor([0, 0.25, 0.5, 0.75, 1], device=target.device)
 
     # Flatten the last three dimensions to apply bucketize
@@ -41,7 +40,12 @@ def metric_prediction_accuracy(target: torch.Tensor, prediction: torch.Tensor) -
     score = torch.where(target_bins == prediction_bins, 1.0,
                         torch.where(torch.abs(target_bins - prediction_bins) == 1, 0.5, 0.0))
 
+    # Calculate the number of guessed metrics
+    guessed = torch.zeros_like(target_flat)
+    guessed = torch.where(target_bins == prediction_bins, 1.0, guessed)
+    guessed = guessed.sum(dim=1)
+
     # Compute the mean score for each item in the batch
     mean_scores = score.mean(dim=1)  # Compute mean across the flattened second dimension
 
-    return mean_scores
+    return mean_scores, guessed

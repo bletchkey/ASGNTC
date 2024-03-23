@@ -190,7 +190,6 @@ def save_progress_plot(plot_data: dict, epoch: int, results_path: str):
 
 
 def test_predictor_model_dataset(test_set: torch.utils.data.DataLoader,
-                         test_meta_set: torch.utils.data.DataLoader,
                          metric_type: str, model_p: torch.nn.Module, device: torch.device) -> dict:
 
     """
@@ -210,10 +209,8 @@ def test_predictor_model_dataset(test_set: torch.utils.data.DataLoader,
 
     # Create an iterator from the data_loader
     iterator_batch = iter(test_set)
-    iterator_metadata = iter(test_meta_set)
     # Fetch the first batch
-    batch = next(iterator_batch)
-    batch_metadata = next(iterator_metadata)
+    batch, batch_metadata = next(iterator_batch)
 
     metadata = {
         META_ID: batch_metadata[META_ID],
@@ -262,7 +259,7 @@ def save_progress_plot_dataset(plot_data: dict, epoch: int, results_path: str):
     indices = np.linspace(0, BATCH_SIZE - 1, 4).astype(int)
 
     # Create figure and subplots
-    fig, axs = plt.subplots(n_rows, n_cols, figsize=(n_cols * 5, n_rows * 4))  # Adjusted size for better visibility
+    fig, axs = plt.subplots(n_rows, n_cols, figsize=(n_cols * 5, n_rows * 6))
 
     plt.suptitle(f"Epoch {current_epoch}", fontsize=32)
 
@@ -279,18 +276,18 @@ def save_progress_plot_dataset(plot_data: dict, epoch: int, results_path: str):
                 img_data = plot_data[key][indices[i]]
                 axs[i, j].imshow(img_data, cmap='gray', vmin=vmin, vmax=vmax)
                 if key == "metric" and i == 0:
-                    axs[i, j].set_title(f"metric - {plot_data['metadata']['metric_type']}")
+                    axs[i, j].set_title(f"metric - {plot_data['metadata']['metric_type']}", pad=6, fontsize=24)
                 elif i == 0:
-                    axs[i, j].set_title(titles[j])
+                    axs[i, j].set_title(titles[j], pad=6, fontsize=24)
                 else:
-                    axs[i, j].set_title("")
+                    axs[i, j].set_title("", pad=6)
             else:
                 text_data = ""
                 for k in plot_data[key].keys():
                     if k == "metric_type":
                         continue
                     text_data += f"{k}: {plot_data[key][k][indices[i]]}\n"
-                axs[i, j].text(0.5, 0.5, text_data, fontsize=18, ha='left', va='center', transform=axs[i, j].transAxes)
+                axs[i, j].text(0.1, 0.5, text_data, fontsize=18, ha='left', va='center', transform=axs[i, j].transAxes)
 
             axs[i, j].axis('off')
 

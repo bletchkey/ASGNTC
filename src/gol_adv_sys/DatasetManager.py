@@ -260,3 +260,56 @@ class FixedDataset(Dataset):
         """
         return self.data[idx]
 
+
+class PairedDataset(Dataset):
+    """
+    A PyTorch Dataset class for loading paired data from two .pt files.
+
+    This class provides an interface for accessing paired data points from two datasets
+    stored in separate .pt files. It enables compatibility with PyTorch DataLoader for
+    batch processing and shuffling.
+
+    Attributes:
+        data_set (FixedDataset): The dataset containing the data samples.
+        meta_set (FixedDataset): The dataset containing the metadata samples.
+
+    Parameters:
+        data_set (FixedDataset): The dataset containing the data samples.
+        meta_set (FixedDataset): The dataset containing the metadata samples.
+
+    Raises:
+        ValueError: If the data and metadata sets are not of the same size.
+
+    """
+    def __init__(self, data_set, meta_set):
+        self.data_set = data_set
+        self.meta_set = meta_set
+
+        if len(self.data_set) != len(self.meta_set):
+            raise ValueError("Data and metadata sets must be of the same size")
+
+
+    def __len__(self):
+        """
+        Returns the total number of samples in the dataset.
+
+        Returns:
+            int: The size of the dataset.
+        """
+        return len(self.data_set)
+
+
+    def __getitem__(self, idx):
+        """
+        Retrieves the data and metadata points at the specified index in the dataset.
+
+        Parameters:
+            idx (int): An index into the dataset indicating which sample to retrieve.
+
+        Returns:
+            Tuple[torch.Tensor, torch.Tensor]: A tuple containing the data and metadata samples
+
+        """
+        data = self.data_set[idx]
+        meta = self.meta_set[idx]
+        return data, meta

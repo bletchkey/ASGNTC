@@ -20,7 +20,7 @@ from config.constants import *
 
 from src.gol_adv_sys.FolderManager import FolderManager
 from src.gol_adv_sys.DeviceManager import DeviceManager
-from src.gol_adv_sys.DatasetManager import FixedDataset
+from src.gol_adv_sys.DatasetManager import FixedDataset, PairedDataset
 from src.gol_adv_sys.ModelManager import ModelManager
 from src.gol_adv_sys.TrainingBase import TrainingBase
 
@@ -85,15 +85,13 @@ class TrainingPredictor(TrainingBase):
                        "predictor_val": [],
                        "predictor_test": []}
 
-        self.accuracy = []
+        self.accuracies = []
 
         self.dataset = {"train": None, "train_meta": None,
                         "val": None, "val_meta": None,
                         "test": None, "test_meta": None}
 
-        self.dataloader = {"train": None, "train_meta": None,
-                            "val": None, "val_meta": None,
-                            "test": None, "test_meta": None}
+        self.dataloader = {"train": None, "val": None, "test": None}
 
         self.path_log_file = self.__init_log_file()
 
@@ -137,10 +135,6 @@ class TrainingPredictor(TrainingBase):
         # Training loop
         for epoch in range(NUM_EPOCHS):
 
-            self.__shuffle_dataloaders("train")
-            self.__shuffle_dataloaders("val")
-            self.__shuffle_dataloaders("test")
-
             self.current_epoch = epoch
             self.learning_rates.append(self.predictor.get_learning_rate())
 
@@ -152,7 +146,7 @@ class TrainingPredictor(TrainingBase):
             # Train the predictor model
             train_loss = 0
             self.predictor.model.train()
-            for batch in self.dataloader["train"]:
+            for batch, _ in self.dataloader["train"]:
                 self.predictor.optimizer.zero_grad()
                 predicted_metric = self.predictor.model(self.__get_initial_config(batch))
                 errP = self.predictor.criterion(predicted_metric, self.__get_metric_config(batch, self.metric_type))
@@ -175,21 +169,24 @@ class TrainingPredictor(TrainingBase):
 
             # Check the validation loss
             val_loss = 0
-            accuracy = 0
+            accuracy_avg = 0
             self.predictor.model.eval()
             with torch.no_grad():
-                for batch in self.dataloader["val"]:
+                for batch, _ in self.dataloader["val"]:
                     predicted_metric = self.predictor.model(self.__get_initial_config(batch))
                     errP = self.predictor.criterion(predicted_metric, self.__get_metric_config(batch, self.metric_type))
                     val_loss += errP.item()
 
                     # Compute metric prediction accuracy
-                    accuracy += metric_prediction_accuracy(self.__get_metric_config(batch, self.metric_type), predicted_metric)
+                    accuracy, guessed = metric_prediction_accuracy(self.__get_metric_config(batch, self.metric_type), predicted_metric)
+                    accuracy = accuracy.mean().item()
+                    accuracy_avg += accuracy
+                    logging.debug(f"Accuracy on validation batch: {accuracy}")
+                    logging.debug(f"Guessed: {guessed}/{BATCH_SIZE}")
 
-            accuracy /= len(self.dataloader["val"])
-            accuracy = accuracy.mean().item()
-            logging.debug(f"Accuracy: {accuracy}")
-            self.accuracy.append(accuracy)
+            accuracy_avg /= len(self.dataloader["val"])
+            logging.debug(f"Accuracy: {accuracy_avg}")
+            self.accuracies.append(accuracy_avg)
 
             val_loss /= len(self.dataloader["val"])
             self.losses["predictor_val"].append(val_loss)
@@ -226,7 +223,7 @@ class TrainingPredictor(TrainingBase):
         test_loss = 0
         self.predictor.model.eval()
         with torch.no_grad():
-            for batch in self.dataloader["test"]:
+            for batch, _ in self.dataloader["test"]:
                 predicted_metric = self.predictor.model(self.__get_initial_config(batch))
                 errP = self.predictor.criterion(predicted_metric, self.__get_metric_config(batch, self.metric_type))
                 test_loss += errP.item()
@@ -266,36 +263,19 @@ class TrainingPredictor(TrainingBase):
             self.dataset["val_meta"]   = FixedDataset(val_meta_path)
             self.dataset["test_meta"]  = FixedDataset(test_meta_path)
 
-            self.__shuffle_dataloaders("train")
-            self.__shuffle_dataloaders("val")
-            self.__shuffle_dataloaders("test")
+            train_ds = PairedDataset(self.dataset["train"], self.dataset["train_meta"])
+            val_ds   = PairedDataset(self.dataset["val"], self.dataset["val_meta"])
+            test_ds  = PairedDataset(self.dataset["test"], self.dataset["test_meta"])
+
+            self.dataloader["train"] = DataLoader(train_ds, batch_size=BATCH_SIZE, shuffle=True)
+            self.dataloader["val"]   = DataLoader(val_ds, batch_size=BATCH_SIZE, shuffle=False)
+            self.dataloader["test"]  = DataLoader(test_ds, batch_size=BATCH_SIZE, shuffle=False)
 
         except Exception as e:
             logging.error(f"Error initializing the data: {e}")
             raise e
 
         return True
-
-
-    def __shuffle_dataloaders(self, key):
-        """
-        Shuffle the dataloader and its corresponding metadata dataloader for the given key.
-
-        Args:
-            key (str): The key for the dataloader to shuffle (e.g., 'test').
-
-        Returns:
-            None: The method updates the dataloaders in place.
-        """
-        dataset = self.dataset[key]
-        dataset_meta = self.dataset[f"{key}_meta"]
-
-        indices = torch.randperm(len(dataset)).tolist()
-
-        sampler = SubsetRandomSampler(indices)
-
-        self.dataloader[key] = DataLoader(dataset, batch_size=BATCH_SIZE, sampler=sampler)
-        self.dataloader[f"{key}_meta"] = DataLoader(dataset_meta, batch_size=BATCH_SIZE, sampler=sampler)
 
 
     def __log_training_epoch(self, time):
@@ -307,9 +287,9 @@ class TrainingPredictor(TrainingBase):
 
             str_epoch_time  = f"{get_elapsed_time_str(time)}"
             str_epoch       = f"{self.current_epoch+1}/{NUM_EPOCHS}"
-            str_err_p_train = f"{self.losses['predictor_train'][-1]}"
-            str_err_p_val   = f"{self.losses['predictor_val'][-1]}"
-            str_accuracy    = f"{self.accuracy[-1]}"
+            str_err_p_train = f"{self.losses['predictor_train'][-1]:.6f}"
+            str_err_p_val   = f"{self.losses['predictor_val'][-1]:.6f}"
+            str_accuracy    = f"{self.accuracies[-1]:.3f}"
 
             lr = self.learning_rates[self.current_epoch]
 
@@ -378,7 +358,7 @@ class TrainingPredictor(TrainingBase):
             simulated metrics and predicted metrics.
 
         """
-        return test_predictor_model_dataset(self.dataloader["test"], self.dataloader["test_meta"],
+        return test_predictor_model_dataset(self.dataloader["test"],
                                             self.metric_type, self.predictor.model,
                                             self.device_manager.default_device)
 

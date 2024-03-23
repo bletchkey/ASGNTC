@@ -209,3 +209,101 @@ Epoch 00015: reducing learning rate of group 0 to 1.0000e-04.
 Epoch 00020: reducing learning rate of group 0 to 1.0000e-05.
 Epoch 00025: reducing learning rate of group 0 to 1.0000e-06.
 2024-03-23 19:17:41,403 - root - INFO - Training started at 23/03/2024 19:17:41
+/home/bletchkey/ASGNTC/src/gol_adv_sys/utils/scores.py:37: UserWarning: torch.searchsorted(): input value tensor is non-contiguous, this will lower the performance due to extra data copy when converting non-contiguous tensor to contiguous, please use contiguous input value tensor if possible. This message will only appear once per program. (Triggered internally at ../aten/src/ATen/native/BucketizationUtils.h:32.)
+  target_bins = torch.bucketize(target_flat, bin_edges, right=True)
+2024-03-23 19:23:44,647 - root - INFO - Training started at 23/03/2024 19:23:44
+/home/bletchkey/ASGNTC/src/gol_adv_sys/utils/scores.py:37: UserWarning: torch.searchsorted(): input value tensor is non-contiguous, this will lower the performance due to extra data copy when converting non-contiguous tensor to contiguous, please use contiguous input value tensor if possible. This message will only appear once per program. (Triggered internally at ../aten/src/ATen/native/BucketizationUtils.h:32.)
+  target_bins = torch.bucketize(target_flat, bin_edges, right=True)
+Epoch 00020: reducing learning rate of group 0 to 1.0000e-02.
+Epoch 00029: reducing learning rate of group 0 to 1.0000e-03.
+2024-03-23 21:05:22,800 - root - ERROR - Error initializing the data: CUDA out of memory. Tried to allocate 6.01 GiB. GPU 0 has a total capacty of 23.67 GiB of which 3.96 GiB is free. Process 63401 has 19.42 GiB memory in use. Including non-PyTorch memory, this process has 204.00 MiB memory in use. Of the allocated memory 783.00 KiB is allocated by PyTorch, and 1.24 MiB is reserved by PyTorch but unallocated. If reserved but unallocated memory is large try setting max_split_size_mb to avoid fragmentation.  See documentation for Memory Management and PYTORCH_CUDA_ALLOC_CONF
+Traceback (most recent call last):
+  File "main.py", line 111, in <module>
+    RETCODE = main()
+  File "main.py", line 104, in main
+    train_predictor()
+  File "main.py", line 95, in train_predictor
+    train_pred.run()
+  File "/home/bletchkey/ASGNTC/src/gol_adv_sys/TrainingPredictor.py", line 104, in run
+    self.__init_data()
+  File "/home/bletchkey/ASGNTC/src/gol_adv_sys/TrainingPredictor.py", line 273, in __init_data
+    raise e
+  File "/home/bletchkey/ASGNTC/src/gol_adv_sys/TrainingPredictor.py", line 255, in __init_data
+    self.dataset["train"] = FixedDataset(train_path)
+  File "/home/bletchkey/ASGNTC/src/gol_adv_sys/DatasetManager.py", line 235, in __init__
+    self.data = torch.load(path)
+  File "/home/bletchkey/.local/lib/python3.8/site-packages/torch/serialization.py", line 1014, in load
+    return _load(opened_zipfile,
+  File "/home/bletchkey/.local/lib/python3.8/site-packages/torch/serialization.py", line 1422, in _load
+    result = unpickler.load()
+  File "/home/bletchkey/.local/lib/python3.8/site-packages/torch/serialization.py", line 1392, in persistent_load
+    typed_storage = load_tensor(dtype, nbytes, key, _maybe_decode_ascii(location))
+  File "/home/bletchkey/.local/lib/python3.8/site-packages/torch/serialization.py", line 1366, in load_tensor
+    wrap_storage=restore_location(storage, location),
+  File "/home/bletchkey/.local/lib/python3.8/site-packages/torch/serialization.py", line 381, in default_restore_location
+    result = fn(storage, location)
+  File "/home/bletchkey/.local/lib/python3.8/site-packages/torch/serialization.py", line 279, in _cuda_deserialize
+    return obj.cuda(device)
+  File "/home/bletchkey/.local/lib/python3.8/site-packages/torch/_utils.py", line 114, in _cuda
+    untyped_storage = torch.UntypedStorage(
+torch.cuda.OutOfMemoryError: CUDA out of memory. Tried to allocate 6.01 GiB. GPU 0 has a total capacty of 23.67 GiB of which 3.96 GiB is free. Process 63401 has 19.42 GiB memory in use. Including non-PyTorch memory, this process has 204.00 MiB memory in use. Of the allocated memory 783.00 KiB is allocated by PyTorch, and 1.24 MiB is reserved by PyTorch but unallocated. If reserved but unallocated memory is large try setting max_split_size_mb to avoid fragmentation.  See documentation for Memory Management and PYTORCH_CUDA_ALLOC_CONF
+2024-03-23 21:07:03,099 - root - INFO - Training started at 23/03/2024 21:07:03
+Traceback (most recent call last):
+  File "main.py", line 111, in <module>
+    RETCODE = main()
+  File "main.py", line 104, in main
+    train_predictor()
+  File "main.py", line 95, in train_predictor
+    train_pred.run()
+  File "/home/bletchkey/ASGNTC/src/gol_adv_sys/TrainingPredictor.py", line 106, in run
+    self._fit()
+  File "/home/bletchkey/ASGNTC/src/gol_adv_sys/TrainingPredictor.py", line 151, in _fit
+    predicted_metric = self.predictor.model(self.__get_initial_config(batch))
+  File "/home/bletchkey/ASGNTC/src/gol_adv_sys/TrainingPredictor.py", line 338, in __get_initial_config
+    return get_config_from_batch(batch, CONFIG_INITIAL, self.device_manager.default_device)
+  File "/home/bletchkey/ASGNTC/src/gol_adv_sys/utils/helper_functions.py", line 404, in get_config_from_batch
+    if batch.dim() != 5:
+AttributeError: 'list' object has no attribute 'dim'
+2024-03-23 21:10:20,302 - root - INFO - Training started at 23/03/2024 21:10:20
+/home/bletchkey/ASGNTC/src/gol_adv_sys/utils/scores.py:37: UserWarning: torch.searchsorted(): input value tensor is non-contiguous, this will lower the performance due to extra data copy when converting non-contiguous tensor to contiguous, please use contiguous input value tensor if possible. This message will only appear once per program. (Triggered internally at ../aten/src/ATen/native/BucketizationUtils.h:32.)
+  target_bins = torch.bucketize(target_flat, bin_edges, right=True)
+Traceback (most recent call last):
+  File "main.py", line 111, in <module>
+    RETCODE = main()
+  File "main.py", line 104, in main
+    train_predictor()
+  File "main.py", line 95, in train_predictor
+    train_pred.run()
+  File "/home/bletchkey/ASGNTC/src/gol_adv_sys/TrainingPredictor.py", line 106, in run
+    self._fit()
+  File "/home/bletchkey/ASGNTC/src/gol_adv_sys/TrainingPredictor.py", line 208, in _fit
+    self.__save_progress_plot(data)
+  File "/home/bletchkey/ASGNTC/src/gol_adv_sys/TrainingPredictor.py", line 374, in __save_progress_plot
+    save_progress_plot_dataset(data, self.current_epoch, self.__folders.results_folder)
+  File "/home/bletchkey/ASGNTC/src/gol_adv_sys/utils/helper_functions.py", line 264, in save_progress_plot_dataset
+    plt.suptitle(f"Epoch {current_epoch}", fontsize=32, pad=20)
+  File "/home/bletchkey/.local/lib/python3.8/site-packages/matplotlib/pyplot.py", line 2343, in suptitle
+    return gcf().suptitle(t, **kwargs)
+  File "/home/bletchkey/.local/lib/python3.8/site-packages/matplotlib/figure.py", line 404, in suptitle
+    return self._suplabels(t, info, **kwargs)
+  File "/home/bletchkey/.local/lib/python3.8/site-packages/matplotlib/figure.py", line 383, in _suplabels
+    sup = self.text(x, y, t, **kwargs)
+  File "/home/bletchkey/.local/lib/python3.8/site-packages/matplotlib/figure.py", line 1193, in text
+    text = Text(x=x, y=y, text=s, **effective_kwargs)
+  File "/home/bletchkey/.local/lib/python3.8/site-packages/matplotlib/_api/deprecation.py", line 454, in wrapper
+    return func(*args, **kwargs)
+  File "/home/bletchkey/.local/lib/python3.8/site-packages/matplotlib/text.py", line 183, in __init__
+    self.update(kwargs)
+  File "/home/bletchkey/.local/lib/python3.8/site-packages/matplotlib/text.py", line 231, in update
+    super().update(kwargs)
+  File "/home/bletchkey/.local/lib/python3.8/site-packages/matplotlib/artist.py", line 1213, in update
+    return self._update_props(
+  File "/home/bletchkey/.local/lib/python3.8/site-packages/matplotlib/artist.py", line 1197, in _update_props
+    raise AttributeError(
+AttributeError: 'Text' object has no property 'pad'
+2024-03-23 21:16:02,531 - root - INFO - Training started at 23/03/2024 21:16:02
+/home/bletchkey/ASGNTC/src/gol_adv_sys/utils/scores.py:37: UserWarning: torch.searchsorted(): input value tensor is non-contiguous, this will lower the performance due to extra data copy when converting non-contiguous tensor to contiguous, please use contiguous input value tensor if possible. This message will only appear once per program. (Triggered internally at ../aten/src/ATen/native/BucketizationUtils.h:32.)
+  target_bins = torch.bucketize(target_flat, bin_edges, right=True)
+2024-03-23 21:50:35,590 - root - INFO - Training started at 23/03/2024 21:50:35
+/home/bletchkey/ASGNTC/src/gol_adv_sys/utils/scores.py:36: UserWarning: torch.searchsorted(): input value tensor is non-contiguous, this will lower the performance due to extra data copy when converting non-contiguous tensor to contiguous, please use contiguous input value tensor if possible. This message will only appear once per program. (Triggered internally at ../aten/src/ATen/native/BucketizationUtils.h:32.)
+  target_bins = torch.bucketize(target_flat, bin_edges, right=True)
