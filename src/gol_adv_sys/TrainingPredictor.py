@@ -187,6 +187,7 @@ class TrainingPredictor(TrainingBase):
                     accuracy += metric_prediction_accuracy(self.__get_metric_config(batch, self.metric_type), predicted_metric)
 
             accuracy /= len(self.dataloader["val"])
+            accuracy = accuracy.mean().item()
             logging.debug(f"Accuracy: {accuracy}")
             self.accuracy.append(accuracy)
 
@@ -264,14 +265,6 @@ class TrainingPredictor(TrainingBase):
             self.dataset["train_meta"] = FixedDataset(train_meta_path)
             self.dataset["val_meta"]   = FixedDataset(val_meta_path)
             self.dataset["test_meta"]  = FixedDataset(test_meta_path)
-
-            self.dataloader["train"] = DataLoader(self.dataset["train"], batch_size=BATCH_SIZE, shuffle=False)
-            self.dataloader["val"]   = DataLoader(self.dataset["val"], batch_size=BATCH_SIZE, shuffle=False)
-            self.dataloader["test"]  = DataLoader(self.dataset["test"], batch_size=BATCH_SIZE, shuffle=False)
-
-            self.dataloader["train_meta"] = DataLoader(self.dataset["train_meta"], batch_size=BATCH_SIZE, shuffle=False)
-            self.dataloader["val_meta"]   = DataLoader(self.dataset["val_meta"], batch_size=BATCH_SIZE, shuffle=False)
-            self.dataloader["test_meta"]  = DataLoader(self.dataset["test_meta"], batch_size=BATCH_SIZE, shuffle=False)
 
             self.__shuffle_dataloaders("train")
             self.__shuffle_dataloaders("val")

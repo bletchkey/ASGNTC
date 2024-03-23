@@ -221,6 +221,7 @@ def test_predictor_model_dataset(test_set: torch.utils.data.DataLoader,
         META_N_CELLS_FINAL: batch_metadata[META_N_CELLS_FINAL],
         META_TRANSIENT_PHASE: batch_metadata[META_TRANSIENT_PHASE],
         META_PERIOD: batch_metadata[META_PERIOD],
+        "metric_type": metric_type,
     }
 
     # Test the models on the fixed noise
@@ -261,7 +262,7 @@ def save_progress_plot_dataset(plot_data: dict, epoch: int, results_path: str):
     indices = np.linspace(0, BATCH_SIZE - 1, 4).astype(int)
 
     # Create figure and subplots
-    fig, axs = plt.subplots(n_rows, n_cols, figsize=(n_cols * 6, n_rows * 4))  # Adjusted size for better visibility
+    fig, axs = plt.subplots(n_rows, n_cols, figsize=(n_cols * 5, n_rows * 4))  # Adjusted size for better visibility
 
     plt.suptitle(f"Epoch {current_epoch}", fontsize=32)
 
@@ -277,21 +278,25 @@ def save_progress_plot_dataset(plot_data: dict, epoch: int, results_path: str):
             if key != "metadata":
                 img_data = plot_data[key][indices[i]]
                 axs[i, j].imshow(img_data, cmap='gray', vmin=vmin, vmax=vmax)
-                if j == 0:
-                    title = f"{titles[j]} - {plot_data['metadata'][META_N_CELLS_INIT][indices[i]]}"
-                elif j == 1:
-                    title = f"{titles[j]} - {plot_data['metadata'][META_N_CELLS_FINAL][indices[i]]}"
+                if key == "metric" and i == 0:
+                    axs[i, j].set_title(f"metric - {plot_data['metadata']['metric_type']}")
+                elif i == 0:
+                    axs[i, j].set_title(titles[j])
                 else:
-                    title = titles[j]
-                axs[i, j].set_title(title)
-
+                    axs[i, j].set_title("")
             else:
-                metadata_items = list(plot_data["metadata"][key][indices[i]].items())[2:]
-                text_data = "\n".join([f"{k}: {v}" for k, v in metadata_items])
-                axs[i, j].text(0.5, 0.5, text_data, fontsize=12, ha='center', va='center', transform=axs[i, j].transAxes)
+                text_data = ""
+                for k in plot_data[key].keys():
+                    if k == "metric_type":
+                        continue
+                    text_data += f"{k}: {plot_data[key][k][indices[i]]}\n"
+                axs[i, j].text(0.5, 0.5, text_data, fontsize=18, ha='left', va='center', transform=axs[i, j].transAxes)
+
+            axs[i, j].axis('off')
 
     plt.tight_layout()
-    plt.savefig(Path(results_path, f"epoch_{current_epoch}.png"), dpi=300)
+    plt.subplots_adjust(left=0.05, right=0.95, top=0.95, bottom=0.05)
+    plt.savefig(Path(results_path, f"epoch_{current_epoch}.png"), dpi=300, bbox_inches='tight')
     plt.close(fig)
 
 
