@@ -83,6 +83,7 @@ class DatasetCreator():
         metadata = []
 
         ids = torch.arange(DATASET_N_TOTAL_CONFIGS, dtype=torch.int32, device=self.device_manager.default_device)
+
         # Generate the configurations for the dataset
         for n_cells in range(n):
             logging.info(f"Generating configurations for {n_cells} living cells")
@@ -313,3 +314,4 @@ class PairedDataset(Dataset):
         data = self.data_set[idx]
         meta = self.meta_set[idx]
         return data, meta
+

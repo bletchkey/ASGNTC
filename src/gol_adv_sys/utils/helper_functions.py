@@ -259,7 +259,7 @@ def save_progress_plot_dataset(plot_data: dict, epoch: int, results_path: str):
     indices = np.linspace(0, BATCH_SIZE - 1, 4).astype(int)
 
     # Create figure and subplots
-    fig, axs = plt.subplots(n_rows, n_cols, figsize=(n_cols * 5, n_rows * 6))
+    fig, axs = plt.subplots(n_rows, n_cols, figsize=(n_cols * 5.5, n_rows * 6))
 
     plt.suptitle(f"Epoch {current_epoch}", fontsize=32)
 
@@ -275,6 +275,8 @@ def save_progress_plot_dataset(plot_data: dict, epoch: int, results_path: str):
             if key != "metadata":
                 img_data = plot_data[key][indices[i]]
                 axs[i, j].imshow(img_data, cmap='gray', vmin=vmin, vmax=vmax)
+                axs[i, j].patch.set_edgecolor('black')
+                axs[i, j].patch.set_linewidth(1)
                 if key == "metric" and i == 0:
                     axs[i, j].set_title(f"metric - {plot_data['metadata']['metric_type']}", pad=6, fontsize=24)
                 elif i == 0:

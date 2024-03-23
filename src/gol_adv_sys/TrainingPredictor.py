@@ -177,13 +177,12 @@ class TrainingPredictor(TrainingBase):
                     errP = self.predictor.criterion(predicted_metric, self.__get_metric_config(batch, self.metric_type))
                     val_loss += errP.item()
 
-                    # Compute metric prediction accuracy
-                    accuracy, guessed = metric_prediction_accuracy(self.__get_metric_config(batch, self.metric_type), predicted_metric)
+                    accuracy = metric_prediction_accuracy(self.__get_metric_config(batch, self.metric_type), predicted_metric)
                     accuracy = accuracy.mean().item()
                     accuracy_avg += accuracy
                     logging.debug(f"Accuracy on validation batch: {accuracy}")
-                    logging.debug(f"Guessed: {guessed}/{BATCH_SIZE}")
 
+            # Compute metric prediction accuracy
             accuracy_avg /= len(self.dataloader["val"])
             logging.debug(f"Accuracy: {accuracy_avg}")
             self.accuracies.append(accuracy_avg)
@@ -289,7 +288,7 @@ class TrainingPredictor(TrainingBase):
             str_epoch       = f"{self.current_epoch+1}/{NUM_EPOCHS}"
             str_err_p_train = f"{self.losses['predictor_train'][-1]:.6f}"
             str_err_p_val   = f"{self.losses['predictor_val'][-1]:.6f}"
-            str_accuracy    = f"{self.accuracies[-1]:.3f}"
+            str_accuracy    = f"{(100*self.accuracies[-1]):.3f}%"
 
             lr = self.learning_rates[self.current_epoch]
 

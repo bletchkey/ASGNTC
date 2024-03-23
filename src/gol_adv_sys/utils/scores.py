@@ -4,7 +4,7 @@ import torch
 from typing import Tuple
 
 
-def metric_prediction_accuracy(target: torch.Tensor, prediction: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
+def metric_prediction_accuracy(target: torch.Tensor, prediction: torch.Tensor) -> torch.Tensor:
     """
     Calculate the binned accuracy score for each pixel in the prediction compared to the target.
     The values range from 0 to 1, and are binned into four categories. Scores are awarded based on
@@ -18,7 +18,6 @@ def metric_prediction_accuracy(target: torch.Tensor, prediction: torch.Tensor) -
     Returns:
         torch.Tensor: A tensor of shape (N,) where each element is the mean score of the
                       corresponding configuration in the batch.
-        torch.Tensor: A tensor of shape (N,) where each element is the number of guessed metrics
 
     Raises:
         ValueError: If the input tensors do not have matching shapes or are not 4-dimensional.
@@ -41,13 +40,8 @@ def metric_prediction_accuracy(target: torch.Tensor, prediction: torch.Tensor) -
     score = torch.where(target_bins == prediction_bins, 1.0,
                         torch.where(torch.abs(target_bins - prediction_bins) == 1, 0.5, 0.0))
 
-    # Calculate the number of guessed metrics
-    guessed = torch.zeros_like(target_flat)
-    guessed = torch.where(target_bins == prediction_bins, 1.0, guessed)
-    guessed = guessed.sum(dim=1)
-
     # Compute the mean score for each item in the batch
     mean_scores = score.mean(dim=1)  # Compute mean across the flattened second dimension
 
-    return mean_scores, guessed
+    return mean_scores
 
