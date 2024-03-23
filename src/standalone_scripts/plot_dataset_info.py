@@ -109,7 +109,7 @@ def check_transient_phases(saving_path, metadata):
     # Q-Q plot for transient phases
     norm_quantiles = np.linspace(0, 1, len(transient_phases))
     data_quantiles = np.quantile(transient_phases, norm_quantiles)
-    theoretical_quantiles = np.quantile(np.random.normal(size=1000), norm_quantiles)
+    theoretical_quantiles = np.quantile(np.random.normal(size=10000), norm_quantiles)
 
     axs[1].plot(theoretical_quantiles, data_quantiles, 'o', color='skyblue')
     axs[1].plot([theoretical_quantiles.min(), theoretical_quantiles.max()],

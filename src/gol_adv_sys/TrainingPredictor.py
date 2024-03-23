@@ -292,8 +292,8 @@ class TrainingPredictor(TrainingBase):
 
             lr = self.learning_rates[self.current_epoch]
 
-            log.write(f"{str_epoch_time} | Epoch: {str_epoch}| Loss P (train): {str_err_p_train}| "
-                      f"Loss P (val): {str_err_p_val}| Accuracy: {str_accuracy} | Learning rate: {lr}\n"
+            log.write(f"{str_epoch_time} | Epoch: {str_epoch} | Loss P (train): {str_err_p_train} | "
+                      f"Loss P (val): {str_err_p_val} | Accuracy: {str_accuracy} | Learning rate: {lr}\n"
             )
             log.flush()
 
@@ -400,22 +400,4 @@ class TrainingPredictor(TrainingBase):
             torch.cuda.manual_seed(self.__seed)
         except Exception as e:
             logging.error(f"Error initializing the seed: {e}")
-
-
-    # TODO: This function needs to be implemented properly
-    def load_pretrained_model(self, model_name: str) -> None:
-     """
-     Function for loading a model from a file.
-
-     Args:
-         name_p (str): The name of the predictor model to load.
-
-     """
-
-     path = TRAINED_MODELS_DIR / model_name
-
-     if path.is_file():
-        checkpoint = torch.load(path)
-        self.predictor.model.load_state_dict(checkpoint["state_dict"])
-        self.predictor.optimizer.load_state_dict(checkpoint["optimizer"])
 
