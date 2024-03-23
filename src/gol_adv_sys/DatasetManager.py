@@ -6,7 +6,7 @@ from torch.utils.data import Dataset
 
 
 from config.paths import DATASET_DIR
-from src.gol_adv_sys.utils import constants as constants
+from config.constants import *
 from src.gol_adv_sys.utils.simulation_functions import simulate_config
 
 
@@ -37,17 +37,17 @@ class DatasetCreator():
 
         self.device_manager = device_manager
 
-        self.__simulation_topology = constants.TOPOLOGY_TYPE["toroidal"]
+        self.__simulation_topology = TOPOLOGY_TOROIDAL
 
-        self.dataset_entire_path = DATASET_DIR / f"{constants.dataset_name}.pt"
-        self.dataset_train_path  = DATASET_DIR / f"{constants.dataset_name}_train.pt"
-        self.dataset_val_path    = DATASET_DIR / f"{constants.dataset_name}_val.pt"
-        self.dataset_test_path   = DATASET_DIR / f"{constants.dataset_name}_test.pt"
+        self.dataset_entire_path = DATASET_DIR / f"{DATASET_NAME}.pt"
+        self.dataset_train_path  = DATASET_DIR / f"{DATASET_NAME}_train.pt"
+        self.dataset_val_path    = DATASET_DIR / f"{DATASET_NAME}_val.pt"
+        self.dataset_test_path   = DATASET_DIR / f"{DATASET_NAME}_test.pt"
 
-        self.metadata_entire_path = DATASET_DIR / f"{constants.dataset_name}_metadata.pt"
-        self.metadata_train_path  = DATASET_DIR / f"{constants.dataset_name}_metadata_train.pt"
-        self.metadata_val_path    = DATASET_DIR / f"{constants.dataset_name}_metadata_val.pt"
-        self.metadata_test_path   = DATASET_DIR / f"{constants.dataset_name}_metadata_test.pt"
+        self.metadata_entire_path = DATASET_DIR / f"{DATASET_NAME}_metadata.pt"
+        self.metadata_train_path  = DATASET_DIR / f"{DATASET_NAME}_metadata_train.pt"
+        self.metadata_val_path    = DATASET_DIR / f"{DATASET_NAME}_metadata_val.pt"
+        self.metadata_test_path   = DATASET_DIR / f"{DATASET_NAME}_metadata_test.pt"
 
         self.total_configs = 0
 
@@ -76,66 +76,66 @@ class DatasetCreator():
             logging.warning("Data folder is not empty. Skipping dataset generation.")
             return False
 
-        n_batches = constants.dataset_n_configs // constants.dataset_bs
-        n = constants.grid_size ** 2 + 1
+        n_batches = DATASET_N_TOTAL_CONFIGS // DATASET_BATCH_SIZE
+        n = GRID_SIZE ** 2 + 1
         batches_for_n_cells = n_batches // n
         configs = []
         metadata = []
 
-        ids = torch.arange(constants.dataset_n_configs, dtype=torch.int32, device=self.device_manager.default_device)
+        ids = torch.arange(DATASET_N_TOTAL_CONFIGS, dtype=torch.int32, device=self.device_manager.default_device)
         # Generate the configurations for the dataset
         for n_cells in range(n):
             logging.info(f"Generating configurations for {n_cells} living cells")
             for i in range(batches_for_n_cells):
                 batch_number = i + n_cells * batches_for_n_cells
                 # Initialize the batch of configurations with all cells dead (0)
-                initial_config = torch.zeros(constants.dataset_bs, constants.grid_size, constants.grid_size, dtype=torch.float32,
+                initial_config = torch.zeros(DATASET_BATCH_SIZE, GRID_SIZE, GRID_SIZE, dtype=torch.float32,
                                              device=self.device_manager.default_device)
                 # For each configuration in the batch
-                for i in range(constants.dataset_bs):
-                    flat_indices = torch.randperm(constants.grid_size ** 2, device=self.device_manager.default_device)[:n_cells]
-                    rows, cols = flat_indices // constants.grid_size, flat_indices % constants.grid_size
+                for i in range(DATASET_BATCH_SIZE):
+                    flat_indices = torch.randperm(GRID_SIZE ** 2, device=self.device_manager.default_device)[:n_cells]
+                    rows, cols = flat_indices // GRID_SIZE, flat_indices % GRID_SIZE
                     initial_config[i, rows, cols] = 1.0
-                initial_config = initial_config.view(constants.dataset_bs, 1, constants.grid_size, constants.grid_size)
+                initial_config = initial_config.view(DATASET_BATCH_SIZE, 1, GRID_SIZE, GRID_SIZE)
                 with torch.no_grad():
                     final, metrics, n_cells_init, n_cells_final = simulate_config(
                                                             config=initial_config, topology=self.__simulation_topology,
-                                                            steps=constants.dataset_n_simulation_steps, calculate_final_config=True,
+                                                            steps=DATASET_N_SIM_STEPS, calculate_final_config=True,
                                                             device=self.device_manager.default_device)
                 configs.append({
-                    "initial": initial_config,
-                    "final": final["config"],
-                    "metric_easy": metrics["easy"]["config"],
-                    "metric_medium": metrics["medium"]["config"],
-                    "metric_hard": metrics["hard"]["config"],
-                    "metric_stable": metrics["stable"]["config"]
+                    CONFIG_INITIAL: initial_config,
+                    CONFIG_FINAL: final["config"],
+                    CONFIG_METRIC_EASY: metrics[CONFIG_METRIC_EASY]["config"],
+                    CONFIG_METRIC_MEDIUM: metrics[CONFIG_METRIC_MEDIUM]["config"],
+                    CONFIG_METRIC_HARD: metrics[CONFIG_METRIC_HARD]["config"],
+                    CONFIG_METRIC_STABLE: metrics[CONFIG_METRIC_STABLE]["config"]
                 })
                 metadata.append({
-                    "id": ids[batch_number*constants.dataset_bs: (batch_number+1)*constants.dataset_bs],
-                    "n_cells_init": n_cells_init,
-                    "n_cells_final": n_cells_final,
-                    "transient_phase": final["transient_phase"],
-                    "period": final["period"],
-                    "easy_minimum": metrics["easy"]["minimum"],
-                    "easy_maximum": metrics["easy"]["maximum"],
-                    "easy_q1": metrics["easy"]["q1"],
-                    "easy_q2": metrics["easy"]["q2"],
-                    "easy_q3": metrics["easy"]["q3"],
-                    "medium_minimum": metrics["medium"]["minimum"],
-                    "medium_maximum": metrics["medium"]["maximum"],
-                    "medium_q1": metrics["medium"]["q1"],
-                    "medium_q2": metrics["medium"]["q2"],
-                    "medium_q3": metrics["medium"]["q3"],
-                    "hard_minimum": metrics["hard"]["minimum"],
-                    "hard_maximum": metrics["hard"]["maximum"],
-                    "hard_q1": metrics["hard"]["q1"],
-                    "hard_q2": metrics["hard"]["q2"],
-                    "hard_q3": metrics["hard"]["q3"],
-                    "stable_minimum": metrics["stable"]["minimum"],
-                    "stable_maximum": metrics["stable"]["maximum"],
-                    "stable_q1": metrics["stable"]["q1"],
-                    "stable_q2": metrics["stable"]["q2"],
-                    "stable_q3": metrics["stable"]["q3"]
+                    META_ID: ids[batch_number*DATASET_BATCH_SIZE: (batch_number+1)*DATASET_BATCH_SIZE],
+                    META_N_CELLS_INIT: n_cells_init,
+                    META_N_CELLS_FINAL: n_cells_final,
+                    META_TRANSIENT_PHASE: final["transient_phase"],
+                    META_PERIOD: final["period"],
+                    META_EASY_MIN: metrics[CONFIG_METRIC_EASY]["minimum"],
+                    META_EASY_MAX: metrics[CONFIG_METRIC_EASY]["maximum"],
+                    META_EASY_Q1: metrics[CONFIG_METRIC_EASY]["q1"],
+                    META_EASY_Q2: metrics[CONFIG_METRIC_EASY]["q2"],
+                    META_EASY_Q3: metrics[CONFIG_METRIC_EASY]["q3"],
+                    META_MEDIUM_MIN: metrics[CONFIG_METRIC_MEDIUM]["minimum"],
+                    META_MEDIUM_MAX: metrics[CONFIG_METRIC_MEDIUM]["maximum"],
+                    META_MEDIUM_Q1: metrics[CONFIG_METRIC_MEDIUM]["q1"],
+                    META_MEDIUM_Q2: metrics[CONFIG_METRIC_MEDIUM]["q2"],
+                    META_MEDIUM_Q3: metrics[CONFIG_METRIC_MEDIUM]["q3"],
+                    META_HARD_MIN: metrics[CONFIG_METRIC_MEDIUM]["minimum"],
+                    META_HARD_MAX: metrics[CONFIG_METRIC_MEDIUM]["maximum"],
+                    META_HARD_Q1: metrics[CONFIG_METRIC_MEDIUM]["q1"],
+                    META_HARD_Q2: metrics[CONFIG_METRIC_MEDIUM]["q2"],
+                    META_HARD_Q3: metrics[CONFIG_METRIC_MEDIUM]["q3"],
+                    META_STABLE_MIN: metrics[CONFIG_METRIC_MEDIUM]["minimum"],
+                    META_STABLE_MAX: metrics[CONFIG_METRIC_MEDIUM]["maximum"],
+                    META_STABLE_Q1: metrics[CONFIG_METRIC_MEDIUM]["q1"],
+                    META_STABLE_Q2: metrics[CONFIG_METRIC_MEDIUM]["q2"],
+                    META_STABLE_Q3: metrics[CONFIG_METRIC_MEDIUM]["q3"]
                 })
 
         # Configs
@@ -155,7 +155,7 @@ class DatasetCreator():
             metadata_data[key] = torch.cat(tensors, dim=0)
 
         # Generate shuffled indices based on the total number of configurations
-        self.total_configs = len(configs_data)  # Should be constants.dataset_n_configs
+        self.total_configs = len(configs_data)  # Should be DATASET_N_TOTAL_CONFIGS
         shuffled_indices = torch.randperm(self.total_configs, device=self.device_manager.default_device)
 
         # Apply the shuffled indices to flatten configs and metadata
@@ -186,8 +186,8 @@ class DatasetCreator():
         data = torch.stack(shuffled_configs, dim=0)
 
         # Divide the data into training, validation, and test sets (use shuffled_metadata for indexing)
-        n_train = int(constants.dataset_train_ratio * data.size(0))
-        n_val   = int(constants.dataset_val_ratio * data.size(0))
+        n_train = int(DATASET_TRAIN_RATIO * data.size(0))
+        n_val   = int(DATASET_VAL_RATIO * data.size(0))
 
         train_data = data[:n_train]
         val_data   = data[n_train:n_train + n_val]

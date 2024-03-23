@@ -2,12 +2,15 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 
+from typing import Union, Callable
+
 from src.gol_adv_sys.DeviceManager import DeviceManager
-from src.gol_adv_sys.utils import constants as constants
+from config.constants import *
 
 
 class ModelManager:
-    def __init__(self, model: nn.Module, optimizer: optim.Optimizer, criterion: nn.Module, device_manager: DeviceManager):
+    def __init__(self, model: nn.Module, optimizer: optim.Optimizer,
+                 criterion: Union[nn.Module, Callable], device_manager: DeviceManager):
 
         self.__model = model
         self.__optimizer = optimizer
@@ -31,7 +34,7 @@ class ModelManager:
         return self.__optimizer
 
     @property
-    def criterion(self) -> nn.Module:
+    def criterion(self) -> Union[nn.Module, Callable]:
         """Returns the loss function."""
         return self.__criterion
 

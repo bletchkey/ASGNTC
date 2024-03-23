@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 
-from src.gol_adv_sys.utils import constants as constants
+from config.constants import *
 
 
 class DCGAN(nn.Module):
@@ -11,10 +11,10 @@ class DCGAN(nn.Module):
         self.noise_std = noise_std
 
         layers = [
-            self._make_layer(constants.nz, constants.ngf * 4, kernel_size=4, stride=1, padding=0),
-            self._make_layer(constants.ngf * 4, constants.ngf * 2),
-            self._make_layer(constants.ngf * 2, constants.ngf),
-            self._make_final_layer(constants.ngf, constants.nc),
+            self._make_layer(N_Z, N_GENERATOR_FEATURES * 4, kernel_size=4, stride=1, padding=0),
+            self._make_layer(N_GENERATOR_FEATURES * 4, N_GENERATOR_FEATURES * 2),
+            self._make_layer(N_GENERATOR_FEATURES * 2, N_GENERATOR_FEATURES),
+            self._make_final_layer(N_GENERATOR_FEATURES, N_CHANNELS),
         ]
 
         self.model = nn.Sequential(*layers)

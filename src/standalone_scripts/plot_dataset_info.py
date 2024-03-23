@@ -10,7 +10,7 @@ sys.path.append(str(Path(__file__).resolve().parents[1]))
 sys.path.append(str(Path(__file__).resolve().parents[2]))
 
 from config.paths import DATASET_DIR
-from src.gol_adv_sys.utils import constants as constants
+from config.constants import *
 
 
 def check_dataset_configs(saving_path, dataset, metadata, total_indices=50, n_per_png=5):
@@ -32,12 +32,43 @@ def check_dataset_configs(saving_path, dataset, metadata, total_indices=50, n_pe
             meta = metadata[indices[global_idx]]
 
             metadata_texts = [
-                f"ID: {meta['id']}\nInitial cells: {meta['n_cells_init']}",
-                f"Final cells: {meta['n_cells_final']}\nTransient phase: {meta['transient_phase']}\nPeriod: {meta['period']}",
-                f"Minimum: {meta['easy_minimum']:.4f}\nMaximum: {meta['easy_maximum']:.4f}\nQ1: {meta['easy_q1']:.4f}\nQ2: {meta['easy_q2']:.4f}\nQ3: {meta    ['easy_q3']:.4f}",
-                f"Minimum: {meta['medium_minimum']:.4f}\nMaximum: {meta['medium_maximum']:.4f}\nQ1: {meta['medium_q1']:.4f}\nQ2: {meta['medium_q2']:.4f}       \nQ3: {meta['medium_q3']:.4f}",
-                f"Minimum: {meta['hard_minimum']:.4f}\nMaximum: {meta['hard_maximum']:.4f}\nQ1: {meta['hard_q1']:.4f}\nQ2: {meta['hard_q2']:.4f}\nQ3: {meta    ['hard_q3']:.4f}",
-                f"Minimum: {meta['stable_minimum']:.4f}\nMaximum: {meta['stable_maximum']:.4f}\nQ1: {meta['stable_q1']:.4f}\nQ2: {meta['stable_q2']:.4f}       \nQ3: {meta['stable_q3']:.4f}"
+                (
+                    f"ID: {meta[META_ID]}\n"
+                    f"Initial cells: {meta[META_N_CELLS_INIT]}"
+                ),
+                (
+                    f"Final cells: {meta[META_N_CELLS_FINAL]}\n"
+                    f"Transient phase: {meta[META_TRANSIENT_PHASE]}\n"
+                    f"Period: {meta[META_PERIOD]}"
+                ),
+                (
+                    f"Minimum: {meta[META_EASY_MIN]:.4f}\n"
+                    f"Maximum: {meta[META_EASY_MAX]:.4f}\n"
+                    f"Q1: {meta[META_EASY_Q1]:.4f}\n"
+                    f"Q2: {meta[META_EASY_Q2]:.4f}\n"
+                    f"Q3: {meta[META_EASY_Q3]:.4f}"
+                ),
+                (
+                    f"Minimum: {meta[META_MEDIUM_MIN]:.4f}\n"
+                    f"Maximum: {meta[META_MEDIUM_MAX]:.4f}\n"
+                    f"Q1: {meta[META_MEDIUM_Q1]:.4f}\n"
+                    f"Q2: {meta[META_MEDIUM_Q2]:.4f}\n"
+                    f"Q3: {meta[META_MEDIUM_Q3]:.4f}"
+                ),
+                (
+                    f"Minimum: {meta[META_HARD_MIN]:.4f}\n"
+                    f"Maximum: {meta[META_HARD_MAX]:.4f}\n"
+                    f"Q1: {meta[META_HARD_Q1]:.4f}\n"
+                    f"Q2: {meta[META_HARD_Q2]:.4f}\n"
+                    f"Q3: {meta[META_HARD_Q3]:.4f}"
+                ),
+                (
+                    f"Minimum: {meta[META_STABLE_MIN]:.4f}\n"
+                    f"Maximum: {meta[META_STABLE_MAX]:.4f}\n"
+                    f"Q1: {meta[META_STABLE_Q1]:.4f}\n"
+                    f"Q2: {meta[META_STABLE_Q2]:.4f}\n"
+                    f"Q3: {meta[META_STABLE_Q3]:.4f}"
+                )
             ]
 
             for col in range(6):
@@ -94,7 +125,7 @@ def check_transient_phases(saving_path, metadata):
 
 
 def check_dataset_distribution(saving_path, dataset):
-    n = constants.grid_size ** 2
+    n = GRID_SIZE ** 2
     bins = torch.zeros(n + 1, dtype=torch.int64)
 
     plot_path = Path(saving_path) / "distribution.png"
@@ -132,8 +163,8 @@ def main():
         saving_path = base_saving_path / name
         saving_path.mkdir(exist_ok=True)
 
-        ds_path = DATASET_DIR / f"{constants.dataset_name}_{name}.pt"
-        metadata_path = DATASET_DIR / f"{constants.dataset_name}_metadata_{name}.pt"
+        ds_path = DATASET_DIR / f"{DATASET_NAME}_{name}.pt"
+        metadata_path = DATASET_DIR / f"{DATASET_NAME}_metadata_{name}.pt"
 
         dataset = torch.load(ds_path)
         metadata = torch.load(metadata_path)

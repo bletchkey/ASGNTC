@@ -1,142 +1,76 @@
-Traceback (most recent call last):
-  File "main.py", line 18, in <module>
-    from src.gol_adv_sys.Predictor import Predictor_Baseline, Predictor_Baseline_v2, \
-ImportError: cannot import name 'Predictor_Baseline_v2' from 'src.gol_adv_sys.Predictor' (/home/bletchkey/ASGNTC/src/gol_adv_sys/Predictor.py)
-Traceback (most recent call last):
-  File "main.py", line 109, in <module>
-    RETCODE = main()
-  File "main.py", line 101, in main
-    playground()
-  File "main.py", line 76, in playground
-    pg.plot_record(data)
-  File "/home/bletchkey/ASGNTC/src/gol_adv_sys/Playground.py", line 136, in plot_record
-    axs[6].text(0.5, 0.5, text_str, ha="center", va="center", fontsize=30, wrap=True)
-IndexError: list index out of range
-Traceback (most recent call last):
-  File "main.py", line 109, in <module>
-    RETCODE = main()
-  File "main.py", line 101, in main
-    playground()
-  File "main.py", line 76, in playground
-    pg.plot_record(data)
-  File "/home/bletchkey/ASGNTC/src/gol_adv_sys/Playground.py", line 126, in plot_record
-    axs[2].imshow(record["easy_metric"].detach().cpu().numpy().squeeze(), **imshow_kwargs)
-KeyError: 'easy_metric'
-Traceback (most recent call last):
-  File "main.py", line 109, in <module>
-    RETCODE = main()
-  File "main.py", line 101, in main
-    playground()
-  File "main.py", line 76, in playground
-    pg.plot_record(data)
-  File "/home/bletchkey/ASGNTC/src/gol_adv_sys/Playground.py", line 129, in plot_record
-    axs[3].imshow(record["medium"]["config"].detach().cpu().numpy().squeeze(), **imshow_kwargs)
-KeyError: 'medium'
-Traceback (most recent call last):
-  File "main.py", line 109, in <module>
-    RETCODE = main()
-  File "main.py", line 101, in main
-    playground()
-  File "main.py", line 76, in playground
-    pg.plot_record(data)
-  File "/home/bletchkey/ASGNTC/src/gol_adv_sys/Playground.py", line 126, in plot_record
-    axs[2].imshow(record["easy_metric"]["config"].detach().cpu().numpy().squeeze(), **imshow_kwargs)
-KeyError: 'easy_metric'
-Traceback (most recent call last):
-  File "main.py", line 109, in <module>
-    RETCODE = main()
-  File "main.py", line 101, in main
-    playground()
-  File "main.py", line 76, in playground
-    pg.plot_record(data)
-  File "/home/bletchkey/ASGNTC/src/gol_adv_sys/Playground.py", line 129, in plot_record
-    axs[2].text(0.5, 0.5, f"Min: {record['easy']['minimum']}\nMax: {record['easy']['maximum']}\nQ1: {record['easy']['q1']}\nQ2: {record['easy']['q2']}\nQ3: {record['easy']['q3']}", ha="center", va="center", fontsize=20, wrap=True)
-KeyError: 'easy'
-Traceback (most recent call last):
-  File "main.py", line 109, in <module>
-    RETCODE = main()
-  File "main.py", line 101, in main
-    playground()
-  File "main.py", line 76, in playground
-    pg.plot_record(data)
-  File "/home/bletchkey/ASGNTC/src/gol_adv_sys/Playground.py", line 158, in plot_record
-    ax.imshow(record[f"{i}_metric"]["config"].detach().cpu().numpy().squeeze(), **imshow_kwargs)
-KeyError: '0_metric'
-Traceback (most recent call last):
-  File "main.py", line 109, in <module>
-    RETCODE = main()
-  File "main.py", line 101, in main
-    playground()
-  File "main.py", line 76, in playground
-    pg.plot_record(data)
-  File "/home/bletchkey/ASGNTC/src/gol_adv_sys/Playground.py", line 138, in plot_record
-    ax.set_title(f"{record[f'{titles[i]}']} - {record[f'{config}']['n_cells']} cells", fontsize=16)
-KeyError: 'Easy Metric'
-Traceback (most recent call last):
-  File "main.py", line 109, in <module>
-    RETCODE = main()
-  File "main.py", line 101, in main
-    playground()
-  File "main.py", line 76, in playground
-    pg.plot_record(data)
-  File "/home/bletchkey/ASGNTC/src/gol_adv_sys/Playground.py", line 138, in plot_record
-    ax.set_title(f"{titles[i]}" - f"{record['n_cells_init']} cells", fontsize=16)
-TypeError: unsupported operand type(s) for -: 'str' and 'str'
-Traceback (most recent call last):
-  File "main.py", line 109, in <module>
-    RETCODE = main()
-  File "main.py", line 101, in main
-    playground()
-  File "main.py", line 76, in playground
-    pg.plot_record(data)
-  File "/home/bletchkey/ASGNTC/src/gol_adv_sys/Playground.py", line 115, in plot_record
-    gs = GridSpec(3, 6, figure=fig, height_ratios=[5, 1])  # Allocate more space for the images
-  File "/home/bletchkey/.local/lib/python3.8/site-packages/matplotlib/gridspec.py", line 379, in __init__
-    super().__init__(nrows, ncols,
-  File "/home/bletchkey/.local/lib/python3.8/site-packages/matplotlib/gridspec.py", line 55, in __init__
-    self.set_height_ratios(height_ratios)
-  File "/home/bletchkey/.local/lib/python3.8/site-packages/matplotlib/gridspec.py", line 133, in set_height_ratios
-    raise ValueError('Expected the given number of height ratios to '
-ValueError: Expected the given number of height ratios to match the number of rows of the grid
-Stable min: 0.0
-Stable max: 1.0
-Stable min: 0.0
-Stable max: 1.0
-Stable min: 0.0
-Stable max: 1.0
-Stable min: 0.0
-Stable max: 1.0
-Stable min: 0.0
-Stable max: 1.0
-Stable min: 0.0
-Stable max: 1.0
-Stable min: 0.0
-Stable max: 1.0
-Stable min: 0.0
-Stable max: 1.0
+2024-03-23 16:28:57,974 - root - INFO - Training started at 23/03/2024 16:28:57
 Traceback (most recent call last):
   File "main.py", line 111, in <module>
     RETCODE = main()
-  File "main.py", line 103, in main
-    playground()
-  File "main.py", line 78, in playground
-    pg.plot_record(data)
-  File "/home/bletchkey/ASGNTC/src/gol_adv_sys/Playground.py", line 165, in plot_record
-    plt.subplots_adjust(left=0.05, right=0.95, top=0.1, bottom=0.1, wspace=0.1, hspace=0)
-  File "/home/bletchkey/.local/lib/python3.8/site-packages/matplotlib/pyplot.py", line 2335, in subplots_adjust
-    return gcf().subplots_adjust(
-  File "/home/bletchkey/.local/lib/python3.8/site-packages/matplotlib/figure.py", line 1353, in subplots_adjust
-    self.subplotpars.update(left, bottom, right, top, wspace, hspace)
-  File "/home/bletchkey/.local/lib/python3.8/site-packages/matplotlib/figure.py", line 166, in update
-    raise ValueError('bottom cannot be >= top')
-ValueError: bottom cannot be >= top
-Stable min: 0.0
-Stable max: 1.0
-Stable min: 0.0
-Stable max: 1.0
-Stable min: 0.0
-Stable max: 1.0
-Stable min: 0.0
-Stable max: 1.0
-Stable min: 0.0
-Stable max: 1.0
+  File "main.py", line 104, in main
+    train_predictor()
+  File "main.py", line 95, in train_predictor
+    train_pred.run()
+  File "/home/bletchkey/ASGNTC/src/gol_adv_sys/TrainingPredictor.py", line 104, in run
+    self._fit()
+  File "/home/bletchkey/ASGNTC/src/gol_adv_sys/TrainingPredictor.py", line 201, in _fit
+    self.__save_progress_plot(data)
+  File "/home/bletchkey/ASGNTC/src/gol_adv_sys/TrainingPredictor.py", line 390, in __save_progress_plot
+    save_progress_plot(data, self.current_epoch, self.__folders.results_folder)
+  File "/home/bletchkey/ASGNTC/src/gol_adv_sys/utils/helper_functions.py", line 237, in save_progress_plot
+    axs[i, j].imshow(plot_data[key][indices[i]], cmap='gray', vmin=vmin, vmax=vmax)
+KeyError: 0
+2024-03-23 16:40:06,814 - root - INFO - Training started at 23/03/2024 16:40:06
+2024-03-23 16:53:34,750 - root - INFO - Training started at 23/03/2024 16:53:34
+/home/bletchkey/ASGNTC/src/gol_adv_sys/utils/scores.py:38: UserWarning: torch.searchsorted(): input value tensor is non-contiguous, this will lower the performance due to extra data copy when converting non-contiguous tensor to contiguous, please use contiguous input value tensor if possible. This message will only appear once per program. (Triggered internally at ../aten/src/ATen/native/BucketizationUtils.h:32.)
+  target_bins = torch.bucketize(target_flat, bin_edges, right=True)
+Traceback (most recent call last):
+  File "main.py", line 111, in <module>
+    RETCODE = main()
+  File "main.py", line 104, in main
+    train_predictor()
+  File "main.py", line 95, in train_predictor
+    train_pred.run()
+  File "/home/bletchkey/ASGNTC/src/gol_adv_sys/TrainingPredictor.py", line 108, in run
+    self._fit()
+  File "/home/bletchkey/ASGNTC/src/gol_adv_sys/TrainingPredictor.py", line 190, in _fit
+    val_loss /= len(self.dataloader["val"])
+  File "/home/bletchkey/ASGNTC/src/gol_adv_sys/utils/scores.py", line 49, in metric_prediction_accuracy
+    mean_scores = score.mean(dim=[2, 3])  # Compute mean across H, and W dimensions
+IndexError: Dimension out of range (expected to be in range of [-2, 1], but got 2)
+2024-03-23 17:10:58,702 - root - INFO - Training started at 23/03/2024 17:10:58
+/home/bletchkey/ASGNTC/src/gol_adv_sys/utils/scores.py:37: UserWarning: torch.searchsorted(): input value tensor is non-contiguous, this will lower the performance due to extra data copy when converting non-contiguous tensor to contiguous, please use contiguous input value tensor if possible. This message will only appear once per program. (Triggered internally at ../aten/src/ATen/native/BucketizationUtils.h:32.)
+  target_bins = torch.bucketize(target_flat, bin_edges, right=True)
+2024-03-23 17:16:33,494 - root - INFO - Training started at 23/03/2024 17:16:33
+/home/bletchkey/ASGNTC/src/gol_adv_sys/utils/scores.py:37: UserWarning: torch.searchsorted(): input value tensor is non-contiguous, this will lower the performance due to extra data copy when converting non-contiguous tensor to contiguous, please use contiguous input value tensor if possible. This message will only appear once per program. (Triggered internally at ../aten/src/ATen/native/BucketizationUtils.h:32.)
+  target_bins = torch.bucketize(target_flat, bin_edges, right=True)
+Traceback (most recent call last):
+  File "main.py", line 111, in <module>
+    RETCODE = main()
+  File "main.py", line 104, in main
+    train_predictor()
+  File "main.py", line 95, in train_predictor
+    train_pred.run()
+  File "/home/bletchkey/ASGNTC/src/gol_adv_sys/TrainingPredictor.py", line 108, in run
+    self._fit()
+  File "/home/bletchkey/ASGNTC/src/gol_adv_sys/TrainingPredictor.py", line 213, in _fit
+    self.__save_progress_plot(data)
+  File "/home/bletchkey/ASGNTC/src/gol_adv_sys/TrainingPredictor.py", line 404, in __save_progress_plot
+    save_progress_plot_dataset(data, self.current_epoch, self.__folders.results_folder)
+  File "/home/bletchkey/ASGNTC/src/gol_adv_sys/utils/helper_functions.py", line 288, in save_progress_plot_dataset
+    metadata_items = list(plot_data[key][indices[i]].items())[2:]
+KeyError: 0
+2024-03-23 17:21:54,326 - root - INFO - Training started at 23/03/2024 17:21:54
+/home/bletchkey/ASGNTC/src/gol_adv_sys/utils/scores.py:37: UserWarning: torch.searchsorted(): input value tensor is non-contiguous, this will lower the performance due to extra data copy when converting non-contiguous tensor to contiguous, please use contiguous input value tensor if possible. This message will only appear once per program. (Triggered internally at ../aten/src/ATen/native/BucketizationUtils.h:32.)
+  target_bins = torch.bucketize(target_flat, bin_edges, right=True)
+Traceback (most recent call last):
+  File "main.py", line 111, in <module>
+    RETCODE = main()
+  File "main.py", line 104, in main
+    train_predictor()
+  File "main.py", line 95, in train_predictor
+    train_pred.run()
+  File "/home/bletchkey/ASGNTC/src/gol_adv_sys/TrainingPredictor.py", line 108, in run
+    self._fit()
+  File "/home/bletchkey/ASGNTC/src/gol_adv_sys/TrainingPredictor.py", line 213, in _fit
+    self.__save_progress_plot(data)
+  File "/home/bletchkey/ASGNTC/src/gol_adv_sys/TrainingPredictor.py", line 404, in __save_progress_plot
+    save_progress_plot_dataset(data, self.current_epoch, self.__folders.results_folder)
+  File "/home/bletchkey/ASGNTC/src/gol_adv_sys/utils/helper_functions.py", line 288, in save_progress_plot_dataset
+    else:
+KeyError: 'metadata'

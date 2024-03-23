@@ -13,10 +13,10 @@ import logging
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from torch.utils.data import DataLoader
+from torch.utils.data import DataLoader, SubsetRandomSampler
 
 from config.paths import DATASET_DIR, TRAINED_MODELS_DIR
-from src.gol_adv_sys.utils import constants as constants
+from config.constants import *
 
 from src.gol_adv_sys.FolderManager import FolderManager
 from src.gol_adv_sys.DeviceManager import DeviceManager
@@ -24,8 +24,11 @@ from src.gol_adv_sys.DatasetManager import FixedDataset
 from src.gol_adv_sys.ModelManager import ModelManager
 from src.gol_adv_sys.TrainingBase import TrainingBase
 
-from src.gol_adv_sys.utils.helper_functions import save_progress_plot, save_losses_plot, \
-                                                   test_predictor_model, get_elapsed_time_str, \
+from src.gol_adv_sys.utils.losses import weigthed_mse_loss, cross_entropy_loss
+from src.gol_adv_sys.utils.scores import metric_prediction_accuracy
+
+from src.gol_adv_sys.utils.helper_functions import save_progress_plot_dataset, save_losses_plot, \
+                                                   test_predictor_model_dataset, get_elapsed_time_str, \
                                                    get_config_from_batch
 
 
@@ -41,11 +44,12 @@ class TrainingPredictor(TrainingBase):
         device_manager (DeviceManager): The device manager used for managing the devices used in the training session.
         predictor (ModelManager): The model manager used for managing the predictor model.
         simulation_topology (str): The topology used for the simulation.
-        init_config_type (str): The type of initial configuration used for the simulation.
+        init_config_initial_type (str): The type of initial configuration used for the simulation.
         metric_type (str): The type of metric used for the simulation.
         current_epoch (int): The current epoch of the training session.
         step_times_secs (list): The times in seconds for each step of the training session.
         losses (dict): The losses of the predictor model during the training session.
+        accuracy (list): The accuracy of the predictor model during the training session.
         learning_rates (list): The learning rates used during the training session.
         dataset (dict): The dataset used for the training session.
         dataloader (dict): The dataloaders used for the training session.
@@ -61,15 +65,15 @@ class TrainingPredictor(TrainingBase):
         self.device_manager = DeviceManager()
 
         optimizer = optim.SGD(model.parameters(),
-                              lr=constants.p_sgd_lr,
-                              momentum=constants.p_sgd_momentum,
-                              weight_decay=constants.p_sgd_wd)
+                              lr=P_SGD_LR,
+                              momentum=P_SGD_MOMENTUM,
+                              weight_decay=P_SGD_WEIGHT_DECAY)
 
-        self.predictor = ModelManager(model=model, optimizer=optimizer, criterion=nn.MSELoss(), device_manager=self.device_manager)
+        self.predictor = ModelManager(model=model, optimizer=optimizer, criterion=weigthed_mse_loss, device_manager=self.device_manager)
 
-        self.simulation_topology = constants.TOPOLOGY_TYPE["toroidal"]
-        self.init_config_type = constants.INIT_CONFIG_TYPE["threshold"]
-        self.metric_type = constants.CONFIG_TYPE["medium"]
+        self.simulation_topology = TOPOLOGY_TOROIDAL
+        self.init_config_initial_type = INIT_CONFIG_INTIAL_THRESHOLD
+        self.metric_type = CONFIG_METRIC_STABLE
 
         self.current_epoch = 0
         self.n_times_trained_p = 0
@@ -79,10 +83,17 @@ class TrainingPredictor(TrainingBase):
 
         self.losses = {"predictor_train": [],
                        "predictor_val": [],
-                       "predictor_test": [],}
+                       "predictor_test": []}
 
-        self.dataset = {"train_data": None, "val_data": None, "test_data": None}
-        self.dataloader = {"train": None, "val": None, "test": None}
+        self.accuracy = []
+
+        self.dataset = {"train": None, "train_meta": None,
+                        "val": None, "val_meta": None,
+                        "test": None, "test_meta": None}
+
+        self.dataloader = {"train": None, "train_meta": None,
+                            "val": None, "val_meta": None,
+                            "test": None, "test_meta": None}
 
         self.path_log_file = self.__init_log_file()
 
@@ -92,17 +103,7 @@ class TrainingPredictor(TrainingBase):
         Function used for running the training session.
 
         """
-        train_path = DATASET_DIR / f"{constants.dataset_name}_train.pt"
-        val_path   = DATASET_DIR / f"{constants.dataset_name}_val.pt"
-        test_path  = DATASET_DIR / f"{constants.dataset_name}_test.pt"
-
-        self.dataset["train_data"] = FixedDataset(train_path)
-        self.dataset["val_data"]   = FixedDataset(val_path)
-        self.dataset["test_data"]  = FixedDataset(test_path)
-
-        self.dataloader["train"] = DataLoader(self.dataset["train_data"], batch_size=constants.bs, shuffle=True)
-        self.dataloader["val"]   = DataLoader(self.dataset["val_data"], batch_size=constants.bs, shuffle=True)
-        self.dataloader["test"]  = DataLoader(self.dataset["test_data"], batch_size=constants.bs, shuffle=True)
+        self.__init_data()
 
         self._fit()
 
@@ -127,18 +128,23 @@ class TrainingPredictor(TrainingBase):
         )
 
         # Warmup scheduler
-        warmup_lr_values = np.linspace(constants.warmup_initial_lr, constants.warmup_target_lr, constants.warmup_total_steps).tolist()
+        warmup_lr_values = np.linspace(WARMUP_INITIAL_LR, WARMUP_TARGET_LR, WARMUP_TOTAL_STEPS).tolist()
 
         total_steps = 0
 
-        self.predictor.set_learning_rate(constants.warmup_initial_lr)
+        self.predictor.set_learning_rate(WARMUP_INITIAL_LR)
 
         # Training loop
-        for epoch in range(constants.num_epochs):
+        for epoch in range(NUM_EPOCHS):
+
+            self.__shuffle_dataloaders("train")
+            self.__shuffle_dataloaders("val")
+            self.__shuffle_dataloaders("test")
+
             self.current_epoch = epoch
             self.learning_rates.append(self.predictor.get_learning_rate())
 
-            logging.debug(f"Epoch: {epoch+1}/{constants.num_epochs}")
+            logging.debug(f"Epoch: {epoch+1}/{NUM_EPOCHS}")
             logging.debug(f"Learning rate: {self.predictor.get_learning_rate()}")
 
             epoch_start_time = time.time()
@@ -157,7 +163,7 @@ class TrainingPredictor(TrainingBase):
                 logging.debug(f"Batches processed: {total_steps}")
 
                 # Updates during the warm-up phase
-                if total_steps <= constants.warmup_total_steps:
+                if total_steps <= WARMUP_TOTAL_STEPS:
                     self.predictor.set_learning_rate(warmup_lr_values[total_steps-1])
                     logging.debug(f"Warm-up phase")
                     logging.debug(f"Learning rate: {self.predictor.get_learning_rate()}")
@@ -169,6 +175,7 @@ class TrainingPredictor(TrainingBase):
 
             # Check the validation loss
             val_loss = 0
+            accuracy = 0
             self.predictor.model.eval()
             with torch.no_grad():
                 for batch in self.dataloader["val"]:
@@ -176,12 +183,19 @@ class TrainingPredictor(TrainingBase):
                     errP = self.predictor.criterion(predicted_metric, self.__get_metric_config(batch, self.metric_type))
                     val_loss += errP.item()
 
+                    # Compute metric prediction accuracy
+                    accuracy += metric_prediction_accuracy(self.__get_metric_config(batch, self.metric_type), predicted_metric)
+
+            accuracy /= len(self.dataloader["val"])
+            logging.debug(f"Accuracy: {accuracy}")
+            self.accuracy.append(accuracy)
+
             val_loss /= len(self.dataloader["val"])
             self.losses["predictor_val"].append(val_loss)
             logging.debug(f"Predictor loss on validation data: {val_loss}")
 
             # Update the learning rate
-            if total_steps > constants.warmup_total_steps:
+            if total_steps > WARMUP_TOTAL_STEPS:
                 lr_scheduler.step(val_loss)
                 logging.debug(f"Reduce On Plateau phase")
                 logging.debug(f"Learning rate: {self.predictor.get_learning_rate()}")
@@ -211,7 +225,7 @@ class TrainingPredictor(TrainingBase):
         test_loss = 0
         self.predictor.model.eval()
         with torch.no_grad():
-            for batch in self.test_dataloader:
+            for batch in self.dataloader["test"]:
                 predicted_metric = self.predictor.model(self.__get_initial_config(batch))
                 errP = self.predictor.criterion(predicted_metric, self.__get_metric_config(batch, self.metric_type))
                 test_loss += errP.item()
@@ -233,6 +247,64 @@ class TrainingPredictor(TrainingBase):
         logging.info(f"Training ended at {datetime.datetime.now().strftime('%d/%m/%Y %H:%M:%S')}")
 
 
+    def __init_data(self) -> bool:
+        try:
+            train_path = DATASET_DIR / f"{DATASET_NAME}_train.pt"
+            val_path   = DATASET_DIR / f"{DATASET_NAME}_val.pt"
+            test_path  = DATASET_DIR / f"{DATASET_NAME}_test.pt"
+
+            train_meta_path = DATASET_DIR / f"{DATASET_NAME}_metadata_train.pt"
+            val_meta_path   = DATASET_DIR / f"{DATASET_NAME}_metadata_val.pt"
+            test_meta_path  = DATASET_DIR / f"{DATASET_NAME}_metadata_test.pt"
+
+            self.dataset["train"] = FixedDataset(train_path)
+            self.dataset["val"]   = FixedDataset(val_path)
+            self.dataset["test"]  = FixedDataset(test_path)
+
+            self.dataset["train_meta"] = FixedDataset(train_meta_path)
+            self.dataset["val_meta"]   = FixedDataset(val_meta_path)
+            self.dataset["test_meta"]  = FixedDataset(test_meta_path)
+
+            self.dataloader["train"] = DataLoader(self.dataset["train"], batch_size=BATCH_SIZE, shuffle=False)
+            self.dataloader["val"]   = DataLoader(self.dataset["val"], batch_size=BATCH_SIZE, shuffle=False)
+            self.dataloader["test"]  = DataLoader(self.dataset["test"], batch_size=BATCH_SIZE, shuffle=False)
+
+            self.dataloader["train_meta"] = DataLoader(self.dataset["train_meta"], batch_size=BATCH_SIZE, shuffle=False)
+            self.dataloader["val_meta"]   = DataLoader(self.dataset["val_meta"], batch_size=BATCH_SIZE, shuffle=False)
+            self.dataloader["test_meta"]  = DataLoader(self.dataset["test_meta"], batch_size=BATCH_SIZE, shuffle=False)
+
+            self.__shuffle_dataloaders("train")
+            self.__shuffle_dataloaders("val")
+            self.__shuffle_dataloaders("test")
+
+        except Exception as e:
+            logging.error(f"Error initializing the data: {e}")
+            raise e
+
+        return True
+
+
+    def __shuffle_dataloaders(self, key):
+        """
+        Shuffle the dataloader and its corresponding metadata dataloader for the given key.
+
+        Args:
+            key (str): The key for the dataloader to shuffle (e.g., 'test').
+
+        Returns:
+            None: The method updates the dataloaders in place.
+        """
+        dataset = self.dataset[key]
+        dataset_meta = self.dataset[f"{key}_meta"]
+
+        indices = torch.randperm(len(dataset)).tolist()
+
+        sampler = SubsetRandomSampler(indices)
+
+        self.dataloader[key] = DataLoader(dataset, batch_size=BATCH_SIZE, sampler=sampler)
+        self.dataloader[f"{key}_meta"] = DataLoader(dataset_meta, batch_size=BATCH_SIZE, sampler=sampler)
+
+
     def __log_training_epoch(self, time):
         """
         Log the progress of the training session inside each epoch for the predictor model.
@@ -241,14 +313,15 @@ class TrainingPredictor(TrainingBase):
         with open(self.path_log_file, "a") as log:
 
             str_epoch_time  = f"{get_elapsed_time_str(time)}"
-            str_epoch       = f"{self.current_epoch+1}/{constants.num_epochs}"
+            str_epoch       = f"{self.current_epoch+1}/{NUM_EPOCHS}"
             str_err_p_train = f"{self.losses['predictor_train'][-1]}"
             str_err_p_val   = f"{self.losses['predictor_val'][-1]}"
+            str_accuracy    = f"{self.accuracy[-1]}"
 
             lr = self.learning_rates[self.current_epoch]
 
             log.write(f"{str_epoch_time} | Epoch: {str_epoch}, Loss P (train): {str_err_p_train}, "
-                      f"Loss P (val): {str_err_p_val}, [LR: {lr}]\n"
+                      f"Loss P (val): {str_err_p_val}, Accuracy: {str_accuracy} | Learning rate: {lr}\n"
             )
             log.flush()
 
@@ -273,8 +346,8 @@ class TrainingPredictor(TrainingBase):
             f"Default device: {self.device_manager.default_device}\n"
             f"{balanced_gpu_info}\n"
             f"Training specs:\n"
-            f"Batch size: {constants.bs}\n"
-            f"Epochs: {constants.num_epochs}\n"
+            f"Batch size: {BATCH_SIZE}\n"
+            f"Epochs: {NUM_EPOCHS}\n"
             f"Predicting metric type: {self.metric_type}\n\n"
             f"Training progress:\n\n"
         )
@@ -292,7 +365,7 @@ class TrainingPredictor(TrainingBase):
 
         """
 
-        return get_config_from_batch(batch, constants.CONFIG_TYPE["initial"], self.device_manager.default_device)
+        return get_config_from_batch(batch, CONFIG_INITIAL, self.device_manager.default_device)
 
 
     def __get_metric_config(self, batch, metric_type):
@@ -312,7 +385,9 @@ class TrainingPredictor(TrainingBase):
             simulated metrics and predicted metrics.
 
         """
-        return test_predictor_model(self.dataloader["test"], self.metric_type, self.predictor.model, self.device_manager.default_device)
+        return test_predictor_model_dataset(self.dataloader["test"], self.dataloader["test_meta"],
+                                            self.metric_type, self.predictor.model,
+                                            self.device_manager.default_device)
 
 
     def __save_progress_plot(self, data):
@@ -326,7 +401,7 @@ class TrainingPredictor(TrainingBase):
             simulated metrics and predicted metrics.
 
         """
-        save_progress_plot(data, self.current_epoch, self.__folders.results_folder)
+        save_progress_plot_dataset(data, self.current_epoch, self.__folders.results_folder)
 
 
     def __save_losses_plot(self):

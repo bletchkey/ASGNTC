@@ -23,7 +23,7 @@ from torch.utils.data import DataLoader
 import datetime
 
 from config.paths import TRAINED_MODELS_DIR
-from src.gol_adv_sys.utils import constants as constants
+from config.constants import *
 
 from src.gol_adv_sys.FolderManager import FolderManager
 from src.gol_adv_sys.DeviceManager import DeviceManager
@@ -44,7 +44,7 @@ class TrainingAdversarial(TrainingBase):
         folders (FolderManager): An instance of FolderManager to manage the creation of folders for the training session.
         device_manager (DeviceManager): An instance of DeviceManager to manage device selection.
         simulation_topology (str): The topology of the simulation grid.
-        init_config_type (str): The type of initial configuration to use.
+        init_config_initial_type (str): The type of initial configuration to use.
         metric_type (str): The type of metric used for the prediction.
         current_epoch (int): The current epoch of the training session.
         step_times_secs (list): A list of lists containing the time in seconds for each step in each epoch.
@@ -78,10 +78,10 @@ class TrainingAdversarial(TrainingBase):
         self.folders = FolderManager(self.__date)
         self.device_manager = DeviceManager()
 
-        self.simulation_topology = constants.TOPOLOGY_TYPE["toroidal"]
-        self.init_config_type = constants.INIT_CONFIG_TYPE["threshold"]
+        self.simulation_topology = TOPOLOGY_TOROIDAL
+        self.init_config_initial_type = INIT_CONFIG_INTIAL_THRESHOLD
 
-        self.metric_type = constants.CONFIG_TYPE["medium"]
+        self.metric_type = CONFIG_METRIC_MEDIUM
 
         self.current_epoch = 0
         self.step_times_secs = []
@@ -107,17 +107,17 @@ class TrainingAdversarial(TrainingBase):
         self.model_g = model_g
 
         self.optimizer_p = optim.SGD(self.model_p.parameters(),
-                                     lr=constants.p_sgd_lr,
-                                     momentum=constants.p_sgd_momentum,
-                                     weight_decay=constants.p_sgd_wd)
+                                     lr=P_SGD_LR,
+                                     momentum=P_SGD_MOMENTUM,
+                                     weight_decay=P_SGD_WEIGHT_DECAY)
 
         self.optimizer_g = optim.AdamW(self.model_g.parameters(),
-                                       lr=constants.g_adamw_lr,
-                                       betas=(constants.g_adamw_b1, constants.g_adamw_b2),
-                                       eps=constants.g_adamw_eps,
-                                       weight_decay=constants.g_adamw_wd)
+                                       lr=G_ADAMW_LR,
+                                       betas=(G_ADAMW_B1, G_ADAMW_B2),
+                                       eps=G_ADAMW_EPS,
+                                       weight_decay=G_ADAMW_WEIGHT_DECAY)
 
-        self.fixed_noise = torch.randn(constants.bs, constants.nz, 1, 1, device=self.device_manager.default_device)
+        self.fixed_noise = torch.randn(BATCH_SIZE, N_Z, 1, 1, device=self.device_manager.default_device)
 
         self.properties_g= {"enabled": True, "can_train": False}
 
@@ -156,7 +156,7 @@ class TrainingAdversarial(TrainingBase):
             self.model_p = nn.DataParallel(self.model_p, device_ids=self.device_manager.balanced_gpu_indices)
             self.model_g = nn.DataParallel(self.model_g, device_ids=self.device_manager.balanced_gpu_indices)
 
-        for epoch in range(constants.num_epochs):
+        for epoch in range(NUM_EPOCHS):
 
             self.step_times_secs.append([])
             self.current_epoch = epoch
@@ -165,11 +165,11 @@ class TrainingAdversarial(TrainingBase):
 
             with open(self.path_log_file, "a") as log:
 
-                log.write(f"\nEpoch: {epoch+1}/{constants.num_epochs}\n")
-                log.write(f"Number of generated configurations in the dataset: {len(self.train_dataloader)*constants.bs}\n\n")
+                log.write(f"\nEpoch: {epoch+1}/{NUM_EPOCHS}\n")
+                log.write(f"Number of generated configurations in the dataset: {len(self.train_dataloader)*BATCH_SIZE}\n\n")
                 log.flush()
 
-            for step in range(constants.num_training_steps):
+            for step in range(NUM_TRAINING_STEPS):
 
                 step_start_time = time.time()
 
@@ -216,7 +216,7 @@ class TrainingAdversarial(TrainingBase):
         with open(self.path_log_file, "a") as log:
 
             str_step_time = f"{get_elapsed_time_str(self.step_times_secs[self.current_epoch][step])}"
-            str_step      = f"{step+1}/{constants.num_training_steps}"
+            str_step      = f"{step+1}/{NUM_TRAINING_STEPS}"
             str_err_p     = f"{self.losses['predictor_train'][-1]}"
             str_err_g     = f"{self.losses['generator'][-1]}" if len(self.losses['generator']) > 0 else "N/A"
 
@@ -240,18 +240,18 @@ class TrainingAdversarial(TrainingBase):
         balanced_gpu_info = (f"Balanced GPU indices: {self.device_manager.balanced_gpu_indices}\n"
                              if self.device_manager.balanced_gpu_indices else "")
 
-        topology_info = ("Topology: toroidal" if self.simulation_topology == constants.TOPOLOGY_TYPE["toroidal"] else
-                         "Topology: flat" if self.simulation_topology == constants.TOPOLOGY_TYPE["flat"] else
+        topology_info = ("Topology: toroidal" if self.simulation_topology == TOPOLOGY_TOROIDAL else
+                         "Topology: flat" if self.simulation_topology == TOPOLOGY_FLAT else
                          "Topology: unknown")
 
-        init_config_type = self.init_config_type
+        init_config_initial_type = self.init_config_initial_type
         init_config_info = ""
-        if init_config_type == constants.INIT_CONFIG_TYPE["threshold"]:
+        if init_config_initial_type == INIT_CONFIG_INTIAL_THRESHOLD:
             init_config_info = (f"Initial configuration type: threshold\n"
-                                f"Threshold for the value of the cells: {constants.threshold_cell_value}\n")
-        elif init_config_type == constants.INIT_CONFIG_TYPE["n_living_cells"]:
+                                f"Threshold for the value of the cells: {THRESHOLD_CELL_VALUE}\n")
+        elif init_config_initial_type == INIT_CONFIG_INITAL_N_CELLS:
             init_config_info = (f"Initial configuration type: n_living_cells\n"
-                                f"Number of living cells in initial grid: {constants.n_living_cells}\n")
+                                f"Number of living cells in initial grid: {N_LIVING_CELLS_VALUE}\n")
         else:
             init_config_info = "Initial configuration type: unknown\n"
 
@@ -263,7 +263,7 @@ class TrainingAdversarial(TrainingBase):
 
         generator_info = ""
         if self.properties_g["enabled"]:
-            generator_info += (f"Latent space size: {constants.nz}\n"
+            generator_info += (f"Latent space size: {N_Z}\n"
                                f"Optimizer G: {self.optimizer_g.__class__.__name__}\n"
                                f"Criterion G: {self.criterion_g.__class__.__name__}\n")
 
@@ -273,14 +273,14 @@ class TrainingAdversarial(TrainingBase):
             f"Default device: {self.device_manager.default_device}\n"
             f"{balanced_gpu_info}\n"
             f"Training specs:\n"
-            f"Batch size: {constants.bs}\n"
-            f"Epochs: {constants.num_epochs}\n"
-            f"Number of training steps in each epoch: {constants.num_training_steps}\n"
-            f"Number of batches generated in each epoch: {constants.n_batches} ({constants.n_configs} configs)\n"
-            f"Max number of generated batches in dataset: {constants.n_max_batches} ({constants.n_max_configs} configs)\n"
+            f"Batch size: {BATCH_SIZE}\n"
+            f"Epochs: {NUM_EPOCHS}\n"
+            f"Number of training steps in each epoch: {NUM_TRAINING_STEPS}\n"
+            f"Number of batches generated in each epoch: {N_BATCHES} ({N_CONFIGS} configs)\n"
+            f"Max number of generated batches in dataset: {N_MAX_BATCHES} ({N_MAX_CONFIGS} configs)\n"
             f"\nSimulation specs:\n"
-            f"Grid size: {constants.grid_size}\n"
-            f"Simulation steps: {constants.n_simulation_steps}\n"
+            f"Grid size: {GRID_SIZE}\n"
+            f"Simulation steps: {N_SIM_STEPS}\n"
             f"{topology_info}\n"
             f"{init_config_info}"
             f"\nPredicting metric type: {self.metric_type}\n"
@@ -316,12 +316,12 @@ class TrainingAdversarial(TrainingBase):
         """
 
         data = get_data_tensor(self.data_tensor, self.model_g,
-                              self.simulation_topology, self.init_config_type, self.device_manager.default_device)
+                              self.simulation_topology, self.init_config_initial_type, self.device_manager.default_device)
 
         self.data_tensor = data
 
         # Create the dataloader from the tensor
-        self.train_dataloader = DataLoader(self.data_tensor, batch_size=constants.bs, shuffle=True)
+        self.train_dataloader = DataLoader(self.data_tensor, batch_size=BATCH_SIZE, shuffle=True)
 
         return self.train_dataloader
 
@@ -339,7 +339,7 @@ class TrainingAdversarial(TrainingBase):
         """
 
         return  generate_new_batches(self.model_g, n_batches, self.simulation_topology,
-                                     self.init_config_type, self.device_manager.default_device)
+                                     self.init_config_initial_type, self.device_manager.default_device)
 
 
     def __get_one_new_batch(self):
@@ -360,7 +360,7 @@ class TrainingAdversarial(TrainingBase):
 
         """
 
-        return get_config_from_batch(batch, constants.CONFIG_TYPE["initial"], self.device_manager.default_device)
+        return get_config_from_batch(batch, CONFIG_INITIAL, self.device_manager.default_device)
 
 
     def __get_metric_config(self, batch, metric_type):
@@ -412,7 +412,7 @@ class TrainingAdversarial(TrainingBase):
         if self.properties_g["can_train"]:
 
             loss = 0
-            n = constants.n_batches
+            n = N_BATCHES
 
             self.model_g.train()
             for _ in range(n):
@@ -499,7 +499,7 @@ class TrainingAdversarial(TrainingBase):
             avg_loss_p_last_epoch (float): The average loss of the predictor model on the last epoch.
 
         """
-        return self.__get_loss_avg_p(constants.num_training_steps)
+        return self.__get_loss_avg_p(NUM_TRAINING_STEPS)
 
 
     def __get_loss_avg_g_last_epoch(self):
@@ -511,7 +511,7 @@ class TrainingAdversarial(TrainingBase):
 
         """
 
-        return self.__get_loss_avg_g(constants.num_training_steps)
+        return self.__get_loss_avg_g(NUM_TRAINING_STEPS)
 
 
     def __test_models(self):
@@ -526,7 +526,7 @@ class TrainingAdversarial(TrainingBase):
         """
 
         return test_models(self.model_g, self.model_p, self.simulation_topology,
-                           self.init_config_type, self.fixed_noise, self.metric_type, self.device_manager.default_device)
+                           self.init_config_initial_type, self.fixed_noise, self.metric_type, self.device_manager.default_device)
 
 
     def __save_progress_plot(self, data):
@@ -644,7 +644,7 @@ class TrainingAdversarial(TrainingBase):
             return True
 
         if self.properties_g["enabled"] and not self.properties_g["can_train"]:
-            self.properties_g["can_train"] = self.__get_loss_avg_p_last_epoch() < constants.threshold_avg_loss_p
+            self.properties_g["can_train"] = self.__get_loss_avg_p_last_epoch() < THRESHOLD_AVG_LOSS_P
 
             if self.properties_g["can_train"]:
                 # +1 because the current epoch is 0-based, +2 because the generator can be trained from the next epoch

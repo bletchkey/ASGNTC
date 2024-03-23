@@ -3,7 +3,7 @@ import torch.nn as nn
 
 
 from src.gol_adv_sys.generators.DCGAN import DCGAN
-from src.gol_adv_sys.utils import constants as constants
+from config.constants import *
 
 def Generator_DCGAN(noise_std=0):
     generator = DCGAN(noise_std=noise_std)

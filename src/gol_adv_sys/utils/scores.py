@@ -1,5 +1,5 @@
 import torch
-from src.gol_adv_sys.utils import constants as constants
+from config.constants import *
 import torch
 from typing import Tuple
 
@@ -23,7 +23,6 @@ def metric_prediction_accuracy(target: torch.Tensor, prediction: torch.Tensor) -
         ValueError: If the input tensors do not have matching shapes or are not 4-dimensional.
 
     """
-    # Check if the input tensors have the same shape and are 4-dimensional
     if target.size() != prediction.size() or target.dim() != 4:
         raise ValueError("Target and prediction tensors must have the same 4-dimensional shape.")
 
@@ -42,11 +41,7 @@ def metric_prediction_accuracy(target: torch.Tensor, prediction: torch.Tensor) -
     score = torch.where(target_bins == prediction_bins, 1.0,
                         torch.where(torch.abs(target_bins - prediction_bins) == 1, 0.5, 0.0))
 
-    # Reshape the score tensor to match the input tensor's flattened shape
-    score = score.view_as(target_flat)
-
-    # Compute the mean score for each configuration in the batch
-    mean_scores = score.mean(dim=[2, 3])  # Compute mean across H, and W dimensions
+    # Compute the mean score for each item in the batch
+    mean_scores = score.mean(dim=1)  # Compute mean across the flattened second dimension
 
     return mean_scores
-

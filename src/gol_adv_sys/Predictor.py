@@ -1,6 +1,6 @@
 import logging
 
-from src.gol_adv_sys.utils import constants as constants
+from config.constants import *
 from src.gol_adv_sys.predictors.Baseline import Baseline
 from src.gol_adv_sys.predictors.UNet import UNet
 from src.gol_adv_sys.predictors.ResNet import ResNetConstantChannels
@@ -13,7 +13,7 @@ def Predictor_Baseline():
 
 
 def Predictor_ResNet():
-    module = ResNetConstantChannels([2, 2, 2, 2], constants.grid_size)
+    module = ResNetConstantChannels([2, 2, 2, 2], GRID_SIZE)
     logging.debug(module)
     return module
 

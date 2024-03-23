@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 
 from src.gol_adv_sys.predictors.utils.toroidal import toroidal_Conv2d
-from src.gol_adv_sys.utils import constants as constants
+from config.constants import *
 
 
 class block(nn.Module):
@@ -35,8 +35,8 @@ class ResNetConstantChannels(nn.Module):
         self.channels = channels
         self.n_layers = len(layers)
 
-        self.in_conv = nn.Conv2d(constants.nc, channels, kernel_size=3, padding=0)
-        self.out_conv = nn.Conv2d(channels, constants.nc, kernel_size=1, padding=0)
+        self.in_conv = nn.Conv2d(N_CHANNELS, channels, kernel_size=3, padding=0)
+        self.out_conv = nn.Conv2d(channels, N_CHANNELS, kernel_size=1, padding=0)
 
         for i in range(self.n_layers):
             setattr(self, f"layer{i}", self._make_layer(block, layers[i], self.channels))

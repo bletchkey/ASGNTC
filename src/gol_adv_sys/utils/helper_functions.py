@@ -5,12 +5,12 @@ import logging
 import torch
 
 
-from src.gol_adv_sys.utils import constants as constants
+from config.constants import *
 from src.gol_adv_sys.utils.simulation_functions import simulate_config
 
 
 def get_data_tensor(data_tensor: torch.Tensor, model_g: torch.nn.Module,
-                    topology: str, init_config_type: str, device: torch.device) -> torch.Tensor:
+                    topology: str, init_config_initial_type: str, device: torch.device) -> torch.Tensor:
     """
     Function to get the dataloader for the training of the predictor model
 
@@ -23,14 +23,14 @@ def get_data_tensor(data_tensor: torch.Tensor, model_g: torch.nn.Module,
         data_tensor (torch.Tensor): The tensor containing the configurations
         model_g (torch.nn.Module): The generator model
         topology (str): The topology to use for simulating the configurations
-        init_config_type (str): The type of initial configuration to use
+        init_config_initial_type (str): The type of initial configuration to use
         device (torch.device): The device to use for computation
 
     Returns:
         torch.Tensor: The updated data tensor
 
     """
-    new_configs = generate_new_batches(model_g, constants.n_batches, topology, init_config_type, device)
+    new_configs = generate_new_batches(model_g, N_BATCHES, topology, init_config_initial_type, device)
 
     # If data_tensor is None, initialize it with new_configs
     if data_tensor is None:
@@ -40,7 +40,7 @@ def get_data_tensor(data_tensor: torch.Tensor, model_g: torch.nn.Module,
         combined_tensor = torch.cat([data_tensor, new_configs], dim=0)
 
         # If the combined size exceeds the max allowed size, trim the oldest entries
-        max_size = constants.n_max_batches * constants.bs
+        max_size = N_MAX_BATCHES * BATCH_SIZE
         if combined_tensor.size(0) > max_size:
             # Calculate number of entries to drop from the start to fit the new_configs
             excess_entries = combined_tensor.size(0) - max_size
@@ -54,7 +54,7 @@ def get_data_tensor(data_tensor: torch.Tensor, model_g: torch.nn.Module,
 
 
 def generate_new_batches(model_g: torch.nn.Module, n_batches: int, topology: str,
-                         init_config_type: str, device: torch.device) -> torch.Tensor:
+                         init_config_initial_type: str, device: torch.device) -> torch.Tensor:
 
     """
     Function to generate new batches of configurations
@@ -63,7 +63,7 @@ def generate_new_batches(model_g: torch.nn.Module, n_batches: int, topology: str
         model_g (torch.nn.Module): The generator model
         n_batches (int): The number of batches to generate
         topology (str): The topology to use for simulating the configurations
-        init_config_type (str): The type of initial configuration to use
+        init_config_initial_type (str): The type of initial configuration to use
         device (torch.device): The device used for computation
 
     Returns:
@@ -74,21 +74,21 @@ def generate_new_batches(model_g: torch.nn.Module, n_batches: int, topology: str
     configs = []
 
     for _ in range(n_batches):
-        noise = torch.randn(constants.bs, constants.nz, 1, 1, device=device)
+        noise = torch.randn(BATCH_SIZE, N_Z, 1, 1, device=device)
         generated_config = model_g(noise)
-        initial_config = get_init_config(generated_config, init_config_type)
+        initial_config = get_init_config(generated_config, init_config_initial_type)
 
         with torch.no_grad():
-            simulated_config, simulated_metrics, _, _ = simulate_config(config=initial_config, topology=topology,
-                                                                  steps=constants.n_simulation_steps, calculate_final_config=False,
-                                                                  device=device)
+            simulated_config, metrics, _, _ = simulate_config(config=initial_config, topology=topology,
+                                                              steps=N_SIM_STEPS, calculate_final_config=False,
+                                                              device=device)
         configs.append({
-            "initial": initial_config,
-            "simulated":  simulated_config,
-            "easy": simulated_metrics["easy"]["config"],
-            "medium": simulated_metrics["medium"]["config"],
-            "hard": simulated_metrics["hard"]["config"],
-            "stable": simulated_metrics["stable"]["config"]
+            CONFIG_INITIAL: initial_config,
+            CONFIG_SIMULATED:  simulated_config,
+            CONFIG_METRIC_EASY: metrics[CONFIG_METRIC_EASY]["config"],
+            CONFIG_METRIC_MEDIUM: metrics[CONFIG_METRIC_MEDIUM]["config"],
+            CONFIG_METRIC_HARD: metrics[CONFIG_METRIC_HARD]["config"],
+            CONFIG_METRIC_STABLE: metrics[CONFIG_METRIC_STABLE]["config"]
         })
 
     # Create a tensor from the list of configurations
@@ -106,7 +106,7 @@ def generate_new_batches(model_g: torch.nn.Module, n_batches: int, topology: str
 
 
 def test_models(model_g: torch.nn.Module, model_p: torch.nn.Module, topology: str,
-                init_config_type: str, fixed_noise: torch.Tensor, metric_type: str, device: torch.device) -> dict:
+                init_config_initial_type: str, fixed_noise: torch.Tensor, metric_type: str, device: torch.device) -> dict:
     """
     Function to test the models
 
@@ -114,7 +114,7 @@ def test_models(model_g: torch.nn.Module, model_p: torch.nn.Module, topology: st
         model_g (torch.nn.Module): The generator model
         model_p (torch.nn.Module): The predictor model
         topology (str): The topology to use for simulating the configurations
-        init_config_type (str): The type of initial configuration to use
+        init_config_initial_type (str): The type of initial configuration to use
         fixed_noise (torch.Tensor): The fixed noise to use for testing the generator model
         metric_type (str): The type of metric to predict
         device (torch.device): The device used for computation
@@ -138,53 +138,12 @@ def test_models(model_g: torch.nn.Module, model_p: torch.nn.Module, topology: st
         model_p.eval()
         generated_config_fixed = model_g(fixed_noise)
         data["generated"] = generated_config_fixed
-        data["initial"]   = get_init_config(generated_config_fixed, init_config_type)
+        data["initial"]   = get_init_config(generated_config_fixed, init_config_initial_type)
         data["simulated"], sim_metrics, _, _ = simulate_config(config=data["initial"], topology=topology,
-                                                         steps=constants.n_simulation_steps, calculate_final_config=False,
+                                                         steps=N_SIM_STEPS, calculate_final_config=False,
                                                          device=device)
         data["metric"] = sim_metrics[metric_type]["config"]
         data["predicted_metric"] = model_p(data["initial"])
-
-    return data
-
-
-def test_predictor_model(test_set: torch.utils.data.DataLoader, metric_type: str,
-                         model_p: torch.nn.Module, device: torch.device) -> dict:
-
-    """
-    Function to test the predictor model
-
-    Args:
-        test_set (torch.utils.data.DataLoader): The test set
-        metric_type (str): The type of metric to predict
-        model_p (torch.nn.Module): The predictor model
-        device (torch.device): The device used for computation
-
-    Returns:
-        dict: The dictionary containing the test results
-
-    """
-
-    # Create an iterator from the data_loader
-    data_iterator = iter(test_set)
-    # Fetch the first batch
-    batch = next(data_iterator)
-
-    data = {
-        "initial": None,
-        "final": None,
-        "metric": None,
-        "predicted_metric": None,
-    }
-
-    # Test the models on the fixed noise
-    with torch.no_grad():
-        model_p.eval()
-        data["predicted_metric"] = model_p(get_config_from_batch(batch, "initial", device))
-
-    data["initial"] = get_config_from_batch(batch, "initial", device)
-    data["final"]   = get_config_from_batch(batch, "final", device)
-    data["metric"]  = get_config_from_batch(batch, metric_type, device)
 
     return data
 
@@ -212,7 +171,7 @@ def save_progress_plot(plot_data: dict, epoch: int, results_path: str):
     current_epoch = epoch+1
 
     # Get 4 equally spaced indices
-    indices = np.linspace(0, constants.bs-1, 4).astype(int)
+    indices = np.linspace(0, BATCH_SIZE-1, 4).astype(int)
 
     # Create figure and subplots
     fig, axs = plt.subplots(len(indices), len(plot_data), figsize=(len(indices)*len(plot_data), len(indices)*4))
@@ -226,7 +185,113 @@ def save_progress_plot(plot_data: dict, epoch: int, results_path: str):
             axs[i, j].set_title(titles[j])
 
     plt.tight_layout()
-    plt.savefig(Path(results_path, f"epoch_{current_epoch}.png"))
+    plt.savefig(Path(results_path, f"epoch_{current_epoch}.png"), dpi=300)
+    plt.close(fig)
+
+
+def test_predictor_model_dataset(test_set: torch.utils.data.DataLoader,
+                         test_meta_set: torch.utils.data.DataLoader,
+                         metric_type: str, model_p: torch.nn.Module, device: torch.device) -> dict:
+
+    """
+    Function to test the predictor model
+
+    Args:
+        test_set (torch.utils.data.DataLoader): The test set
+        test_meta_set (torch.utils.data.DataLoader): The test metadata set
+        metric_type (str): The type of metric to predict
+        model_p (torch.nn.Module): The predictor model
+        device (torch.device): The device used for computation
+
+    Returns:
+        dict: The dictionary containing the test results
+
+    """
+
+    # Create an iterator from the data_loader
+    iterator_batch = iter(test_set)
+    iterator_metadata = iter(test_meta_set)
+    # Fetch the first batch
+    batch = next(iterator_batch)
+    batch_metadata = next(iterator_metadata)
+
+    metadata = {
+        META_ID: batch_metadata[META_ID],
+        META_N_CELLS_INIT: batch_metadata[META_N_CELLS_INIT],
+        META_N_CELLS_FINAL: batch_metadata[META_N_CELLS_FINAL],
+        META_TRANSIENT_PHASE: batch_metadata[META_TRANSIENT_PHASE],
+        META_PERIOD: batch_metadata[META_PERIOD],
+    }
+
+    # Test the models on the fixed noise
+    with torch.no_grad():
+        model_p.eval()
+        prediction = model_p(get_config_from_batch(batch, CONFIG_INITIAL, device))
+
+    initial = get_config_from_batch(batch, CONFIG_INITIAL, device)
+    final   = get_config_from_batch(batch, CONFIG_FINAL, device)
+    metric  = get_config_from_batch(batch, metric_type, device)
+
+    data = __create_data_dict(initial, final, metric, prediction, metadata)
+
+    return data
+
+
+def save_progress_plot_dataset(plot_data: dict, epoch: int, results_path: str):
+    """
+    Function to save the progress plot
+
+    Args:
+        plot_data (dict): The dictionary containing the data to plot
+        epoch (int): The current epoch
+        results_path (str): The path to where the results will be saved
+
+    """
+
+    vmin = 0
+    vmax = 1
+
+    titles = [key for key in plot_data.keys()]
+    n_rows = len(np.linspace(0, BATCH_SIZE - 1, 4).astype(int))
+    n_cols = len(titles)
+
+    current_epoch = epoch + 1
+
+    # Get 4 equally spaced indices
+    indices = np.linspace(0, BATCH_SIZE - 1, 4).astype(int)
+
+    # Create figure and subplots
+    fig, axs = plt.subplots(n_rows, n_cols, figsize=(n_cols * 6, n_rows * 4))  # Adjusted size for better visibility
+
+    plt.suptitle(f"Epoch {current_epoch}", fontsize=32)
+
+    # Convert to NumPy
+    for key in plot_data.keys():
+        if key == "metadata":
+            continue
+        plot_data[key] = plot_data[key].detach().cpu().numpy().squeeze()
+
+    # Plot each data in a subplot
+    for i in range(n_rows):
+        for j, key in enumerate(titles):
+            if key != "metadata":
+                img_data = plot_data[key][indices[i]]
+                axs[i, j].imshow(img_data, cmap='gray', vmin=vmin, vmax=vmax)
+                if j == 0:
+                    title = f"{titles[j]} - {plot_data['metadata'][META_N_CELLS_INIT][indices[i]]}"
+                elif j == 1:
+                    title = f"{titles[j]} - {plot_data['metadata'][META_N_CELLS_FINAL][indices[i]]}"
+                else:
+                    title = titles[j]
+                axs[i, j].set_title(title)
+
+            else:
+                metadata_items = list(plot_data["metadata"][key][indices[i]].items())[2:]
+                text_data = "\n".join([f"{k}: {v}" for k, v in metadata_items])
+                axs[i, j].text(0.5, 0.5, text_data, fontsize=12, ha='center', va='center', transform=axs[i, j].transAxes)
+
+    plt.tight_layout()
+    plt.savefig(Path(results_path, f"epoch_{current_epoch}.png"), dpi=300)
     plt.close(fig)
 
 
@@ -300,24 +365,24 @@ def get_elapsed_time_str(times: list) -> str:
     return time_format
 
 
-def get_init_config(config: torch.Tensor, init_config_type: str) -> torch.Tensor:
+def get_init_config(config: torch.Tensor, init_config_initial_type: str) -> torch.Tensor:
     """
     Function to get the initial configuration from the generated configuration
 
     Args:
         config (torch.Tensor): The generated configuration
-        init_config_type (str): The type of initial configuration to use
+        init_config_initial_type (str): The type of initial configuration to use
 
     Returns:
         torch.Tensor: The initial configuration
 
     """
-    if init_config_type == constants.INIT_CONFIG_TYPE["threshold"]:
+    if init_config_initial_type == INIT_CONFIG_INTIAL_THRESHOLD:
         return __get_init_config_threshold(config)
-    elif init_config_type == constants.INIT_CONFIG_TYPE["n_living_cells"]:
+    elif init_config_initial_type == INIT_CONFIG_INITAL_N_CELLS:
         return __get_init_config_n_living_cells(config)
     else:
-        raise ValueError(f"Invalid init configuration type: {init_config_type}")
+        raise ValueError(f"Invalid init configuration type: {init_config_initial_type}")
 
 
 def get_config_from_batch(batch: torch.Tensor, type: str, device: torch.device) -> torch.Tensor:
@@ -339,13 +404,13 @@ def get_config_from_batch(batch: torch.Tensor, type: str, device: torch.device) 
 
     # Mapping from type to index in the batch
     config_indices = {
-        constants.CONFIG_TYPE["initial"]: 0,
-        constants.CONFIG_TYPE["final"]: 1,
-        constants.CONFIG_TYPE["simulated"]: 1,
-        constants.CONFIG_TYPE["easy"]: 2,
-        constants.CONFIG_TYPE["medium"]: 3,
-        constants.CONFIG_TYPE["hard"]: 4,
-        constants.CONFIG_TYPE["stable"]: 5,
+        CONFIG_INITIAL: 0,
+        CONFIG_FINAL: 1,
+        CONFIG_SIMULATED: 1,
+        CONFIG_METRIC_EASY: 2,
+        CONFIG_METRIC_MEDIUM: 3,
+        CONFIG_METRIC_HARD: 4,
+        CONFIG_METRIC_STABLE: 5,
     }
 
     # Validate and retrieve the configuration index
@@ -374,7 +439,7 @@ def __get_init_config_n_living_cells(config: torch.Tensor) -> torch.Tensor:
     config_flat = config.view(batch_size, -1)  # Flatten each image in the batch
 
     # Find the indices of the top values for each image in the batch
-    _, indices = torch.topk(config_flat, constants.n_living_cells, dim=1)
+    _, indices = torch.topk(config_flat, N_LIVING_CELLS_VALUE, dim=1)
 
     # Create a zero tensor of the same shape
     updated_config = torch.zeros_like(config_flat)
@@ -399,5 +464,31 @@ def __get_init_config_threshold(config: torch.Tensor) -> torch.Tensor:
         torch.Tensor: The updated configuration
 
     """
-    return (config > constants.threshold_cell_value).float()
+    return (config > THRESHOLD_CELL_VALUE).float()
+
+
+def __create_data_dict(initial: torch.Tensor,
+                       final: torch.Tensor,
+                       metric: torch.Tensor,
+                       prediction: torch.Tensor,
+                       metadata: dict) -> dict:
+    """
+    Function to create the dictionary to plot the data
+
+    Args:
+        data (dict): The dictionary containing the data
+
+    Returns:
+        dict: The dictionary containing the data
+
+    """
+    data = {
+        "metadata": metadata,
+        "initial": initial,
+        "final": final,
+        "metric": metric,
+        "predicted_metric": prediction,
+    }
+
+    return data
 

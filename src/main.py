@@ -20,7 +20,7 @@ from src.gol_adv_sys.Predictor import Predictor_Baseline, Predictor_ResNet, \
 
 from src.gol_adv_sys.Generator import Generator_DCGAN
 
-from src.gol_adv_sys.utils import constants as constants
+from config.constants import *
 
 
 def setup_base_dir():
@@ -100,8 +100,8 @@ def main():
     setup_base_dir()
     setup_logging(path=CONFIG_DIR / "logging.json")
 
-    playground()
-    # train_predictor()
+    # playground()
+    train_predictor()
     # train_adversarial()
 
     return 0

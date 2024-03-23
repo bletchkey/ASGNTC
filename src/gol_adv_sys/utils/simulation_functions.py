@@ -1,7 +1,7 @@
 from typing import Tuple, Union
 import torch
 
-from src.gol_adv_sys.utils import constants as constants
+from config.constants import *
 
 
 def simulate_config(config: torch.Tensor, topology: str, steps: int,
@@ -32,8 +32,8 @@ def simulate_config(config: torch.Tensor, topology: str, steps: int,
 
     # Mapping of topology types to their corresponding simulation functions
     simulation_functions = {
-        constants.TOPOLOGY_TYPE["toroidal"]: __simulate_config_toroidal,
-        constants.TOPOLOGY_TYPE["flat"]: __simulate_config_flat
+        TOPOLOGY_TOROIDAL: __simulate_config_toroidal,
+        TOPOLOGY_FLAT: __simulate_config_flat
     }
 
     # Retrieve the appropriate simulation function based on the provided topology
@@ -167,32 +167,32 @@ def __calculate_metrics(configs: list, stable_config: torch.Tensor, device: torc
     stacked_configs = stacked_configs.permute(1, 0, 2, 3, 4)
 
     sim_metrics = {
-        constants.CONFIG_TYPE["stable"]: {
+        CONFIG_METRIC_EASY: {
+            "config": stacked_configs.clone(),
+            "maximum": None,
+            "minimum": None,
+            "q1": None,
+            "q2": None,
+            "q3": None
+        },
+        CONFIG_METRIC_MEDIUM: {
+            "config": stacked_configs.clone(),
+            "maximum": None,
+            "minimum": None,
+            "q1": None,
+            "q2": None,
+            "q3": None
+        },
+        CONFIG_METRIC_HARD: {
+            "config": stacked_configs.clone(),
+            "maximum": None,
+            "minimum": None,
+            "q1": None,
+            "q2": None,
+            "q3": None
+        },
+        CONFIG_METRIC_STABLE: {
             "config": stable_config,
-            "maximum": None,
-            "minimum": None,
-            "q1": None,
-            "q2": None,
-            "q3": None
-        },
-        constants.CONFIG_TYPE["easy"]: {
-            "config": stacked_configs.clone(),
-            "maximum": None,
-            "minimum": None,
-            "q1": None,
-            "q2": None,
-            "q3": None
-        },
-        constants.CONFIG_TYPE["medium"]: {
-            "config": stacked_configs.clone(),
-            "maximum": None,
-            "minimum": None,
-            "q1": None,
-            "q2": None,
-            "q3": None
-        },
-        constants.CONFIG_TYPE["hard"]: {
-            "config": stacked_configs.clone(),
             "maximum": None,
             "minimum": None,
             "q1": None,
@@ -202,24 +202,24 @@ def __calculate_metrics(configs: list, stable_config: torch.Tensor, device: torc
     }
 
     eps = {
-        constants.CONFIG_TYPE["easy"]:   __calculate_eps(half_step=constants.METRIC_EASY_HALF_STEP),
-        constants.CONFIG_TYPE["medium"]: __calculate_eps(half_step=constants.METRIC_MEDIUM_HALF_STEP),
-        constants.CONFIG_TYPE["hard"]:   __calculate_eps(half_step=constants.METRIC_HARD_HALF_STEP)
+        CONFIG_METRIC_EASY:   __calculate_eps(half_step=METRIC_EASY_HALF_STEP),
+        CONFIG_METRIC_MEDIUM: __calculate_eps(half_step=METRIC_MEDIUM_HALF_STEP),
+        CONFIG_METRIC_HARD:   __calculate_eps(half_step=METRIC_HARD_HALF_STEP)
     }
 
-    correction_factor_easy   = eps[constants.CONFIG_TYPE["easy"]] / (1 - ((1 - eps[constants.CONFIG_TYPE["easy"]]) ** steps))
-    correction_factor_medium = eps[constants.CONFIG_TYPE["medium"]] / (1 - ((1 - eps[constants.CONFIG_TYPE["medium"]]) ** steps))
-    correction_factor_hard   = eps[constants.CONFIG_TYPE["hard"]] / (1 - ((1 - eps[constants.CONFIG_TYPE["hard"]]) ** steps))
+    correction_factor_easy   = eps[CONFIG_METRIC_EASY] / (1 - ((1 - eps[CONFIG_METRIC_EASY]) ** steps))
+    correction_factor_medium = eps[CONFIG_METRIC_MEDIUM] / (1 - ((1 - eps[CONFIG_METRIC_MEDIUM]) ** steps))
+    correction_factor_hard   = eps[CONFIG_METRIC_HARD] / (1 - ((1 - eps[CONFIG_METRIC_HARD]) ** steps))
 
     # Combine the correction factors into a dictionary
     correction_factors = {
-        constants.CONFIG_TYPE["easy"]:   correction_factor_easy,
-        constants.CONFIG_TYPE["medium"]: correction_factor_medium,
-        constants.CONFIG_TYPE["hard"]:   correction_factor_hard,
+        CONFIG_METRIC_EASY:   correction_factor_easy,
+        CONFIG_METRIC_MEDIUM: correction_factor_medium,
+        CONFIG_METRIC_HARD:   correction_factor_hard,
     }
 
     # Apply decay and correction for each difficulty level
-    for difficulty in [constants.CONFIG_TYPE["easy"], constants.CONFIG_TYPE["medium"], constants.CONFIG_TYPE["hard"]]:
+    for difficulty in [CONFIG_METRIC_EASY, CONFIG_METRIC_MEDIUM, CONFIG_METRIC_HARD]:
 
         # Efficient decay rates calculation
         step_indices = torch.arange(steps, dtype=torch.float32, device=device)
@@ -241,12 +241,12 @@ def __calculate_metrics(configs: list, stable_config: torch.Tensor, device: torc
         sim_metrics[difficulty]["q3"]      = results[4]
 
     # Calculate quartiles for the stable configuration
-    results = __calculate_quartiles(sim_metrics[constants.CONFIG_TYPE["stable"]]["config"])
-    sim_metrics[constants.CONFIG_TYPE["stable"]]["maximum"] = results[0]
-    sim_metrics[constants.CONFIG_TYPE["stable"]]["minimum"] = results[1]
-    sim_metrics[constants.CONFIG_TYPE["stable"]]["q1"]      = results[2]
-    sim_metrics[constants.CONFIG_TYPE["stable"]]["q2"]      = results[3]
-    sim_metrics[constants.CONFIG_TYPE["stable"]]["q3"]      = results[4]
+    results = __calculate_quartiles(sim_metrics[CONFIG_METRIC_STABLE]["config"])
+    sim_metrics[CONFIG_METRIC_STABLE]["maximum"] = results[0]
+    sim_metrics[CONFIG_METRIC_STABLE]["minimum"] = results[1]
+    sim_metrics[CONFIG_METRIC_STABLE]["q1"]      = results[2]
+    sim_metrics[CONFIG_METRIC_STABLE]["q2"]      = results[3]
+    sim_metrics[CONFIG_METRIC_STABLE]["q3"]      = results[4]
 
     return sim_metrics
 

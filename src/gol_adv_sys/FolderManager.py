@@ -2,7 +2,7 @@ from pathlib import Path
 from datetime import datetime
 
 from config.paths import TRAININGS_DIR
-from src.gol_adv_sys.utils import constants as constants
+from config.constants import *
 
 class FolderManager:
     """

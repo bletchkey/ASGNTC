@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 
 from src.gol_adv_sys.predictors.utils.toroidal import toroidal_Conv2d
-from src.gol_adv_sys.utils import constants as constants
+from config.constants import *
 
 
 class UNet(nn.Module):
@@ -10,23 +10,23 @@ class UNet(nn.Module):
         super(UNet, self).__init__()
 
         # Encoder (Downsampling)
-        self.enc_conv1 = nn.Conv2d(constants.nc, constants.npf, kernel_size=3, padding=0)
-        self.enc_conv2 = nn.Conv2d(constants.npf, constants.npf*2, kernel_size=3, padding=0)
+        self.enc_conv1 = nn.Conv2d(N_CHANNELS, N_PREDICTOR_FEATURES, kernel_size=3, padding=0)
+        self.enc_conv2 = nn.Conv2d(N_PREDICTOR_FEATURES, N_PREDICTOR_FEATURES*2, kernel_size=3, padding=0)
 
         self.avgpool = nn.AvgPool2d(2, 2)
         self.maxpool = nn.MaxPool2d(2, 2)
 
         # Bottleneck
-        self.bottleneck_conv = nn.Conv2d(constants.npf*2, constants.npf*4, kernel_size=3, padding=0)
+        self.bottleneck_conv = nn.Conv2d(N_PREDICTOR_FEATURES*2, N_PREDICTOR_FEATURES*4, kernel_size=3, padding=0)
 
         # Decoder (Upsampling)
-        self.up_conv1 = nn.ConvTranspose2d(constants.npf*4, constants.npf*2, kernel_size=2, stride=2)
-        self.dec_conv1 = nn.Conv2d(constants.npf*4, constants.npf*2, kernel_size=3, padding=0)
-        self.up_conv2 = nn.ConvTranspose2d(constants.npf*2, constants.npf, kernel_size=2, stride=2)
-        self.dec_conv2 = nn.Conv2d(constants.npf*2, constants.npf, kernel_size=3, padding=0)
+        self.up_conv1 = nn.ConvTranspose2d(N_PREDICTOR_FEATURES*4, N_PREDICTOR_FEATURES*2, kernel_size=2, stride=2)
+        self.dec_conv1 = nn.Conv2d(N_PREDICTOR_FEATURES*4, N_PREDICTOR_FEATURES*2, kernel_size=3, padding=0)
+        self.up_conv2 = nn.ConvTranspose2d(N_PREDICTOR_FEATURES*2, N_PREDICTOR_FEATURES, kernel_size=2, stride=2)
+        self.dec_conv2 = nn.Conv2d(N_PREDICTOR_FEATURES*2, N_PREDICTOR_FEATURES, kernel_size=3, padding=0)
 
         # Output Convolution
-        self.output_conv = nn.Conv2d(constants.npf, constants.nc, kernel_size=1, padding = 0)
+        self.output_conv = nn.Conv2d(N_PREDICTOR_FEATURES, N_CHANNELS, kernel_size=1, padding = 0)
 
         # Activation Function
         self.relu = nn.ReLU()

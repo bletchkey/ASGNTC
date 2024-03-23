@@ -7,7 +7,7 @@ import torch
 from torch.utils.data import DataLoader
 
 from src.gol_adv_sys.utils.simulation_functions import simulate_config
-from src.gol_adv_sys.utils import constants as constants
+from config.constants import *
 
 from src.gol_adv_sys.DatasetManager import FixedDataset
 from src.gol_adv_sys.DeviceManager import DeviceManager
@@ -53,8 +53,7 @@ class Playground():
     def simulate(self, config: torch.Tensor, steps: int) -> torch.Tensor:
 
         config = config.to(self.__device_manager.default_device)
-
-        final, metrics, n_cells_init, n_cells_final = simulate_config(config, constants.TOPOLOGY_TYPE["toroidal"], steps=steps,
+        final, metrics, n_cells_init, n_cells_final = simulate_config(config, TOPOLOGY_TOROIDAL, steps=steps,
                                                         calculate_final_config=True, device=self.__device_manager.default_device)
 
 
@@ -140,15 +139,18 @@ class Playground():
             ax.axis('off')
 
         # Text plot for metrics in the first row
-        for i, config in enumerate(["initial","final","easy", "medium", "hard", "stable"]):
+        configs_types_list = [CONFIG_INITIAL, CONFIG_FINAL,
+                              CONFIG_METRIC_EASY, CONFIG_METRIC_MEDIUM,
+                              CONFIG_METRIC_HARD, CONFIG_METRIC_STABLE]
+        for i, config in enumerate(configs_types_list):
             ax = fig.add_subplot(gs[1, i])
-            if config == "initial":
+            if config == CONFIG_INITIAL:
                 text_str = f"ID: {record['id']}"
                 ax.text(0.1, 0, text_str, ha="left", va="center", fontsize=14, wrap=True)
                 ax.axis('off')
                 continue
 
-            if config == "final":
+            if config == CONFIG_FINAL:
                 text_str = f"Transient phase: {record['transient_phase']}\nPeriod: {record['period']}"
                 ax.text(0.1, 0, text_str, ha="left", va="center", fontsize=14, wrap=True)
                 ax.axis('off')
@@ -172,13 +174,13 @@ class Playground():
 
     def __load_train_dataset(self):
 
-        train_data_path = DATASET_DIR / f"{constants.dataset_name}_train.pt"
+        train_data_path = DATASET_DIR / f"{DATASET_NAME}_train.pt"
         self.__dataset["train_data"] = FixedDataset(train_data_path)
 
 
     def __load_train_metadata(self):
 
-        train_meta_path = DATASET_DIR / f"{constants.dataset_name}_metadata_train.pt"
+        train_meta_path = DATASET_DIR / f"{DATASET_NAME}_metadata_train.pt"
         self.__dataset["train_meta"] = torch.load(train_meta_path)
 
 

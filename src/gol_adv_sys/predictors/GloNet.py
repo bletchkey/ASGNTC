@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 
 from src.gol_adv_sys.predictors.utils.toroidal import toroidal_Conv2d
-from src.gol_adv_sys.utils import constants as constants
+from config.constants import *
 
 
 class GloNet(nn.Module):
@@ -11,24 +11,24 @@ class GloNet(nn.Module):
         super(GloNet, self).__init__()
 
         # First block
-        self.conv1 = nn.Conv2d(constants.nc, constants.npf, kernel_size=3, padding=0)
-        self.conv2 = nn.Conv2d(constants.npf, constants.npf, kernel_size=3, padding=0)
+        self.conv1 = nn.Conv2d(N_CHANNELS, npf, kernel_size=3, padding=0)
+        self.conv2 = nn.Conv2d(N_PREDICTOR_FEATURES, N_PREDICTOR_FEATURES, kernel_size=3, padding=0)
 
         # Second block
-        self.conv3 = nn.Conv2d(constants.npf, constants.npf*2, kernel_size=3, padding=0)
-        self.conv4 = nn.Conv2d(constants.npf*2, constants.npf*2, kernel_size=3, padding=0)
+        self.conv3 = nn.Conv2d(N_PREDICTOR_FEATURES, N_PREDICTOR_FEATURES*2, kernel_size=3, padding=0)
+        self.conv4 = nn.Conv2d(N_PREDICTOR_FEATURES*2, N_PREDICTOR_FEATURES*2, kernel_size=3, padding=0)
 
         # Third block
-        self.conv5 = nn.Conv2d(constants.npf*2, constants.npf*4, kernel_size=3, padding=0)
-        self.conv6 = nn.Conv2d(constants.npf*4, constants.npf*4, kernel_size=3, padding=0)
+        self.conv5 = nn.Conv2d(N_PREDICTOR_FEATURES*2, N_PREDICTOR_FEATURES*4, kernel_size=3, padding=0)
+        self.conv6 = nn.Conv2d(N_PREDICTOR_FEATURES*4, N_PREDICTOR_FEATURES*4, kernel_size=3, padding=0)
 
         # Output Convolution
-        self.output_conv = nn.Conv2d(constants.npf, constants.nc, kernel_size=1, padding=0)
+        self.output_conv = nn.Conv2d(N_PREDICTOR_FEATURES, N_CHANNELS, kernel_size=1, padding=0)
 
         # Adjusting Convolutions
-        self.adjust_conv1 = nn.Conv2d(in_channels=constants.npf, out_channels=constants.npf, kernel_size=1)
-        self.adjust_conv2 = nn.Conv2d(in_channels=constants.npf*2, out_channels=constants.npf, kernel_size=1)
-        self.adjust_conv3 = nn.Conv2d(in_channels=constants.npf*4, out_channels=constants.npf, kernel_size=1)
+        self.adjust_conv1 = nn.Conv2d(in_channels=N_PREDICTOR_FEATURES, out_channels=N_PREDICTOR_FEATURES, kernel_size=1)
+        self.adjust_conv2 = nn.Conv2d(in_channels=N_PREDICTOR_FEATURES*2, out_channels=N_PREDICTOR_FEATURES, kernel_size=1)
+        self.adjust_conv3 = nn.Conv2d(in_channels=N_PREDICTOR_FEATURES*4, out_channels=N_PREDICTOR_FEATURES, kernel_size=1)
 
 
         # Activation Function
