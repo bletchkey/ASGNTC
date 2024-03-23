@@ -332,3 +332,5 @@ Traceback (most recent call last):
     guessed = guessed.mean(dim=1)
 IndexError: Dimension out of range (expected to be in range of [-1, 0], but got 1)
 2024-03-23 22:28:48,324 - root - INFO - Training started at 23/03/2024 22:28:48
+/home/bletchkey/ASGNTC/src/gol_adv_sys/utils/scores.py:37: UserWarning: torch.searchsorted(): input value tensor is non-contiguous, this will lower the performance due to extra data copy when converting non-contiguous tensor to contiguous, please use contiguous input value tensor if possible. This message will only appear once per program. (Triggered internally at ../aten/src/ATen/native/BucketizationUtils.h:32.)
+  prediction_bins = torch.bucketize(prediction_flat, bin_edges, right=True)

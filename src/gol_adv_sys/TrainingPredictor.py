@@ -288,12 +288,12 @@ class TrainingPredictor(TrainingBase):
             str_epoch       = f"{self.current_epoch+1}/{NUM_EPOCHS}"
             str_err_p_train = f"{self.losses['predictor_train'][-1]:.6f}"
             str_err_p_val   = f"{self.losses['predictor_val'][-1]:.6f}"
-            str_accuracy    = f"{(100*self.accuracies[-1]):.3f}%"
+            str_accuracy    = f"{(100*self.accuracies[-1]):.1f}%"
 
             lr = self.learning_rates[self.current_epoch]
 
-            log.write(f"{str_epoch_time} | Epoch: {str_epoch}, Loss P (train): {str_err_p_train}, "
-                      f"Loss P (val): {str_err_p_val}, Accuracy: {str_accuracy} | Learning rate: {lr}\n"
+            log.write(f"{str_epoch_time} | Epoch: {str_epoch}| Loss P (train): {str_err_p_train}| "
+                      f"Loss P (val): {str_err_p_val}| Accuracy: {str_accuracy} | Learning rate: {lr}\n"
             )
             log.flush()
 
