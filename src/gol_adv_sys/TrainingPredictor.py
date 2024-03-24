@@ -24,7 +24,7 @@ from src.gol_adv_sys.DatasetManager import FixedDataset, PairedDataset
 from src.gol_adv_sys.ModelManager import ModelManager
 from src.gol_adv_sys.TrainingBase import TrainingBase
 
-from src.gol_adv_sys.utils.losses import weigthed_mse_loss, cross_entropy_loss
+from src.gol_adv_sys.utils.losses import WeightedMSELoss, WeightedBCELoss
 from src.gol_adv_sys.utils.scores import metric_prediction_accuracy
 
 from src.gol_adv_sys.utils.helper_functions import save_progress_plot_dataset, save_losses_plot, \
@@ -69,7 +69,7 @@ class TrainingPredictor(TrainingBase):
                               momentum=P_SGD_MOMENTUM,
                               weight_decay=P_SGD_WEIGHT_DECAY)
 
-        self.predictor = ModelManager(model=model, optimizer=optimizer, criterion=weigthed_mse_loss, device_manager=self.device_manager)
+        self.predictor = ModelManager(model=model, optimizer=optimizer, criterion=WeightedMSELoss(), device_manager=self.device_manager)
 
         self.simulation_topology = TOPOLOGY_TOROIDAL
         self.init_config_initial_type = INIT_CONFIG_INTIAL_THRESHOLD

@@ -250,13 +250,33 @@ def save_progress_plot_dataset(plot_data: dict, epoch: int, results_path: str):
     vmax = 1
 
     titles = [key for key in plot_data.keys()]
-    n_rows = len(np.linspace(0, BATCH_SIZE - 1, 4).astype(int))
+
+    # IDs
+    ids = [8154, 87646, 96922, 115472, 179702, 248104]
+
+    id_tensor = plot_data["metadata"]["id"]
+
+    # Check and ensure id_tensor is a PyTorch tensor
+    if not isinstance(id_tensor, torch.Tensor):
+        id_tensor = torch.tensor(id_tensor)
+
+    indices = []
+    for id in ids:
+        # Find where the ID matches in the tensor
+        matched_indices = torch.where(id_tensor == id)[0]
+
+        # Check if there is at least one match and get the first occurrence
+        if matched_indices.nelement() > 0:
+            index = matched_indices[0].item()
+            indices.append(index)
+        else:
+            print(f"ID {id} not found.")
+            indices.append(None)
+
+    n_rows = len(indices)
     n_cols = len(titles)
 
     current_epoch = epoch + 1
-
-    # Get 4 equally spaced indices
-    indices = np.linspace(0, BATCH_SIZE - 1, 4).astype(int)
 
     # Create figure and subplots
     fig, axs = plt.subplots(n_rows, n_cols, figsize=(n_cols * 5.5, n_rows * 6))
