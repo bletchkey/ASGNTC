@@ -190,47 +190,58 @@ def save_progress_plot(plot_data: dict, epoch: int, results_path: str):
 
 
 def test_predictor_model_dataset(test_set: torch.utils.data.DataLoader,
-                         metric_type: str, model_p: torch.nn.Module, device: torch.device) -> dict:
-
+                                 metric_type: str, model_p: torch.nn.Module, device: torch.device) -> dict:
     """
-    Function to test the predictor model
+    Function to test the predictor model.
+
+
 
     Args:
-        test_set (torch.utils.data.DataLoader): The test set
-        test_meta_set (torch.utils.data.DataLoader): The test metadata set
+        test_set (torch.utils.data.DataLoader): The test set containing data and metadata
         metric_type (str): The type of metric to predict
         model_p (torch.nn.Module): The predictor model
         device (torch.device): The device used for computation
 
     Returns:
-        dict: The dictionary containing the test results
-
+        dict: The dictionary containing the test results.
     """
+    model_p.eval()  # Set the model to evaluation mode
 
-    # Create an iterator from the data_loader
-    iterator_batch = iter(test_set)
-    # Fetch the first batch
-    batch, batch_metadata = next(iterator_batch)
+    batch_data = None
+    batch_metadata_aggregated = {}
+    all_predictions = None
 
+    with torch.no_grad():
+        for batch, batch_metadata in test_set:
+            data = get_config_from_batch(batch, CONFIG_INITIAL, device)
+            data = data.to(device)  # Ensure data is on the correct device
+            prediction = model_p(data)  # Get prediction for the current batch
+
+            # Aggregate batch data if already exists, else initialize
+            batch_data = torch.cat((batch_data, batch), dim=0) if batch_data is not None else batch
+
+            # Aggregate predictions if already exists, else initialize
+            all_predictions = torch.cat((all_predictions, prediction), dim=0) if all_predictions is not None else prediction
+
+            # Aggregate batch metadata
+            for key in batch_metadata.keys():
+                if key in batch_metadata_aggregated:
+                    batch_metadata_aggregated[key] = torch.cat((batch_metadata_aggregated[key], batch_metadata[key]), dim=0)
+                else:
+                    batch_metadata_aggregated[key] = batch_metadata[key]
+
+    # Construct metadata from aggregated data
     metadata = {
-        META_ID: batch_metadata[META_ID],
-        META_N_CELLS_INIT: batch_metadata[META_N_CELLS_INIT],
-        META_N_CELLS_FINAL: batch_metadata[META_N_CELLS_FINAL],
-        META_TRANSIENT_PHASE: batch_metadata[META_TRANSIENT_PHASE],
-        META_PERIOD: batch_metadata[META_PERIOD],
+        META_ID: batch_metadata_aggregated[META_ID],
+        META_N_CELLS_INIT: batch_metadata_aggregated[META_N_CELLS_INIT],
+        META_N_CELLS_FINAL: batch_metadata_aggregated[META_N_CELLS_FINAL],
+        META_TRANSIENT_PHASE: batch_metadata_aggregated[META_TRANSIENT_PHASE],
+        META_PERIOD: batch_metadata_aggregated[META_PERIOD],
         "metric_type": metric_type,
     }
 
-    # Test the models on the fixed noise
-    with torch.no_grad():
-        model_p.eval()
-        prediction = model_p(get_config_from_batch(batch, CONFIG_INITIAL, device))
-
-    initial = get_config_from_batch(batch, CONFIG_INITIAL, device)
-    final   = get_config_from_batch(batch, CONFIG_FINAL, device)
-    metric  = get_config_from_batch(batch, metric_type, device)
-
-    data = __create_data_dict(initial, final, metric, prediction, metadata)
+    # Assuming __create_data_dict is a function that prepares your data dictionary
+    data = __create_data_dict(batch_data, all_predictions, metadata)
 
     return data
 
@@ -253,7 +264,6 @@ def save_progress_plot_dataset(plot_data: dict, epoch: int, results_path: str):
 
     # IDs
     ids = [8154, 87646, 96922, 115472, 179702, 248104]
-
     id_tensor = plot_data["metadata"]["id"]
 
     # Check and ensure id_tensor is a PyTorch tensor
@@ -491,11 +501,7 @@ def __get_init_config_threshold(config: torch.Tensor) -> torch.Tensor:
     return (config > THRESHOLD_CELL_VALUE).float()
 
 
-def __create_data_dict(initial: torch.Tensor,
-                       final: torch.Tensor,
-                       metric: torch.Tensor,
-                       prediction: torch.Tensor,
-                       metadata: dict) -> dict:
+def __create_data_dict(batches: torch.Tensor, prediction: torch.Tensor, metadata: dict) -> dict:
     """
     Function to create the dictionary to plot the data
 
@@ -506,6 +512,13 @@ def __create_data_dict(initial: torch.Tensor,
         dict: The dictionary containing the data
 
     """
+
+    device = batches.device
+
+    initial = get_config_from_batch(batches, CONFIG_INITIAL, device)
+    final   = get_config_from_batch(batches, CONFIG_FINAL, device)
+    metric  = get_config_from_batch(batches, metadata["metric_type"], device)
+
     data = {
         "metadata": metadata,
         "initial": initial,
