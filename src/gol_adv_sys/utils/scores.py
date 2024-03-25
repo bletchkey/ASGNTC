@@ -29,8 +29,8 @@ def metric_prediction_accuracy(target: torch.Tensor, prediction: torch.Tensor) -
     bin_edges = torch.tensor([0, 0.25, 0.5, 0.75, 1], device=target.device)
 
     # Flatten the last three dimensions to apply bucketize
-    target_flat = target.flatten(start_dim=1)
-    prediction_flat = prediction.flatten(start_dim=1)
+    target_flat = target.contiguous().flatten(start_dim=1)
+    prediction_flat = prediction.contiguous().flatten(start_dim=1)
 
     # Find the indices of the bins to which each value belongs
     target_bins = torch.bucketize(target_flat, bin_edges, right=True)

@@ -34,8 +34,7 @@ class UNet(nn.Module):
 
     def forward(self, x):
 
-        for _ in range(1):
-            x = self._u_structure(x)
+        x = self._u_structure(x)
 
         return x
 

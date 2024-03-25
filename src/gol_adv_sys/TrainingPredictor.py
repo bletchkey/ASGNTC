@@ -73,12 +73,12 @@ class TrainingPredictor(TrainingBase):
 
         self.simulation_topology = TOPOLOGY_TOROIDAL
         self.init_config_initial_type = INIT_CONFIG_INTIAL_THRESHOLD
-        self.metric_type = CONFIG_METRIC_STABLE
+        self.metric_type = CONFIG_METRIC_EASY
 
         self.current_epoch = 0
         self.n_times_trained_p = 0
-        self.step_times_secs = []
 
+        self.step_times_secs = []
         self.learning_rates = []
 
         self.losses = {"predictor_train": [],

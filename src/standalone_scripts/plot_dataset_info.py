@@ -90,34 +90,46 @@ def check_dataset_configs(saving_path, dataset, metadata, total_indices=50, n_pe
 
 
 def check_transient_phases(saving_path, metadata):
-    pairs = [(meta["id"], meta["transient_phase"]) for meta in metadata]
+    pairs = [(meta[META_ID], meta[META_TRANSIENT_PHASE]) for meta in metadata]
     pairs.sort(key=lambda x: x[1])
     ids, transient_phases = zip(*pairs)
     transient_phases = np.array(transient_phases)
 
-    fig, axs = plt.subplots(1, 2, figsize=(15, 6))
+    fig, axs = plt.subplots(2, 2, figsize=(15, 6))
 
     # Bar chart for transient phases
-    axs[0].bar(ids, transient_phases, color='skyblue', edgecolor='black')
-    axs[0].set_xlabel("ID", fontsize=12)
-    axs[0].set_ylabel("Transient Phase Length", fontsize=12)
-    axs[0].set_title("Transient Phases", fontsize=14, fontweight='bold')
-    axs[0].xaxis.set_major_locator(MaxNLocator(integer=True))
-    axs[0].grid(axis='y', which='both', linestyle='--', linewidth=0.7, alpha=0.7)
-    axs[0].tick_params(axis='x', rotation=90)
+    axs[0,0].bar(ids, transient_phases, color='#7573d1')
+    axs[0,0].set_xlabel("ID", fontsize=12)
+    axs[0,0].set_ylabel("Transient Phase Length", fontsize=12)
+    axs[0,0].set_title("Transient Phases", fontsize=14, fontweight='bold')
+    axs[0,0].xaxis.set_major_locator(MaxNLocator(integer=True))
+    axs[0,0].grid(axis='y', which='both', linestyle='--', linewidth=0.5, alpha=0.7)
+    axs[0,0].tick_params(axis='x', rotation=90)
 
     # Q-Q plot for transient phases
     norm_quantiles = np.linspace(0, 1, len(transient_phases))
     data_quantiles = np.quantile(transient_phases, norm_quantiles)
-    theoretical_quantiles = np.quantile(np.random.normal(size=10000), norm_quantiles)
+    theoretical_quantiles = np.quantile(np.random.normal(size=len(transient_phases)), norm_quantiles)
 
-    axs[1].plot(theoretical_quantiles, data_quantiles, 'o', color='skyblue')
-    axs[1].plot([theoretical_quantiles.min(), theoretical_quantiles.max()],
+    axs[0,1].plot(theoretical_quantiles, data_quantiles, 'o', color='#7573d1')
+    axs[0,1].plot([theoretical_quantiles.min(), theoretical_quantiles.max()],
                 [theoretical_quantiles.min(), theoretical_quantiles.max()],
                 'k--')
-    axs[1].set_title("Q-Q Plot", fontsize=14, fontweight='bold')
-    axs[1].set_xlabel("Theoretical Quantiles", fontsize=12)
-    axs[1].set_ylabel("Data Quantiles", fontsize=12)
+
+    axs[0,1].set_title("Q-Q Plot", fontsize=14, fontweight='bold')
+    axs[0,1].set_xlabel("Theoretical Quantiles", fontsize=12)
+    axs[0,1].set_ylabel("Data Quantiles", fontsize=12)
+
+    # Histogram for transient phases
+    axs[1,0].hist(transient_phases, bins=20, color='#7573d1', edgecolor='black')
+    axs[1,0].set_title("Histogram", fontsize=14, fontweight='bold')
+    axs[1,0].set_xlabel("Transient Phase Length", fontsize=12)
+    axs[1,0].set_ylabel("Frequency", fontsize=12)
+
+    # Boxplot for transient phases
+    axs[1,1].boxplot(transient_phases, vert=False, patch_artist=True, boxprops=dict(facecolor='#7573d1'))
+    axs[1,1].set_title("Boxplot", fontsize=14, fontweight='bold')
+    axs[1,1].set_xlabel("Transient Phase Length", fontsize=12)
 
     plt.tight_layout()
     plt.savefig(Path(saving_path) / "transient_phases.png", dpi=300, bbox_inches='tight')
@@ -142,12 +154,12 @@ def check_dataset_distribution(saving_path, dataset):
 
     # Plotting
     plt.figure(figsize=(10, 6))
-    plt.bar(range(n + 1), bins_cpu, color='skyblue', edgecolor='gray')
+    plt.bar(range(n + 1), bins_cpu, color='skyblue')
     plt.title('Distribution of Living Cells')
     plt.xlabel('Number of Living Cells')
     plt.ylabel('Frequency')
     plt.ylim(0, max_value + max_value * 0.1)
-    plt.grid(True, linestyle='--', linewidth=0.5)
+    plt.grid(True, linestyle='--', linewidth=1)
 
     plt.savefig(plot_path, dpi=300)
     plt.close()
@@ -169,9 +181,9 @@ def main():
         dataset = torch.load(ds_path)
         metadata = torch.load(metadata_path)
 
-        check_dataset_configs(saving_path, dataset, metadata)
+        #check_dataset_configs(saving_path, dataset, metadata)
         check_transient_phases(saving_path, metadata)
-        check_dataset_distribution(saving_path, dataset)
+        #check_dataset_distribution(saving_path, dataset)
 
 
 if __name__ == "__main__":
