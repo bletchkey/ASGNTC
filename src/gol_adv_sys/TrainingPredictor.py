@@ -389,7 +389,7 @@ class TrainingPredictor(TrainingBase):
         """
 
         return test_predictor_model_dataset(self.dataloader[TEST],
-                                            self.predict_from_config_type,
+                                            self.config_type_pred_input,
                                             self.config_type_pred_target, self.predictor.model,
                                             self.device_manager.default_device)
 

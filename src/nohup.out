@@ -14,3 +14,17 @@ Traceback (most recent call last):
 TypeError: 'float' object cannot be interpreted as an integer
 2024-03-26 21:24:05,360 - root - INFO - Training started at 26/03/2024 21:24:05
 2024-03-26 21:26:07,731 - root - INFO - Training started at 26/03/2024 21:26:07
+Traceback (most recent call last):
+  File "main.py", line 89, in <module>
+    RETCODE = main()
+  File "main.py", line 83, in main
+    train_predictor()
+  File "main.py", line 75, in train_predictor
+    train_pred.run()
+  File "/home/bletchkey/ASGNTC/src/gol_adv_sys/TrainingPredictor.py", line 121, in run
+    self._fit()
+  File "/home/bletchkey/ASGNTC/src/gol_adv_sys/TrainingPredictor.py", line 175, in _fit
+    data = self.__test_predictor_model()
+  File "/home/bletchkey/ASGNTC/src/gol_adv_sys/TrainingPredictor.py", line 392, in __test_predictor_model
+    self.predict_from_config_type,
+AttributeError: 'TrainingPredictor' object has no attribute 'predict_from_config_type'
