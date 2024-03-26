@@ -9,8 +9,12 @@ sys.path.append(str(Path(__file__).resolve().parents[2]))
 
 from config.paths import TRAININGS_DIR
 
-from src.gol_adv_sys.utils.helper_functions import save_losses_plot
+from src.gol_adv_sys.utils.helper_functions import save_loss_acc_plot
 
+"""
+This script may not work anymore, as the log file format may have changed.
+
+"""
 
 def main():
 
@@ -46,7 +50,9 @@ def main():
                 loss_val.append(float(val_loss_str))
 
     # Save the plot
-    save_losses_plot(loss_train, loss_val, lr_values, training_path)
+    acc_train = None
+    acc_val = None
+    save_loss_acc_plot(loss_train, loss_val, acc_train, acc_val, lr_values, training_path)
 
     return 0
 

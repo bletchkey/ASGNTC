@@ -1,10 +1,11 @@
 import torch
 from config.constants import *
 import torch
+import torch.nn as nn
 from typing import Tuple
 
 
-def metric_prediction_accuracy(target: torch.Tensor, prediction: torch.Tensor) -> torch.Tensor:
+def metric_prediction_accuracy(prediction: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
     """
     Calculate the binned accuracy score for each pixel in the prediction compared to the target.
     The values range from 0 to 1, and are binned into four categories. Scores are awarded based on
@@ -12,8 +13,8 @@ def metric_prediction_accuracy(target: torch.Tensor, prediction: torch.Tensor) -
     bins scoring 0.
 
     Parameters:
-        target (torch.Tensor): The target tensor with shape (N, C, H, W).
         prediction (torch.Tensor): The prediction tensor with shape (N, C, H, W).
+        target (torch.Tensor): The target tensor with shape (N, C, H, W).
 
     Returns:
         torch.Tensor: A tensor of shape (N,) where each element is the mean score of the
@@ -37,8 +38,9 @@ def metric_prediction_accuracy(target: torch.Tensor, prediction: torch.Tensor) -
     prediction_bins = torch.bucketize(prediction_flat, bin_edges, right=True)
 
     # Calculate the score
-    score = torch.where(target_bins == prediction_bins, 1.0,
-                        torch.where(torch.abs(target_bins - prediction_bins) == 1, 0.5, 0.0))
+    x = torch.abs(target_bins - prediction_bins)
+
+    score = nn.ReLU()(2 - x.float()) / 2
 
     # Compute the mean score for each item in the batch
     mean_scores = score.mean(dim=1)  # Compute mean across the flattened second dimension

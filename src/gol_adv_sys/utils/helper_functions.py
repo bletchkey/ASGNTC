@@ -329,13 +329,17 @@ def save_progress_plot_dataset(plot_data: dict, epoch: int, results_path: str):
     plt.close(fig)
 
 
-def save_losses_plot(losses_p_train: list, losses_p_val: list, learning_rates: list, path: str):
+def save_loss_acc_plot(losses_p_train: list, losses_p_val: list,
+                       accuracies_p_train: list, accuracies_p_val: list,
+                       learning_rates: list, path: str):
     """
     Function to save the losses plot
 
     Args:
         losses_p_train (list): The training losses for the predictor model
         losses_p_val (list): The validation losses for the predictor model
+        accuracies_p_train (list): The training accuracies for the predictor model
+        accuracies_p_val (list): The validation accuracies for the predictor model
         learning_rates (list): The learning rates used during training for each epoch
         path (str): The path to where the results will be saved
 
@@ -349,6 +353,7 @@ def save_losses_plot(losses_p_train: list, losses_p_val: list, learning_rates: l
         change_indices = []
 
     change_epochs = [epochs[i] for i in change_indices]
+
     change_lr_values = [learning_rates[i] for i in change_indices]  # Get the learning rate values at change points
 
     fig, ax1 = plt.subplots()
@@ -356,6 +361,12 @@ def save_losses_plot(losses_p_train: list, losses_p_val: list, learning_rates: l
     # Plot training and validation losses
     ax1.plot(epochs, losses_p_train, label="Training Loss", color='blue', linewidth=0.7, linestyle='-')
     ax1.plot(epochs, losses_p_val, label="Validation Loss", color='orange', linewidth=0.7, linestyle='--')
+
+    # Plot training and validation accuracies
+    if accuracies_p_train is not None and accuracies_p_val is not None:
+        ax2 = ax1.twinx()
+        ax2.plot(epochs, accuracies_p_train, label="Training Accuracy", color='green', linewidth=0.7, linestyle='-')
+        ax2.plot(epochs, accuracies_p_val, label="Validation Accuracy", color='red', linewidth=0.7, linestyle='--')
 
     ax1.set_yscale('log')
     ax1.set_xlabel("Epoch", fontsize=12)

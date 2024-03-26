@@ -19,6 +19,7 @@ class WeightedMSELoss(nn.Module):
 
 
 class WeightedBCELoss(nn.Module):
+
     def __init__(self, alpha: float = 5.0):
         super(WeightedBCELoss, self).__init__()
         self.alpha = alpha
