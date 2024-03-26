@@ -12,11 +12,14 @@ class Baseline(nn.Module):
     def __init__(self) -> None:
         super(Baseline, self).__init__()
 
+        n_layers = 20
+
         self.in_conv = nn.Conv2d(N_CHANNELS, 32, kernel_size=3, stride=1, padding=0)
         self.convs = nn.ModuleList([
-            nn.Conv2d(32, 32, kernel_size=3, stride=1, padding=0) for _ in range(20)
+            nn.Conv2d(32, 32, kernel_size=3, stride=1, padding=0) for _ in range(n_layers)
         ])
-        self.bn_layers = nn.ModuleList([nn.BatchNorm2d(32) for _ in range(20)])
+        self.bn_layers = nn.ModuleList([nn.BatchNorm2d(32) for _ in range(n_layers)])
+
         self.out_conv = nn.Conv2d(32, N_CHANNELS, kernel_size=1, stride=1, padding=0)
         self.relu = nn.ReLU()
 

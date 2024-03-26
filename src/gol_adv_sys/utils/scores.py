@@ -42,8 +42,7 @@ def metric_prediction_accuracy(prediction: torch.Tensor, target: torch.Tensor) -
 
     score = nn.ReLU()(2 - x.float()) / 2
 
-    # Compute the mean score for each item in the batch
-    mean_scores = score.mean(dim=1)  # Compute mean across the flattened second dimension
+    mean_scores = score.mean()
 
-    return mean_scores
+    return mean_scores.item()
 
