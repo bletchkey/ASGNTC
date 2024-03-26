@@ -105,11 +105,12 @@ class TrainingPredictor(TrainingBase):
         self.path_log_file = self.__init_log_file()
 
 
-    def run(self):
+    def run(self) -> None:
         """
         Function used for running the training session.
 
         """
+
         torch.autograd.set_detect_anomaly(True)
 
         logging.info(f"Training started at {datetime.datetime.now().strftime('%d/%m/%Y %H:%M:%S')}")
@@ -120,18 +121,24 @@ class TrainingPredictor(TrainingBase):
         logging.info(f"Training ended at {datetime.datetime.now().strftime('%d/%m/%Y %H:%M:%S')}")
 
 
-    def _fit(self):
+    def _fit(self) -> None:
         """
-        Training loop for the predictor model.
+        Training loop for training the predictor model on the dataset.
 
-        The predictor model is trained on the dataset.
+        The Warm-up phase is used to gradually increase the learning rate from WARMUP_INITIAL_LR to WARMUP_TARGET_LR.
+        The Warm-up phase lasts for WARMUP_TOTAL_STEPS steps.
+
+        The training loop consists of NUM_EPOCHS epochs.
 
         """
 
         if self.warmup_phase["enabled"] == True:
+            logging.debug(f"Warm-up phase enabled")
+            logging.debug(f"Warm-up phase duration: {WARMUP_TOTAL_STEPS} steps")
+
             self.predictor.set_learning_rate(WARMUP_INITIAL_LR)
 
-        # Training loop
+        logging.debug(f"Starting the training loop for the predictor model")
         for epoch in range(NUM_EPOCHS):
 
             self.current_epoch = epoch
@@ -176,7 +183,26 @@ class TrainingPredictor(TrainingBase):
             self.device_manager.clear_resources()
 
 
-    def process_predictor_model(self, mode):
+    def process_predictor_model(self, mode) -> None:
+        """
+        Process the predictor model on the specified DataLoader.
+
+        If the mode is TRAIN, the model is trained on the training data.
+        If the mode is VALIDATION, the model is tested on the validation data.
+        If the mode is TEST, the model is tested on the test data.
+
+        The test on the test data is only performed after the last epoch.
+
+        The test on the validation data is used to update the learning rate,
+        check for problems like overfitting, etc.
+
+        Args:
+            mode (str): The mode of the processing.
+
+        Raises:
+            ValueError: If an invalid mode is passed.
+
+        """
 
         if mode not in [TRAIN, VALIDATION, TEST]:
             raise ValueError(f"Invalid mode: {mode}, must be one of '{TRAIN}', '{VALIDATION}', '{TEST}'")
@@ -230,6 +256,14 @@ class TrainingPredictor(TrainingBase):
 
 
     def __init_data(self) -> bool:
+        """
+        Initialize the dataset and dataloaders for the training session.
+
+        Returns:
+            success (bool): True if the data was initialized successfully, False otherwise.
+
+        """
+
         try:
             train_path = DATASET_DIR / f"{DATASET_NAME}_train.pt"
             val_path   = DATASET_DIR / f"{DATASET_NAME}_val.pt"
@@ -262,11 +296,15 @@ class TrainingPredictor(TrainingBase):
         return True
 
 
-    def __log_training_epoch(self, time):
+    def __log_training_epoch(self, time) -> None:
         """
         Log the progress of the training session inside each epoch for the predictor model.
 
+        Args:
+            time (float): The elapsed time of the epoch.
+
         """
+
         str_epoch_time  = f"{get_elapsed_time_str(time)}"
         str_epoch       = f"{self.current_epoch+1}/{NUM_EPOCHS}"
         str_err_p_train = f"{self.losses[TRAIN][-1]:.6f}"
@@ -294,13 +332,15 @@ class TrainingPredictor(TrainingBase):
             log.flush()
 
 
-    def __init_log_file(self):
+    def __init_log_file(self) -> str:
         """
         Create a log file for the training session and write the initial specifications.
 
         Returns:
             path (str): The path to the log file.
+
         """
+
         path = self.__folders.logs_folder / FILE_NAME_TRAINING_PROGRESS
         seed_info = "Random seed" if self.__seed_type["random"] else \
                     "Fixed seed" if self.__seed_type["fixed"] else "Unknown seed"
@@ -316,7 +356,7 @@ class TrainingPredictor(TrainingBase):
             f"Training specifications:\n\n"
             f"Batch size: {BATCH_SIZE}\n"
             f"Epochs: {NUM_EPOCHS}\n"
-            f"Predicting metric type: {self.metric_type}\n\n"
+            f"Predicting metric type: {self.metric_type}\n\n\n"
             f"Training progress:\n\n"
         )
 
@@ -327,33 +367,43 @@ class TrainingPredictor(TrainingBase):
         return path
 
 
-    def __get_initial_config(self, batch):
+    def __get_initial_config(self, batch) -> torch.Tensor:
         """
         Function to get a batch of initial configurations from the batch.
+
+        Returns:
+            initial_config (torch.Tensor): The initial configurations.
 
         """
 
         return get_config_from_batch(batch, CONFIG_INITIAL, self.device_manager.default_device)
 
 
-    def __get_final_config(self, batch):
+    def __get_final_config(self, batch) -> torch.Tensor:
         """
         Function to get a batch of final configurations from the batch.
+
+        Returns:
+            final_config (torch.Tensor): The final configurations.
 
         """
 
         return get_config_from_batch(batch, CONFIG_FINAL, self.device_manager.default_device)
 
 
-    def __get_metric_config(self, batch, metric_type):
+    def __get_metric_config(self, batch, metric_type) -> torch.Tensor:
         """
         Function to get a batch of the specified metric type from the batch.
 
+        Returns:
+            metric_config (torch.Tensor): The metric configurations.
+
         """
+
         return get_config_from_batch(batch, metric_type, self.device_manager.default_device)
 
 
-    def __test_predictor_model(self):
+    def __test_predictor_model(self) -> dict:
         """
         Function for testing the predictor model.
 
@@ -362,12 +412,13 @@ class TrainingPredictor(TrainingBase):
             simulated metrics and predicted metrics.
 
         """
+
         return test_predictor_model_dataset(self.dataloader[TEST],
                                             self.metric_type, self.predictor.model,
                                             self.device_manager.default_device)
 
 
-    def __save_progress_plot(self, data):
+    def __save_progress_plot(self, data) -> None:
         """
         Function for saving the progress plot.
         It save the plot that shows the generated configurations, initial configurations, simulated configurations,
@@ -378,24 +429,27 @@ class TrainingPredictor(TrainingBase):
             simulated metrics and predicted metrics.
 
         """
+
         save_progress_plot_dataset(data, self.current_epoch, self.__folders.results_folder)
 
 
-    def __save_loss_acc_plot(self):
+    def __save_loss_acc_plot(self) -> None:
         """
         Function for plotting and saving the losses of training and validation for the predictor model.
 
         """
+
         save_loss_acc_plot(self.losses[TRAIN], self.losses[VALIDATION],
                            self.accuracies[TRAIN], self.accuracies[VALIDATION],
                            self.learning_rates, self.__folders.base_folder)
 
 
-    def __initialize_seed(self):
+    def __initialize_seed(self) -> None:
         """
         Initialize the seed for the random number generators.
 
         """
+
         self.__seed_type = {"fixed": 54, "random": random.randint(1, 10000), "is_random": True}
         self.__seed = self.__seed_type["random"] if self.__seed_type["is_random"] else self.__seed_type["fixed"]
 
