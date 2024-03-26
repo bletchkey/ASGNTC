@@ -213,9 +213,12 @@ def test_predictor_model_dataset(test_set: torch.utils.data.DataLoader,
 
     with torch.no_grad():
         for batch, batch_metadata in test_set:
-            data = get_config_from_batch(batch, CONFIG_INITIAL, device)
-            data = data.to(device)  # Ensure data is on the correct device
-            prediction = model_p(data)  # Get prediction for the current batch
+
+            data = {"initial": get_config_from_batch(batch, CONFIG_INITIAL, device),
+                    "final": get_config_from_batch(batch, CONFIG_FINAL, device)}
+
+            # Get prediction for the current batch
+            prediction = model_p(data["final"])
 
             # Aggregate batch data if already exists, else initialize
             batch_data = torch.cat((batch_data, batch), dim=0) if batch_data is not None else batch

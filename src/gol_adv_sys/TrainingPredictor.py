@@ -195,6 +195,9 @@ class TrainingPredictor(TrainingBase):
 
         self.predictor.model.train()
         for batch_count, (batch, _) in enumerate(self.dataloader["train"], start=1):
+
+            logging.debug(f"Processing batch {batch_count} of epoch {self.current_epoch+1}/{NUM_EPOCHS}")
+
             self.predictor.optimizer.zero_grad()
 
             input_config = {"initial": self.__get_initial_config(batch),
@@ -221,8 +224,8 @@ class TrainingPredictor(TrainingBase):
 
         self.n_times_trained_p += 1
 
-        self.accuracies["predictor_train"].append(running_avg_accuracy.mean())
         self.losses["predictor_train"].append(running_avg_loss)
+        self.accuracies["predictor_train"].append(running_avg_accuracy.mean())
 
         logging.debug(f"Predictor loss on train data: {self.losses['predictor_train'][-1]}")
         logging.debug(f"Accuracy on train data: {self.accuracies['predictor_train'][-1]}")
@@ -246,8 +249,8 @@ class TrainingPredictor(TrainingBase):
                 running_avg_loss     = total_loss / batch_count
                 running_avg_accuracy = total_accuracy / batch_count
 
-        self.losses["predictor_val"].append(running_avg_loss.mean())
-        self.accuracies["predictor_val"].append(running_avg_accuracy)
+        self.losses["predictor_val"].append(running_avg_loss)
+        self.accuracies["predictor_val"].append(running_avg_accuracy.mean())
 
         logging.debug(f"Predictor loss on validation data: {self.losses['predictor_val'][-1]}")
         logging.debug(f"Accuracy on validation data: {self.accuracies['predictor_val'][-1]}")
@@ -271,8 +274,8 @@ class TrainingPredictor(TrainingBase):
                 running_avg_loss     = total_loss / batch_count
                 running_avg_accuracy = total_accuracy / batch_count
 
-        self.losses["predictor_test"].append(running_avg_loss.mean())
-        self.accuracies["predictor_test"].append(running_avg_accuracy)
+        self.losses["predictor_test"].append(running_avg_loss)
+        self.accuracies["predictor_test"].append(running_avg_accuracy.mean())
 
         logging.debug(f"Predictor loss on test data: {self.losses['predictor_test'][-1]}")
         logging.debug(f"Accuracy on test data: {self.accuracies['predictor_test'][-1]}")
@@ -425,7 +428,8 @@ class TrainingPredictor(TrainingBase):
 
         """
         save_loss_acc_plot(self.losses["predictor_train"], self.losses["predictor_val"],
-                         self.learning_rates, self.__folders.base_folder)
+                           self.accuracies["predictor_train"], self.accuracies["predictor_val"],
+                           self.learning_rates, self.__folders.base_folder)
 
 
     def __initialize_seed(self):

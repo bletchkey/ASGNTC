@@ -91,7 +91,6 @@ def check_dataset_configs(saving_path, dataset, metadata, total_indices=50, n_pe
 
 def check_transient_phases(saving_path, metadata):
     pairs = [(meta[META_ID], meta[META_TRANSIENT_PHASE]) for meta in metadata]
-    pairs.sort(key=lambda x: x[1])
     ids, transient_phases = zip(*pairs)
     transient_phases = np.array(transient_phases)
 
@@ -106,22 +105,16 @@ def check_transient_phases(saving_path, metadata):
     axs[0,0].grid(axis='y', which='both', linestyle='--', linewidth=0.5, alpha=0.7)
     axs[0,0].tick_params(axis='x', rotation=90)
 
-    # Q-Q plot for transient phases
-    norm_quantiles = np.linspace(0, 1, len(transient_phases))
-    data_quantiles = np.quantile(transient_phases, norm_quantiles)
-    theoretical_quantiles = np.quantile(np.random.normal(size=len(transient_phases)), norm_quantiles)
-
-    axs[0,1].plot(theoretical_quantiles, data_quantiles, 'o', color='#7573d1')
-    axs[0,1].plot([theoretical_quantiles.min(), theoretical_quantiles.max()],
-                [theoretical_quantiles.min(), theoretical_quantiles.max()],
-                'k--')
-
-    axs[0,1].set_title("Q-Q Plot", fontsize=14, fontweight='bold')
-    axs[0,1].set_xlabel("Theoretical Quantiles", fontsize=12)
-    axs[0,1].set_ylabel("Data Quantiles", fontsize=12)
+    # ECDF for transient phases
+    sorted_phases = np.sort(transient_phases)
+    ecdf = np.arange(1, len(sorted_phases) + 1) / len(sorted_phases)
+    axs[0, 1].plot(sorted_phases, ecdf, color='#7573d1')
+    axs[0, 1].set_xlabel("Transient Phase Length", fontsize=12)
+    axs[0, 1].set_ylabel("ECDF", fontsize=12)
+    axs[0, 1].set_title("ECDF of Transient Phases", fontsize=14, fontweight='bold')
 
     # Histogram for transient phases
-    axs[1,0].hist(transient_phases, bins=20, color='#7573d1', edgecolor='black')
+    axs[1,0].hist(transient_phases, bins=20, color='#7573d1', edgecolor='#3330a1')
     axs[1,0].set_title("Histogram", fontsize=14, fontweight='bold')
     axs[1,0].set_xlabel("Transient Phase Length", fontsize=12)
     axs[1,0].set_ylabel("Frequency", fontsize=12)
@@ -181,9 +174,9 @@ def main():
         dataset = torch.load(ds_path)
         metadata = torch.load(metadata_path)
 
-        #check_dataset_configs(saving_path, dataset, metadata)
+        check_dataset_configs(saving_path, dataset, metadata)
         check_transient_phases(saving_path, metadata)
-        #check_dataset_distribution(saving_path, dataset)
+        check_dataset_distribution(saving_path, dataset)
 
 
 if __name__ == "__main__":
