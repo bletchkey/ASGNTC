@@ -58,6 +58,7 @@ class TrainingPredictor(TrainingBase):
         path_log_file (str): The path to the log file for the training session.
 
     """
+
     def __init__(self, model=None) -> None:
 
         self.__date = datetime.datetime.now()
@@ -232,6 +233,7 @@ class TrainingPredictor(TrainingBase):
                 if mode == TRAIN:
                     errP.backward()
                     self.predictor.optimizer.step()
+                    self.n_times_trained_p += 1
 
                     # Update the learning rate during the warm-up phase (first epoch)
                     if self.current_epoch == 0 and self.warmup_phase.get("enabled", False):

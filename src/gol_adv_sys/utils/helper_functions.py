@@ -129,7 +129,7 @@ def test_models(model_g: torch.nn.Module, model_p: torch.nn.Module, topology: st
         "initial": None,
         "simulated": None,
         "metric": None,
-        "predicted_metric": None,
+        "predicted": None,
     }
 
     # Test the models on the fixed noise
@@ -143,12 +143,12 @@ def test_models(model_g: torch.nn.Module, model_p: torch.nn.Module, topology: st
                                                          steps=N_SIM_STEPS, calculate_final_config=False,
                                                          device=device)
         data["metric"] = sim_metrics[target_config]["config"]
-        data["predicted_metric"] = model_p(data["initial"])
+        data["predicted"] = model_p(data["initial"])
 
     return data
 
 
-def save_progress_plot(plot_data: dict, epoch: int, results_path: str):
+def save_progress_plot(plot_data: dict, epoch: int, results_path: str) -> None:
     """
     Function to save the progress plot
 
@@ -239,7 +239,8 @@ def test_predictor_model_dataset(test_set: torch.utils.data.DataLoader,
         META_N_CELLS_FINAL: batch_metadata_aggregated[META_N_CELLS_FINAL],
         META_TRANSIENT_PHASE: batch_metadata_aggregated[META_TRANSIENT_PHASE],
         META_PERIOD: batch_metadata_aggregated[META_PERIOD],
-        "target_config": target_config
+        "input_config" : config_type_pred_input,
+        "target_config": target_config,
     }
 
     # Assuming __create_data_dict is a function that prepares your data dictionary
@@ -248,7 +249,7 @@ def test_predictor_model_dataset(test_set: torch.utils.data.DataLoader,
     return data
 
 
-def save_progress_plot_dataset(plot_data: dict, epoch: int, results_path: str):
+def save_progress_plot_dataset(plot_data: dict, epoch: int, results_path: str) -> None:
     """
     Function to save the progress plot
 
@@ -291,7 +292,7 @@ def save_progress_plot_dataset(plot_data: dict, epoch: int, results_path: str):
     current_epoch = epoch + 1
 
     # Create figure and subplots
-    fig, axs = plt.subplots(n_rows, n_cols, figsize=(n_cols * 5.5, n_rows * 6))
+    fig, axs = plt.subplots(n_rows, n_cols, figsize=(n_cols * 7, n_rows * 6))
 
     plt.suptitle(f"Epoch {current_epoch}", fontsize=32)
 
@@ -309,8 +310,10 @@ def save_progress_plot_dataset(plot_data: dict, epoch: int, results_path: str):
                 axs[i, j].imshow(img_data, cmap='gray', vmin=vmin, vmax=vmax)
                 axs[i, j].patch.set_edgecolor('black')
                 axs[i, j].patch.set_linewidth(1)
-                if key == "metric" and i == 0:
-                    axs[i, j].set_title(f"metric - {plot_data['metadata']['target_config']}", pad=6, fontsize=24)
+                if key == "input" and i == 0:
+                    axs[i, j].set_title(f"input - {plot_data['metadata']['input_config']}", pad=6, fontsize=24)
+                elif key == "target" and i == 0:
+                    axs[i, j].set_title(f"target - {plot_data['metadata']['target_config']}", pad=6, fontsize=24)
                 elif i == 0:
                     axs[i, j].set_title(titles[j], pad=6, fontsize=24)
                 else:
@@ -318,7 +321,7 @@ def save_progress_plot_dataset(plot_data: dict, epoch: int, results_path: str):
             else:
                 text_data = ""
                 for k in plot_data[key].keys():
-                    if k == "target_config":
+                    if k == "target_config" or k == "input_config":
                         continue
                     text_data += f"{k}: {plot_data[key][k][indices[i]]}\n"
                 axs[i, j].text(0.1, 0.5, text_data, fontsize=18, ha='left', va='center', transform=axs[i, j].transAxes)
@@ -333,7 +336,7 @@ def save_progress_plot_dataset(plot_data: dict, epoch: int, results_path: str):
 
 def save_loss_acc_plot(losses_p_train: list, losses_p_val: list,
                        accuracies_p_train: list, accuracies_p_val: list,
-                       learning_rates: list, path: str):
+                       learning_rates: list, path: str) -> None:
     """
     Function to save the losses plot
 
@@ -534,14 +537,16 @@ def __create_data_dict(batches: torch.Tensor, prediction: torch.Tensor, metadata
 
     initial = get_config_from_batch(batches, CONFIG_INITIAL, device)
     final   = get_config_from_batch(batches, CONFIG_FINAL, device)
-    metric  = get_config_from_batch(batches, metadata["target_config"], device)
+    input   = get_config_from_batch(batches, metadata["input_config"], device)
+    target  = get_config_from_batch(batches, metadata["target_config"], device)
 
     data = {
-        "metadata": metadata,
         "initial": initial,
         "final": final,
-        "metric": metric,
-        "predicted_metric": prediction,
+        "metadata": metadata,
+        "input": input,
+        "target": target,
+        "predicted": prediction,
     }
 
     return data

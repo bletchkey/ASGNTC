@@ -386,8 +386,8 @@ class TrainingAdversarial(TrainingBase):
 
         for batch in self.train_dataloader:
             self.optimizer_p.zero_grad()
-            predicted_metric = self.model_p(self.__get_initial_config(batch))
-            errP = self.criterion_p(predicted_metric, self.__get_metric_config(batch, self.metric_type))
+            predicted = self.model_p(self.__get_initial_config(batch))
+            errP = self.criterion_p(predicted , self.__get_metric_config(batch, self.metric_type))
             errP.backward()
             self.optimizer_p.step()
             loss += errP.item()
@@ -418,8 +418,8 @@ class TrainingAdversarial(TrainingBase):
             for _ in range(n):
                 batch = self.__get_one_new_batch()
                 self.optimizer_g.zero_grad()
-                predicted_metric = self.model_p(self.__get_initial_config(batch))
-                errG = self.criterion_g(predicted_metric, self.__get_metric_config(batch, self.metric_type))
+                predicted = self.model_p(self.__get_initial_config(batch))
+                errG = self.criterion_g(predicted, self.__get_metric_config(batch, self.metric_type))
                 errG.backward()
                 self.optimizer_g.step()
                 loss += (-1 * errG.item())
