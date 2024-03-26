@@ -1,1 +1,16 @@
 2024-03-26 19:48:32,431 - root - INFO - Training started at 26/03/2024 19:48:32Epoch 00020: reducing learning rate of group 0 to 7.9990e-03.
+Traceback (most recent call last):
+  File "main.py", line 89, in <module>
+    RETCODE = main()
+  File "main.py", line 83, in main
+    train_predictor()
+  File "main.py", line 74, in train_predictor
+    train_pred = TrainingPredictor(model=Predictor_Baseline())
+  File "/home/bletchkey/ASGNTC/src/gol_adv_sys/TrainingPredictor.py", line 83, in __init__
+    "values": np.linspace(WARMUP_INITIAL_LR,
+  File "<__array_function__ internals>", line 200, in linspace
+  File "/home/bletchkey/.local/lib/python3.8/site-packages/numpy/core/function_base.py", line 121, in linspace
+    num = operator.index(num)
+TypeError: 'float' object cannot be interpreted as an integer
+2024-03-26 21:24:05,360 - root - INFO - Training started at 26/03/2024 21:24:05
+2024-03-26 21:26:07,731 - root - INFO - Training started at 26/03/2024 21:26:07
