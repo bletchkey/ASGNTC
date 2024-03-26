@@ -4806,3 +4806,32 @@ Traceback (most recent call last):
     for batch_count, batch, _ in enumerate(self.dataloader["train"], start=1):
 ValueError: not enough values to unpack (expected 3, got 2)
 2024-03-26 13:13:32,970 - root - INFO - Training started at 26/03/2024 13:13:32
+Traceback (most recent call last):
+  File "main.py", line 111, in <module>
+    RETCODE = main()
+  File "main.py", line 104, in main
+    train_predictor()
+  File "main.py", line 95, in train_predictor
+    train_pred.run()
+  File "/home/bletchkey/ASGNTC/src/gol_adv_sys/TrainingPredictor.py", line 119, in run
+    
+  File "/home/bletchkey/ASGNTC/src/gol_adv_sys/TrainingPredictor.py", line 148, in _fit
+    
+  File "/home/bletchkey/ASGNTC/src/gol_adv_sys/TrainingPredictor.py", line 224, in __train_predictor_model
+    self.accuracies["predictor_train"].append(running_avg_accuracy.item())
+RuntimeError: a Tensor with 128 elements cannot be converted to Scalar
+2024-03-26 13:20:44,987 - root - INFO - Training started at 26/03/2024 13:20:44
+Traceback (most recent call last):
+  File "main.py", line 111, in <module>
+    RETCODE = main()
+  File "main.py", line 104, in main
+    train_predictor()
+  File "main.py", line 95, in train_predictor
+    train_pred.run()
+  File "/home/bletchkey/ASGNTC/src/gol_adv_sys/TrainingPredictor.py", line 120, in run
+    self._fit()
+  File "/home/bletchkey/ASGNTC/src/gol_adv_sys/TrainingPredictor.py", line 149, in _fit
+    self.__train_predictor_model()
+  File "/home/bletchkey/ASGNTC/src/gol_adv_sys/TrainingPredictor.py", line 225, in __train_predictor_model
+    self.accuracies["predictor_train"].append(running_avg_accuracy.mean().item())
+AttributeError: 'float' object has no attribute 'item'
