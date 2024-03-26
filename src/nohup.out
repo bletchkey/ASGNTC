@@ -1,50 +1,16 @@
-2024-03-26 14:19:33,183 - root - INFO - Training started at 26/03/2024 14:19:33
+2024-03-26 18:02:12,281 - root - INFO - Training started at 26/03/2024 18:02:12
 Traceback (most recent call last):
-  File "main.py", line 111, in <module>
+  File "main.py", line 89, in <module>
     RETCODE = main()
-  File "main.py", line 104, in main
+  File "main.py", line 83, in main
     train_predictor()
-  File "main.py", line 95, in train_predictor
+  File "main.py", line 75, in train_predictor
     train_pred.run()
-  File "/home/bletchkey/ASGNTC/src/gol_adv_sys/TrainingPredictor.py", line 116, in run
+  File "/home/bletchkey/ASGNTC/src/gol_adv_sys/TrainingPredictor.py", line 118, in run
     self._fit()
-  File "/home/bletchkey/ASGNTC/src/gol_adv_sys/TrainingPredictor.py", line 165, in _fit
-    self.__save_loss_acc_plot()
-  File "/home/bletchkey/ASGNTC/src/gol_adv_sys/TrainingPredictor.py", line 430, in __save_loss_acc_plot
-    save_loss_acc_plot(self.losses["predictor_train"], self.losses["predictor_val"],
-  File "/home/bletchkey/ASGNTC/src/gol_adv_sys/utils/helper_functions.py", line 353, in save_loss_acc_plot
-    accuracies_p_train = accuracies_p_train.detach().cpu().numpy()
-AttributeError: 'list' object has no attribute 'detach'
-2024-03-26 14:27:00,862 - root - INFO - Training started at 26/03/2024 14:27:00
-Traceback (most recent call last):
-  File "main.py", line 111, in <module>
-    RETCODE = main()
-  File "main.py", line 104, in main
-    train_predictor()
-  File "main.py", line 95, in train_predictor
-    train_pred.run()
-  File "/home/bletchkey/ASGNTC/src/gol_adv_sys/TrainingPredictor.py", line 116, in run
-    self._fit()
-  File "/home/bletchkey/ASGNTC/src/gol_adv_sys/TrainingPredictor.py", line 165, in _fit
-    self.__save_loss_acc_plot()
-  File "/home/bletchkey/ASGNTC/src/gol_adv_sys/TrainingPredictor.py", line 430, in __save_loss_acc_plot
-    save_loss_acc_plot(self.losses["predictor_train"], self.losses["predictor_val"],
-  File "/home/bletchkey/ASGNTC/src/gol_adv_sys/utils/helper_functions.py", line 377, in save_loss_acc_plot
-    ax[1].plot(epochs, accuracies_p_train, label="Training Accuracy", color='blue', linewidth=0.7)
-  File "/home/bletchkey/.local/lib/python3.8/site-packages/matplotlib/axes/_axes.py", line 1688, in plot
-    lines = [*self._get_lines(*args, data=data, **kwargs)]
-  File "/home/bletchkey/.local/lib/python3.8/site-packages/matplotlib/axes/_base.py", line 311, in __call__
-    yield from self._plot_args(
-  File "/home/bletchkey/.local/lib/python3.8/site-packages/matplotlib/axes/_base.py", line 494, in _plot_args
-    y = _check_1d(xy[1])
-  File "/home/bletchkey/.local/lib/python3.8/site-packages/matplotlib/cbook/__init__.py", line 1358, in _check_1d
-    return np.atleast_1d(x)
-  File "<__array_function__ internals>", line 200, in atleast_1d
-  File "/home/bletchkey/.local/lib/python3.8/site-packages/numpy/core/shape_base.py", line 65, in atleast_1d
-    ary = asanyarray(ary)
-  File "/home/bletchkey/.local/lib/python3.8/site-packages/torch/_tensor.py", line 1030, in __array__
-    return self.numpy()
-TypeError: can't convert cuda:0 device type tensor to numpy. Use Tensor.cpu() to copy the tensor to host memory first.
-2024-03-26 14:35:42,276 - root - INFO - Training started at 26/03/2024 14:35:42
-2024-03-26 14:39:30,707 - root - INFO - Training started at 26/03/2024 14:39:30
-2024-03-26 14:53:55,385 - root - INFO - Training started at 26/03/2024 14:53:55
+  File "/home/bletchkey/ASGNTC/src/gol_adv_sys/TrainingPredictor.py", line 162, in _fit
+    self.__log_training_epoch(epoch_elapsed_time)
+  File "/home/bletchkey/ASGNTC/src/gol_adv_sys/TrainingPredictor.py", line 274, in __log_training_epoch
+    str_err_p_test  = f"{self.losses[TEST][-1]:.6f}"
+IndexError: list index out of range
+2024-03-26 18:13:59,393 - root - INFO - Training started at 26/03/2024 18:13:59

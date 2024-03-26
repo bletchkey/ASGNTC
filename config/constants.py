@@ -24,6 +24,8 @@ NUM_TRAINING_STEPS = 20
 # Average loss of P threshold before training G
 THRESHOLD_AVG_LOSS_P = 0.05
 
+# File name for monitoring the training progress
+FILE_NAME_TRAINING_PROGRESS = "training_progress.txt"
 
 ### DATASET PARAMETERS ############################################################
 
@@ -51,53 +53,63 @@ DATASET_NAME = "gol_dataset"
 
 # NAMING CONVENTIONS ####################################################################
 
+# Dataset keys
+TRAIN      = "train"
+VALIDATION = "validation"
+TEST       = "test"
+
+TRAIN_METADATA      = TRAIN      + "_metadata"
+VALIDATION_METADATA = VALIDATION + "_metadata"
+TEST_METADATA       = TEST       + "_metadata"
+
+
 # Configuration keys
-CONFIG_INITIAL = "initial"
-CONFIG_FINAL = "final"
-CONFIG_SIMULATED = "simulated"
-CONFIG_METRIC_EASY = "easy"
+CONFIG_INITIAL       = "initial"
+CONFIG_FINAL         = "final"
+CONFIG_SIMULATED     = "simulated"
+CONFIG_METRIC_EASY   = "easy"
 CONFIG_METRIC_MEDIUM = "medium"
-CONFIG_METRIC_HARD = "hard"
+CONFIG_METRIC_HARD   = "hard"
 CONFIG_METRIC_STABLE = "stable"
 
 # Metadata keys
-META_ID = "id"
-META_N_CELLS_INIT = "n_cells_init"
-META_N_CELLS_FINAL = "n_cells_final"
+META_ID              = "id"
+META_N_CELLS_INITIAL = "n_cells_init"
+META_N_CELLS_FINAL   = "n_cells_final"
 META_TRANSIENT_PHASE = "transient_phase"
-META_PERIOD = "period"
+META_PERIOD          = "period"
 
 META_EASY_MIN = "easy_minimum"
 META_EASY_MAX = "easy_maximum"
-META_EASY_Q1 = "easy_q1"
-META_EASY_Q2 = "easy_q2"
-META_EASY_Q3 = "easy_q3"
+META_EASY_Q1  = "easy_q1"
+META_EASY_Q2  = "easy_q2"
+META_EASY_Q3  = "easy_q3"
 
 META_MEDIUM_MIN = "medium_minimum"
 META_MEDIUM_MAX = "medium_maximum"
-META_MEDIUM_Q1 = "medium_q1"
-META_MEDIUM_Q2 = "medium_q2"
-META_MEDIUM_Q3 = "medium_q3"
+META_MEDIUM_Q1  = "medium_q1"
+META_MEDIUM_Q2  = "medium_q2"
+META_MEDIUM_Q3  = "medium_q3"
 
 META_HARD_MIN = "hard_minimum"
 META_HARD_MAX = "hard_maximum"
-META_HARD_Q1 = "hard_q1"
-META_HARD_Q2 = "hard_q2"
-META_HARD_Q3 = "hard_q3"
+META_HARD_Q1  = "hard_q1"
+META_HARD_Q2  = "hard_q2"
+META_HARD_Q3  = "hard_q3"
 
 META_STABLE_MIN = "stable_minimum"
 META_STABLE_MAX = "stable_maximum"
-META_STABLE_Q1 = "stable_q1"
-META_STABLE_Q2 = "stable_q2"
-META_STABLE_Q3 = "stable_q3"
+META_STABLE_Q1  = "stable_q1"
+META_STABLE_Q2  = "stable_q2"
+META_STABLE_Q3  = "stable_q3"
 
 # Types of topology for the grid
 TOPOLOGY_TOROIDAL = "toroidal"
-TOPOLOGY_FLAT = "flat"
+TOPOLOGY_FLAT     = "flat"
 
 # Types of intialization for the grid
 INIT_CONFIG_INTIAL_THRESHOLD = "threshold"
-INIT_CONFIG_INITAL_N_CELLS = "n_living_cells"
+INIT_CONFIG_INITAL_N_CELLS   = "n_living_cells"
 
 
 ### SIMULATION PARAMETERS ###############################################################
@@ -138,38 +150,39 @@ N_PREDICTOR_FEATURES = 64
 N_Z = 10
 
 # Hyperparameters for Adam optimizer
-P_ADAM_LR = 0.001
-P_ADAM_B1 = 0.9
-P_ADAM_B2 = 0.999
+P_ADAM_LR  = 0.001
+P_ADAM_B1  = 0.9
+P_ADAM_B2  = 0.999
 P_ADAM_EPS = 1e-08
 
-G_ADAM_LR = 0.001
-G_ADAM_B1 = 0.9
-G_ADAM_B2 = 0.999
+G_ADAM_LR  = 0.001
+G_ADAM_B1  = 0.9
+G_ADAM_B2  = 0.999
 G_ADAM_EPS = 1e-08
 
 
 # Hyperparameters for AdamW optimizer
-P_ADAMW_LR = 0.001
-P_ADAMW_B1 = 0.9
-P_ADAMW_B2 = 0.999
-P_ADAMW_EPS = 1e-08
+P_ADAMW_LR           = 0.001
+P_ADAMW_B1           = 0.9
+P_ADAMW_B2           = 0.999
+P_ADAMW_EPS          = 1e-08
 P_ADAMW_WEIGHT_DECAY = 0.01
 
-G_ADAMW_LR = 0.001
-G_ADAMW_B1 = 0.9
-G_ADAMW_B2 = 0.999
-G_ADAMW_EPS = 1e-08
+G_ADAMW_LR           = 0.001
+G_ADAMW_B1           = 0.9
+G_ADAMW_B2           = 0.999
+G_ADAMW_EPS          = 1e-08
 G_ADAMW_WEIGHT_DECAY = 0.01
 
 
 # Hyperparameters for SGD optimizer
-P_SGD_LR = 0.01
-P_SGD_MOMENTUM = 0.9
+P_SGD_LR           = 0.01
+P_SGD_MOMENTUM     = 0.9
 P_SGD_WEIGHT_DECAY = 1e-4
+
 
 # Warmup phase parameters
 WARMUP_TOTAL_STEPS = DATASET_N_TOTAL_CONFIGS // DATASET_BATCH_SIZE
-WARMUP_INITIAL_LR = 1e-6
-WARMUP_TARGET_LR = 0.1
+WARMUP_INITIAL_LR  = 1e-6
+WARMUP_TARGET_LR   = 0.1
 

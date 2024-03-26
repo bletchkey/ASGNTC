@@ -34,7 +34,7 @@ def check_dataset_configs(saving_path, dataset, metadata, total_indices=50, n_pe
             metadata_texts = [
                 (
                     f"ID: {meta[META_ID]}\n"
-                    f"Initial cells: {meta[META_N_CELLS_INIT]}"
+                    f"Initial cells: {meta[META_N_CELLS_INITIAL ]}"
                 ),
                 (
                     f"Final cells: {meta[META_N_CELLS_FINAL]}\n"
@@ -162,7 +162,7 @@ def main():
     base_saving_path = DATASET_DIR / "plots"
     base_saving_path.mkdir(exist_ok=True)
 
-    names = ["train", "val", "test"]
+    names = [TRAIN, VALIDATION, TEST]
     for name in names:
 
         saving_path = base_saving_path / name

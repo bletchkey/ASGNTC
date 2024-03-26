@@ -82,27 +82,25 @@ class TrainingPredictor(TrainingBase):
                              "values": np.linspace(WARMUP_INITIAL_LR,
                                                 WARMUP_TARGET_LR,
                                                 WARMUP_TOTAL_STEPS).tolist()}
-        self.warmup_phase["values"][-1] = WARMUP_TARGET_LR
 
         self.metric_type = CONFIG_METRIC_STABLE
 
         self.current_epoch = 0
         self.n_times_trained_p = 0
+
         self.learning_rates = []
 
-        self.losses = {"predictor_train": [],
-                       "predictor_val": [],
-                       "predictor_test": []}
+        self.losses     = {TRAIN: [], VALIDATION: [], TEST: []}
+        self.accuracies = {TRAIN: [], VALIDATION: [], TEST: []}
 
-        self.accuracies = {"predictor_train": [],
-                           "predictor_val": [],
-                           "predictor_test": []}
+        self.dataset = {TRAIN: None,
+                        TRAIN_METADATA: None,
+                        VALIDATION: None,
+                        VALIDATION_METADATA: None,
+                        TEST: None,
+                        TEST_METADATA: None}
 
-        self.dataset = {"train": None, "train_meta": None,
-                        "val": None, "val_meta": None,
-                        "test": None, "test_meta": None}
-
-        self.dataloader = {"train": None, "val": None, "test": None}
+        self.dataloader = {TRAIN: None, VALIDATION: None, TEST: None}
 
         self.path_log_file = self.__init_log_file()
 
@@ -112,22 +110,23 @@ class TrainingPredictor(TrainingBase):
         Function used for running the training session.
 
         """
-        self.__init_data()
-
-        self._fit()
-
-
-    def _fit(self):
+        torch.autograd.set_detect_anomaly(True)
 
         logging.info(f"Training started at {datetime.datetime.now().strftime('%d/%m/%Y %H:%M:%S')}")
 
+        self.__init_data()
+        self._fit()
+
+        logging.info(f"Training ended at {datetime.datetime.now().strftime('%d/%m/%Y %H:%M:%S')}")
+
+
+    def _fit(self):
         """
         Training loop for the predictor model.
 
         The predictor model is trained on the dataset.
 
         """
-        torch.autograd.set_detect_anomaly(True)
 
         if self.warmup_phase["enabled"] == True:
             self.predictor.set_learning_rate(WARMUP_INITIAL_LR)
@@ -143,12 +142,15 @@ class TrainingPredictor(TrainingBase):
 
             epoch_start_time = time.time()
 
-            self.__train_predictor_model()
-            self.__val_predictor_model()
+            self.process_predictor_model(TRAIN)
+            self.process_predictor_model(VALIDATION)
 
-            # Update the learning rate after the first epoch, regardless of whether the warm-up phase is enabled.
+            if self.current_epoch+1 == NUM_EPOCHS:
+                self.process_predictor_model(TEST)
+
+            # Update the learning rate
             if self.current_epoch > 0:
-                self.lr_scheduler.step(self.losses["predictor_val"][-1])
+                self.lr_scheduler.step(self.losses[VALIDATION][-1])
                 logging.debug(f"Reduce On Plateau phase")
                 logging.debug(f"Learning rate: {self.predictor.get_learning_rate()}")
 
@@ -160,7 +162,7 @@ class TrainingPredictor(TrainingBase):
             self.__log_training_epoch(epoch_elapsed_time)
 
             # Test the predictor model
-            logging.debug(f"Testing Predictor model")
+            logging.debug(f"Plotting the progress of the predictor model using the test set")
             data = self.__test_predictor_model()
             self.__save_progress_plot(data)
             self.__save_loss_acc_plot()
@@ -171,79 +173,46 @@ class TrainingPredictor(TrainingBase):
                 self.predictor.save(path)
                 logging.debug(f"Predictor model saved at {path}")
 
-            self.device_manager.clear_resources() # End of training loop
-
-        # Test the predictor model on the test set after training
-        self.__test_predictor_model()
-
-        str_err_p_test = f"{self.losses['predictor_test'][-1]}"
-
-        with open(self.path_log_file, "a") as log:
-            log.write("\n\nPerformance of the predictor model on the test set:\n")
-            log.write(f"Loss P (test): {str_err_p_test}\n\n")
-            log.write(f"Accuracy P (test): {self.accuracies['predictor_test'][-1]}\n")
-            log.write(f"\n\nTraining ended at {datetime.datetime.now().strftime('%d/%m/%Y %H:%M:%S')}\n")
-            log.write(f"Number of times P was trained: {self.n_times_trained_p}\n")
-            log.flush()
-
-        logging.info(f"Training ended at {datetime.datetime.now().strftime('%d/%m/%Y %H:%M:%S')}")
+            self.device_manager.clear_resources()
 
 
-    def __train_predictor_model(self):
-        total_loss = 0
+    def process_predictor_model(self, mode):
+
+        if mode not in [TRAIN, VALIDATION, TEST]:
+            raise ValueError(f"Invalid mode: {mode}, must be one of '{TRAIN}', '{VALIDATION}', '{TEST}'")
+
+        total_loss     = 0
         total_accuracy = 0
+        dataloader     = self.dataloader[mode]
 
-        self.predictor.model.train()
-        for batch_count, (batch, _) in enumerate(self.dataloader["train"], start=1):
+        if mode == TRAIN:
+            self.predictor.model.train()
+        else:
+            self.predictor.model.eval()
 
-            logging.debug(f"Processing batch {batch_count} of epoch {self.current_epoch+1}/{NUM_EPOCHS}")
+        process_context = torch.enable_grad() if mode == TRAIN else torch.no_grad()
 
-            self.predictor.optimizer.zero_grad()
+        with process_context:
+            for batch_count, (batch, _) in enumerate(dataloader, start=1):
+                if mode == TRAIN:
+                    logging.debug(f"Processing batch {batch_count} of epoch {self.current_epoch+1}/{NUM_EPOCHS}")
+                    self.predictor.optimizer.zero_grad()
 
-            input_config = {"initial": self.__get_initial_config(batch),
-                            "final":   self.__get_final_config(batch)}
+                input_config = {CONFIG_INITIAL: self.__get_initial_config(batch),
+                                CONFIG_FINAL:   self.__get_final_config(batch)}
 
-            predicted_metric = self.predictor.model(input_config["final"])
-            errP = self.predictor.criterion(predicted_metric, self.__get_metric_config(batch, self.metric_type))
-            errP.backward()
-            self.predictor.optimizer.step()
-
-            accuracy = metric_prediction_accuracy(predicted_metric, self.__get_metric_config(batch, self.metric_type))
-
-            total_loss     += errP.item()
-            total_accuracy += accuracy
-
-            running_avg_loss     = total_loss / batch_count
-            running_avg_accuracy = total_accuracy / batch_count
-
-            # Update the learning rate during the warm-up phase if it is enabled
-            if self.current_epoch == 0 and self.warmup_phase["enabled"] == True:
-                self.predictor.set_learning_rate(self.warmup_phase["values"][batch_count-1])
-                logging.debug(f"Warm-up phase")
-                logging.debug(f"Learning rate: {self.predictor.get_learning_rate()}")
-
-        self.n_times_trained_p += 1
-
-        self.losses["predictor_train"].append(running_avg_loss)
-        self.accuracies["predictor_train"].append(running_avg_accuracy)
-
-        logging.debug(f"Predictor loss on train data: {self.losses['predictor_train'][-1]}")
-        logging.debug(f"Accuracy on train data: {self.accuracies['predictor_train'][-1]}")
-
-
-    def __val_predictor_model(self):
-        total_loss = 0
-        total_accuracy = 0
-
-        self.predictor.model.eval()
-        with torch.no_grad():
-            for batch_count , (batch, _) in enumerate(self.dataloader["val"], start=1):
-
-                input_config = {"initial": self.__get_initial_config(batch),
-                                "final":   self.__get_final_config(batch)}
-
-                predicted_metric = self.predictor.model(input_config["final"])
+                predicted_metric = self.predictor.model(input_config[CONFIG_FINAL])
                 errP = self.predictor.criterion(predicted_metric, self.__get_metric_config(batch, self.metric_type))
+
+                if mode == TRAIN:
+                    errP.backward()
+                    self.predictor.optimizer.step()
+
+                    # Update the learning rate during the warm-up phase (first epoch)
+                    if self.current_epoch == 0 and self.warmup_phase.get("enabled", False):
+                        self.predictor.set_learning_rate(self.warmup_phase["values"][batch_count-1])
+                        logging.debug("Warm-up phase")
+                        logging.debug(f"Learning rate: {self.predictor.get_learning_rate()}")
 
                 accuracy = metric_prediction_accuracy(predicted_metric, self.__get_metric_config(batch, self.metric_type))
 
@@ -253,40 +222,11 @@ class TrainingPredictor(TrainingBase):
                 running_avg_loss     = total_loss / batch_count
                 running_avg_accuracy = total_accuracy / batch_count
 
-        self.losses["predictor_val"].append(running_avg_loss)
-        self.accuracies["predictor_val"].append(running_avg_accuracy)
+        self.losses[mode].append(running_avg_loss)
+        self.accuracies[mode].append(running_avg_accuracy)
 
-        logging.debug(f"Predictor loss on validation data: {self.losses['predictor_val'][-1]}")
-        logging.debug(f"Accuracy on validation data: {self.accuracies['predictor_val'][-1]}")
-
-
-    def __test_predictor_model(self):
-        total_loss = 0
-        total_accuracy = 0
-
-        self.predictor.model.eval()
-        with torch.no_grad():
-            for batch_count, (batch, _) in enumerate(self.dataloader["test"], start=1):
-
-                input_config = {"initial": self.__get_initial_config(batch),
-                                "final":   self.__get_final_config(batch)}
-
-                predicted_metric = self.predictor.model(input_config["final"])
-                errP = self.predictor.criterion(predicted_metric, self.__get_metric_config(batch, self.metric_type))
-
-                accuracy = metric_prediction_accuracy(predicted_metric, self.__get_metric_config(batch, self.metric_type))
-
-                total_loss     += errP.item()
-                total_accuracy += accuracy
-
-                running_avg_loss     = total_loss / batch_count
-                running_avg_accuracy = total_accuracy / batch_count
-
-        self.losses["predictor_test"].append(running_avg_loss)
-        self.accuracies["predictor_test"].append(running_avg_accuracy)
-
-        logging.debug(f"Predictor loss on test data: {self.losses['predictor_test'][-1]}")
-        logging.debug(f"Accuracy on test data: {self.accuracies['predictor_test'][-1]}")
+        logging.debug(f"Predictor loss on {mode} data: {self.losses[mode][-1]}")
+        logging.debug(f"Accuracy on {mode} data: {self.accuracies[mode][-1]}")
 
 
     def __init_data(self) -> bool:
@@ -299,21 +239,21 @@ class TrainingPredictor(TrainingBase):
             val_meta_path   = DATASET_DIR / f"{DATASET_NAME}_metadata_val.pt"
             test_meta_path  = DATASET_DIR / f"{DATASET_NAME}_metadata_test.pt"
 
-            self.dataset["train"] = FixedDataset(train_path)
-            self.dataset["val"]   = FixedDataset(val_path)
-            self.dataset["test"]  = FixedDataset(test_path)
+            self.dataset[TRAIN]      = FixedDataset(train_path)
+            self.dataset[VALIDATION] = FixedDataset(val_path)
+            self.dataset[TEST]       = FixedDataset(test_path)
 
-            self.dataset["train_meta"] = FixedDataset(train_meta_path)
-            self.dataset["val_meta"]   = FixedDataset(val_meta_path)
-            self.dataset["test_meta"]  = FixedDataset(test_meta_path)
+            self.dataset[TRAIN_METADATA]      = FixedDataset(train_meta_path)
+            self.dataset[VALIDATION_METADATA] = FixedDataset(val_meta_path)
+            self.dataset[TEST_METADATA]       = FixedDataset(test_meta_path)
 
-            train_ds = PairedDataset(self.dataset["train"], self.dataset["train_meta"])
-            val_ds   = PairedDataset(self.dataset["val"], self.dataset["val_meta"])
-            test_ds  = PairedDataset(self.dataset["test"], self.dataset["test_meta"])
+            train_ds = PairedDataset(self.dataset[TRAIN], self.dataset[TRAIN_METADATA])
+            val_ds   = PairedDataset(self.dataset[VALIDATION], self.dataset[VALIDATION_METADATA])
+            test_ds  = PairedDataset(self.dataset[TEST], self.dataset[TEST_METADATA])
 
-            self.dataloader["train"] = DataLoader(train_ds, batch_size=BATCH_SIZE, shuffle=True)
-            self.dataloader["val"]   = DataLoader(val_ds, batch_size=BATCH_SIZE, shuffle=False)
-            self.dataloader["test"]  = DataLoader(test_ds, batch_size=BATCH_SIZE, shuffle=False)
+            self.dataloader[TRAIN] = DataLoader(train_ds, batch_size=BATCH_SIZE, shuffle=True)
+            self.dataloader[VALIDATION]   = DataLoader(val_ds, batch_size=BATCH_SIZE, shuffle=False)
+            self.dataloader[TEST]  = DataLoader(test_ds, batch_size=BATCH_SIZE, shuffle=False)
 
         except Exception as e:
             logging.error(f"Error initializing the data: {e}")
@@ -327,19 +267,30 @@ class TrainingPredictor(TrainingBase):
         Log the progress of the training session inside each epoch for the predictor model.
 
         """
+        str_epoch_time  = f"{get_elapsed_time_str(time)}"
+        str_epoch       = f"{self.current_epoch+1}/{NUM_EPOCHS}"
+        str_err_p_train = f"{self.losses[TRAIN][-1]:.6f}"
+        str_err_p_val   = f"{self.losses[VALIDATION][-1]:.6f}"
+        str_acc_p_train = f"{(100*self.accuracies[TRAIN][-1]):.1f}%"
+        str_acc_p_val   = f"{(100*self.accuracies[VALIDATION][-1]):.1f}%"
+        str_losses      = f"Losses P [train: {str_err_p_train}, val: {str_err_p_val}]"
+        str_accuracies  = f"Accuracies P [train: {str_acc_p_train}, val: {str_acc_p_val}]"
+        lr              = self.learning_rates[self.current_epoch]
+
         with open(self.path_log_file, "a") as log:
-
-            str_epoch_time  = f"{get_elapsed_time_str(time)}"
-            str_epoch       = f"{self.current_epoch+1}/{NUM_EPOCHS}"
-            str_err_p_train = f"{self.losses['predictor_train'][-1]:.6f}"
-            str_err_p_val   = f"{self.losses['predictor_val'][-1]:.6f}"
-            str_acc_p_train = f"{(100*self.accuracies['predictor_train'][-1]):.1f}%"
-            str_acc_p_val   = f"{(100*self.accuracies['predictor_val'][-1]):.1f}%"
-            str_losses      = f"Losses P [train: {str_err_p_train}, val: {str_err_p_val}]"
-            str_accuracies  = f"Accuracies P [train: {str_acc_p_train}, val: {str_acc_p_val}]"
-            lr = self.learning_rates[self.current_epoch]
-
             log.write(f"{str_epoch_time} | Epoch: {str_epoch} | {str_losses} | {str_accuracies} | LR: {lr}\n")
+
+            if self.current_epoch+1 == NUM_EPOCHS:
+                str_err_p_test  = f"{self.losses[TEST][-1]:.6f}"
+                str_acc_p_test  = f"{(100*self.accuracies[TEST][-1]):.1f}%"
+
+                log.write(f"\n\n")
+                log.write(f"Performance of the predictor model on the test set:\n")
+                log.write(f"Loss P [test: {str_err_p_test}]\n")
+                log.write(f"Accuracy P [test: {str_acc_p_test}]\n\n")
+                log.write(f"The predictor model was trained {self.n_times_trained_p} times\n\n")
+                log.write(f"Training ended at {datetime.datetime.now().strftime('%d/%m/%Y %H:%M:%S')}\n")
+
             log.flush()
 
 
@@ -350,7 +301,7 @@ class TrainingPredictor(TrainingBase):
         Returns:
             path (str): The path to the log file.
         """
-        path = self.__folders.logs_folder / "training.txt"
+        path = self.__folders.logs_folder / FILE_NAME_TRAINING_PROGRESS
         seed_info = "Random seed" if self.__seed_type["random"] else \
                     "Fixed seed" if self.__seed_type["fixed"] else "Unknown seed"
 
@@ -362,7 +313,7 @@ class TrainingPredictor(TrainingBase):
             f"{seed_info}: {self.__seed}\n"
             f"Default device: {self.device_manager.default_device}\n"
             f"{balanced_gpu_info}\n"
-            f"Training specs:\n"
+            f"Training specifications:\n\n"
             f"Batch size: {BATCH_SIZE}\n"
             f"Epochs: {NUM_EPOCHS}\n"
             f"Predicting metric type: {self.metric_type}\n\n"
@@ -411,7 +362,7 @@ class TrainingPredictor(TrainingBase):
             simulated metrics and predicted metrics.
 
         """
-        return test_predictor_model_dataset(self.dataloader["test"],
+        return test_predictor_model_dataset(self.dataloader[TEST],
                                             self.metric_type, self.predictor.model,
                                             self.device_manager.default_device)
 
@@ -435,8 +386,8 @@ class TrainingPredictor(TrainingBase):
         Function for plotting and saving the losses of training and validation for the predictor model.
 
         """
-        save_loss_acc_plot(self.losses["predictor_train"], self.losses["predictor_val"],
-                           self.accuracies["predictor_train"], self.accuracies["predictor_val"],
+        save_loss_acc_plot(self.losses[TRAIN], self.losses[VALIDATION],
+                           self.accuracies[TRAIN], self.accuracies[VALIDATION],
                            self.learning_rates, self.__folders.base_folder)
 
 

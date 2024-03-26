@@ -215,11 +215,11 @@ def test_predictor_model_dataset(test_set: torch.utils.data.DataLoader,
     with torch.no_grad():
         for batch, batch_metadata in test_set:
 
-            data = {"initial": get_config_from_batch(batch, CONFIG_INITIAL, device),
-                    "final": get_config_from_batch(batch, CONFIG_FINAL, device)}
+            data = {CONFIG_INITIAL: get_config_from_batch(batch, CONFIG_INITIAL, device),
+                    CONFIG_FINAL: get_config_from_batch(batch, CONFIG_FINAL, device)}
 
             # Get prediction for the current batch
-            prediction = model_p(data["final"])
+            prediction = model_p(data[CONFIG_FINAL])
 
             # Aggregate batch data if already exists, else initialize
             batch_data = torch.cat((batch_data, batch), dim=0) if batch_data is not None else batch
@@ -237,7 +237,7 @@ def test_predictor_model_dataset(test_set: torch.utils.data.DataLoader,
     # Construct metadata from aggregated data
     metadata = {
         META_ID: batch_metadata_aggregated[META_ID],
-        META_N_CELLS_INIT: batch_metadata_aggregated[META_N_CELLS_INIT],
+        META_N_CELLS_INITIAL : batch_metadata_aggregated[META_N_CELLS_INITIAL ],
         META_N_CELLS_FINAL: batch_metadata_aggregated[META_N_CELLS_FINAL],
         META_TRANSIENT_PHASE: batch_metadata_aggregated[META_TRANSIENT_PHASE],
         META_PERIOD: batch_metadata_aggregated[META_PERIOD],
@@ -370,7 +370,7 @@ def save_loss_acc_plot(losses_p_train: list, losses_p_val: list,
 
     ax[0].set_yscale('log')
     ax[0].set_xlabel("Epoch", fontsize=12)
-    ax[0].set_ylabel("Losses", fontsize=12)
+    ax[0].set_ylabel("Loss", fontsize=12)
     ax[0].legend(loc='upper right')
 
     # Plot training and validation accuracies

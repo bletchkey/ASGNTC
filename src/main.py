@@ -1,11 +1,10 @@
 import logging
 import logging.config
 import json
-from pathlib import Path
 import sys
 import os
 import torch
-
+from pathlib import Path
 
 sys.path.append(str(Path(__file__).resolve().parents[1]))
 
@@ -47,13 +46,6 @@ def setup_logging(path, default_level=logging.INFO):
 
 
 def playground():
-    # init_config = torch.zeros(1, 1, 32, 32, dtype=torch.float32)
-    # Set the cells for a glider
-    # init_config[0, 0, 15, 16] = 1
-    # init_config[0, 0, 16, 17] = 1
-    # init_config[0, 0, 17, 15] = 1
-    # init_config[0, 0, 17, 16] = 1
-    # init_config[0, 0, 17, 17] = 1
 
     init_config = torch.zeros(1, 1, 32, 32, dtype=torch.float32)
     n_init_cells = 512
@@ -65,23 +57,11 @@ def playground():
 
     results = pg.simulate(init_config, steps=10)
 
-    print(f"Stable min: {results['stable'].min()}")
-    print(f"Stable max: {results['stable'].max()}")
-
-    # print(f"Period: {results['period'].item()}")
-    # print(f"Transient phase: {results['transient_phase'].item()}")
-    # print(f"Initial living cells: {results['n_cells_init'].item()}")
-    # print(f"Final living cells: {results
-    # ['n_cells_final'].item()}")
+    print(f"Stable min: {results[CONFIG_METRIC_STABLE].min()}")
+    print(f"Stable max: {results[CONFIG_METRIC_STABLE].max()}")
 
     data = pg.get_record_from_id(200000)
     pg.plot_record(data)
-
-    # pg.load_predictor("predictor_medium_metric.tar")
-    # pred = pg.predict(data["initial_config"])
-
-    # print(pred.max())
-    # print(pred.min())
 
 
 def train_adversarial():
@@ -100,9 +80,7 @@ def main():
     setup_base_dir()
     setup_logging(path=CONFIG_DIR / "logging.json")
 
-    # playground()
     train_predictor()
-    # train_adversarial()
 
     return 0
 

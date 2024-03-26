@@ -113,7 +113,7 @@ class DatasetCreator():
                 })
                 metadata.append({
                     META_ID: ids[batch_number*DATASET_BATCH_SIZE: (batch_number+1)*DATASET_BATCH_SIZE],
-                    META_N_CELLS_INIT: n_cells_init,
+                    META_N_CELLS_INITIAL : n_cells_init,
                     META_N_CELLS_FINAL: n_cells_final,
                     META_TRANSIENT_PHASE: final["transient_phase"],
                     META_PERIOD: final["period"],

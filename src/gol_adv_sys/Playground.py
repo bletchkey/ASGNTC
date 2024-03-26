@@ -18,7 +18,7 @@ class Playground():
 
     def __init__(self):
         self.__device_manager = DeviceManager()
-        self.__dataset = {"train_data": None, "train_meta": None}
+        self.__dataset = {TRAIN: None, TRAIN_METADATA: None}
         self.__predictor = {"model": None, "name": None}
 
     @property
@@ -26,28 +26,12 @@ class Playground():
         return self.__topology
 
     @property
-    def train_dataset(self) -> FixedDataset:
-        return self.__dataset["train"]
+    def train_data(self) -> FixedDataset:
+        return self.__dataset[TRAIN]
 
     @property
-    def val_dataset(self) -> FixedDataset:
-        return self.__dataset["val"]
-
-    @property
-    def test_dataset(self) -> FixedDataset:
-        return self.__dataset["test"]
-
-    @property
-    def train_dataloader(self) -> DataLoader:
-        return self.__dataloader["train"]
-
-    @property
-    def val_dataloader(self) -> DataLoader:
-        return self.__dataloader["val"]
-
-    @property
-    def test_dataloader(self) -> DataLoader:
-        return self.__dataloader["test"]
+    def train_meta(self) -> dict:
+        return self.__dataset[TRAIN_METADATA]
 
 
     def simulate(self, config: torch.Tensor, steps: int) -> torch.Tensor:
@@ -58,16 +42,15 @@ class Playground():
 
 
         results = {
-            "period": final["period"],
-            "transient_phase": final["transient_phase"],
-            "n_cells_init": n_cells_init,
-            "n_cells_final": n_cells_final,
-            "final_config": final["config"],
-            "easy": metrics["easy"]["config"],
-            "medium": metrics["medium"]["config"],
-            "hard": metrics["hard"]["config"],
-            "stable": metrics["stable"]["config"]
-
+            META_PERIOD: final[META_PERIOD],
+            META_TRANSIENT_PHASE: final[META_TRANSIENT_PHASE],
+            META_N_CELLS_INITIAL : n_cells_init,
+            META_N_CELLS_FINAL: n_cells_final,
+            CONFIG_FINAL: final[CONFIG_FINAL]["config"],
+            CONFIG_METRIC_EASY: metrics[CONFIG_METRIC_EASY]["config"],
+            CONFIG_METRIC_MEDIUM: metrics[CONFIG_METRIC_MEDIUM]["config"],
+            CONFIG_METRIC_HARD: metrics[CONFIG_METRIC_HARD]["config"],
+            CONFIG_METRIC_STABLE: metrics[CONFIG_METRIC_STABLE]["config"]
         }
 
         return results
@@ -75,13 +58,13 @@ class Playground():
 
     def get_record_from_id(self, id: int) -> typing.Tuple[torch.Tensor, dict]:
 
-        if self.__dataset["train_data"] is None:
+        if self.__dataset[TRAIN] is None:
             self.__load_train_dataset()
-        if self.__dataset["train_meta"] is None:
+        if self.__dataset[TRAIN_METADATA] is None:
             self.__load_train_metadata()
 
-        for data, meta in zip(self.__dataset["train_data"], self.__dataset["train_meta"]):
-            if meta["id"] == id:
+        for data, meta in zip(self.__dataset[TRAIN], self.__dataset[TRAIN_METADATA]):
+            if meta[META_ID] == id:
                 return self.__create_record_dict(data, meta)
 
 
@@ -124,13 +107,13 @@ class Playground():
             if i == 0:
                 ax = fig.add_subplot(gs[0, i])
                 ax.imshow(record[f"{config}"].detach().cpu().numpy().squeeze(), **imshow_kwargs)
-                ax.set_title(f"Initial - {record['n_cells_init']} cells", fontsize=16)
+                ax.set_title(f"Initial - {record[META_N_CELLS_INITIAL ]} cells", fontsize=16)
                 ax.axis('off')
                 continue
             if i == 1:
                 ax = fig.add_subplot(gs[0, i])
                 ax.imshow(record[f"{config}"].detach().cpu().numpy().squeeze(), **imshow_kwargs)
-                ax.set_title(f"Final - {record['n_cells_final']} cells", fontsize=16)
+                ax.set_title(f"Final - {record[META_N_CELLS_FINAL]} cells", fontsize=16)
                 ax.axis('off')
                 continue
             ax = fig.add_subplot(gs[0, i])
@@ -145,13 +128,13 @@ class Playground():
         for i, config in enumerate(configs_types_list):
             ax = fig.add_subplot(gs[1, i])
             if config == CONFIG_INITIAL:
-                text_str = f"ID: {record['id']}"
+                text_str = f"ID: {record[META_ID]}"
                 ax.text(0.1, 0, text_str, ha="left", va="center", fontsize=14, wrap=True)
                 ax.axis('off')
                 continue
 
             if config == CONFIG_FINAL:
-                text_str = f"Transient phase: {record['transient_phase']}\nPeriod: {record['period']}"
+                text_str = f"Transient phase: {record[META_TRANSIENT_PHASE]}\nPeriod: {record[META_PERIOD]}"
                 ax.text(0.1, 0, text_str, ha="left", va="center", fontsize=14, wrap=True)
                 ax.axis('off')
                 continue
@@ -181,50 +164,50 @@ class Playground():
     def __load_train_metadata(self):
 
         train_meta_path = DATASET_DIR / f"{DATASET_NAME}_metadata_train.pt"
-        self.__dataset["train_meta"] = torch.load(train_meta_path)
+        self.__dataset[TRAIN_METADATA] = torch.load(train_meta_path)
 
 
     def __create_record_dict(self, data: torch.Tensor, metadata: dict) -> typing.Tuple[torch.Tensor, dict]:
 
         informations = {
-            "id"              : metadata["id"],
-            "n_cells_init"    : metadata["n_cells_init"],
-            "n_cells_final"   : metadata["n_cells_final"],
-            "period"          : metadata["period"],
-            "transient_phase" : metadata["transient_phase"],
+            "id"              : metadata[META_ID],
+            "n_cells_init"    : metadata[META_N_CELLS_INITIAL],
+            "n_cells_final"   : metadata[META_N_CELLS_FINAL],
+            "period"          : metadata[META_PERIOD],
+            "transient_phase" : metadata[META_TRANSIENT_PHASE],
             "initial_config"  : data[0, :, :, :],
             "final_config"    : data[1, :, :, :],
             "easy"     : {
                 "config"  : data[2, :, :, :],
-                "minimum" : metadata["easy_minimum"],
-                "maximum" : metadata["easy_maximum"],
-                "q1"      : metadata["easy_q1"],
-                "q2"      : metadata["easy_q2"],
-                "q3"      : metadata["easy_q3"],
+                "minimum" : metadata[META_EASY_MIN],
+                "maximum" : metadata[META_EASY_MAX],
+                "q1"      : metadata[META_EASY_Q1],
+                "q2"      : metadata[META_EASY_Q2],
+                "q3"      : metadata[META_EASY_Q3],
             },
             "medium"  : {
                 "config"  : data[3, :, :, :],
-                "minimum" : metadata["medium_minimum"],
-                "maximum" : metadata["medium_maximum"],
-                "q1"      : metadata["medium_q1"],
-                "q2"      : metadata["medium_q2"],
-                "q3"      : metadata["medium_q3"],
+                "minimum" : metadata[META_MEDIUM_MIN],
+                "maximum" : metadata[META_MEDIUM_MAX],
+                "q1"      : metadata[META_MEDIUM_Q1],
+                "q2"      : metadata[META_MEDIUM_Q2],
+                "q3"      : metadata[META_MEDIUM_Q3],
             },
             "hard"    : {
                 "config"  : data[4, :, :, :],
-                "minimum" : metadata["hard_minimum"],
-                "maximum" : metadata["hard_maximum"],
-                "q1"      : metadata["hard_q1"],
-                "q2"      : metadata["hard_q2"],
-                "q3"      : metadata["hard_q3"],
+                "minimum" : metadata[META_HARD_MIN],
+                "maximum" : metadata[META_HARD_MAX],
+                "q1"      : metadata[META_HARD_Q1],
+                "q2"      : metadata[META_HARD_Q2],
+                "q3"      : metadata[META_HARD_Q3],
             },
             "stable"  : {
                 "config"  : data[5, :, :, :],
-                "minimum" : metadata["stable_minimum"],
-                "maximum" : metadata["stable_maximum"],
-                "q1"      : metadata["stable_q1"],
-                "q2"      : metadata["stable_q2"],
-                "q3"      : metadata["stable_q3"],
+                "minimum" : metadata[META_STABLE_MIN],
+                "maximum" : metadata[META_STABLE_MAX],
+                "q1"      : metadata[META_STABLE_Q1],
+                "q2"      : metadata[META_STABLE_Q2],
+                "q3"      : metadata[META_STABLE_Q3],
             }
         }
 
