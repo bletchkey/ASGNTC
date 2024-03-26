@@ -82,6 +82,7 @@ class TrainingPredictor(TrainingBase):
                              "values": np.linspace(WARMUP_INITIAL_LR,
                                                 WARMUP_TARGET_LR,
                                                 WARMUP_TOTAL_STEPS).tolist()}
+        self.warmup_phase["values"][-1] = WARMUP_TARGET_LR
 
         self.metric_type = CONFIG_METRIC_STABLE
 
@@ -189,7 +190,6 @@ class TrainingPredictor(TrainingBase):
 
 
     def __train_predictor_model(self):
-
         total_loss = 0
         total_accuracy = 0
 
@@ -238,7 +238,11 @@ class TrainingPredictor(TrainingBase):
         self.predictor.model.eval()
         with torch.no_grad():
             for batch_count , (batch, _) in enumerate(self.dataloader["val"], start=1):
-                predicted_metric = self.predictor.model(self.__get_initial_config(batch))
+
+                input_config = {"initial": self.__get_initial_config(batch),
+                                "final":   self.__get_final_config(batch)}
+
+                predicted_metric = self.predictor.model(input_config["final"])
                 errP = self.predictor.criterion(predicted_metric, self.__get_metric_config(batch, self.metric_type))
 
                 accuracy = metric_prediction_accuracy(predicted_metric, self.__get_metric_config(batch, self.metric_type))
@@ -263,7 +267,11 @@ class TrainingPredictor(TrainingBase):
         self.predictor.model.eval()
         with torch.no_grad():
             for batch_count, (batch, _) in enumerate(self.dataloader["test"], start=1):
-                predicted_metric = self.predictor.model(self.__get_initial_config(batch))
+
+                input_config = {"initial": self.__get_initial_config(batch),
+                                "final":   self.__get_final_config(batch)}
+
+                predicted_metric = self.predictor.model(input_config["final"])
                 errP = self.predictor.criterion(predicted_metric, self.__get_metric_config(batch, self.metric_type))
 
                 accuracy = metric_prediction_accuracy(predicted_metric, self.__get_metric_config(batch, self.metric_type))
