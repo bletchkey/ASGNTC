@@ -163,6 +163,7 @@ def save_progress_plot(plot_data: dict, epoch: int, results_path: str):
     vmax = 1
 
     titles = []
+
     # Convert to NumPy
     for key in plot_data.keys():
         plot_data[key] = plot_data[key].detach().cpu().numpy().squeeze()
@@ -347,6 +348,11 @@ def save_loss_acc_plot(losses_p_train: list, losses_p_val: list,
         path (str): The path to where the results will be saved
 
     """
+
+    # Convert to NumPy
+    accuracies_p_train = accuracies_p_train.detach().cpu().numpy()
+    accuracies_p_val   = accuracies_p_val.detach().cpu().numpy()
+
     epochs = list(range(1, len(losses_p_train) + 1))
 
     # Detecting change indices more robustly
