@@ -354,35 +354,38 @@ def save_loss_acc_plot(losses_p_train: list, losses_p_val: list,
 
     change_epochs = [epochs[i] for i in change_indices]
 
-    change_lr_values = [learning_rates[i] for i in change_indices]  # Get the learning rate values at change points
+    # Get the learning rate values at change points
+    change_lr_values = [learning_rates[i] for i in change_indices]
 
-    fig, ax1 = plt.subplots()
+    fig, ax = plt.subplots(1, 2, figsize=(12, 6))
 
     # Plot training and validation losses
-    ax1.plot(epochs, losses_p_train, label="Training Loss", color='blue', linewidth=0.7, linestyle='-')
-    ax1.plot(epochs, losses_p_val, label="Validation Loss", color='orange', linewidth=0.7, linestyle='--')
+    ax[0].plot(epochs, losses_p_train, label="Training Loss", color='blue', linewidth=0.7)
+    ax[0].plot(epochs, losses_p_val, label="Validation Loss", color='orange', linewidth=0.7, linestyle='--')
+
+    ax[0].set_yscale('log')
+    ax[0].set_xlabel("Epoch", fontsize=12)
+    ax[0].set_ylabel("Losses", fontsize=12)
+    ax[0].legend(loc='upper right')
 
     # Plot training and validation accuracies
-    if accuracies_p_train is not None and accuracies_p_val is not None:
-        ax2 = ax1.twinx()
-        ax2.plot(epochs, accuracies_p_train, label="Training Accuracy", color='green', linewidth=0.7, linestyle='-')
-        ax2.plot(epochs, accuracies_p_val, label="Validation Accuracy", color='red', linewidth=0.7, linestyle='--')
+    ax[1].plot(epochs, accuracies_p_train, label="Training Accuracy", color='blue', linewidth=0.7)
+    ax[1].plot(epochs, accuracies_p_val, label="Validation Accuracy", color='orange', linewidth=0.7, linestyle='--')
 
-    ax1.set_yscale('log')
-    ax1.set_xlabel("Epoch", fontsize=12)
-    ax1.set_ylabel("Losses", fontsize=12)
-    ax1.legend(loc='upper right')
+    ax[1].set_xlabel("Epoch", fontsize=12)
+    ax[1].set_ylabel("Accuracy", fontsize=12)
+    ax[1].legend(loc='lower right')
 
     # Mark learning rate changes on the x-axis and annotate the learning rate value
-    ymin, ymax = ax1.get_ylim()
+    ymin, ymax = ax[0].get_ylim()
     for epoch, lr_value in zip(change_epochs, change_lr_values):
-        ax1.plot([epoch, epoch], [ymin, ymax], color='green', linestyle='-', linewidth=0.1)  # Vertical line for each LR change
-        ax1.annotate(f'{lr_value:.2e}',  # Formatting the learning rate value
+        ax[0].plot([epoch, epoch], [ymin, ymax], color='green', linestyle='-', linewidth=0.1)  # Vertical line for each LR change
+        ax[0].annotate(f'{lr_value:.2e}',  # Formatting the learning rate value
                      (epoch, ymin),  # Position at the bottom of the plot
                      textcoords="offset points", xytext=(-10,0), ha='left', fontsize=2, color='green')
 
     plt.tight_layout()
-    plt.savefig(Path(path, "losses_graph.png"), dpi=600)
+    plt.savefig(Path(path, "loss_acc_graph.png"), dpi=400)
     plt.close()
 
 

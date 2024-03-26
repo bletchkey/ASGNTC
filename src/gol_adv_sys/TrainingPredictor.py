@@ -46,8 +46,6 @@ class TrainingPredictor(TrainingBase):
         predictor (ModelManager): The model manager object used to manage the predictor model.
         lr_scheduler (torch.optim.lr_scheduler): The learning rate scheduler for the predictor model.
         warmup_phase (dict): The warm-up phase specifications.
-        simulation_topology (str): The simulation topology used.
-        init_config_initial_type (str): The type of initial configuration initialization used.
         metric_type (str): The type of metric to predict.
         current_epoch (int): The current epoch of the training session.
         n_times_trained_p (int): The number of times the predictor model was trained.
@@ -85,8 +83,6 @@ class TrainingPredictor(TrainingBase):
                                                 WARMUP_TARGET_LR,
                                                 WARMUP_TOTAL_STEPS).tolist()}
 
-        self.simulation_topology = TOPOLOGY_TOROIDAL
-        self.init_config_initial_type = INIT_CONFIG_INTIAL_THRESHOLD
         self.metric_type = CONFIG_METRIC_STABLE
 
         self.current_epoch = 0
@@ -211,10 +207,10 @@ class TrainingPredictor(TrainingBase):
 
             accuracy = metric_prediction_accuracy(predicted_metric, self.__get_metric_config(batch, self.metric_type))
 
-            total_loss += errP.item()
+            total_loss     += errP.item()
             total_accuracy += accuracy
 
-            running_avg_loss = total_loss / batch_count
+            running_avg_loss     = total_loss / batch_count
             running_avg_accuracy = total_accuracy / batch_count
 
             # Update the learning rate during the warm-up phase if it is enabled
@@ -226,7 +222,7 @@ class TrainingPredictor(TrainingBase):
         self.n_times_trained_p += 1
 
         self.accuracies["predictor_train"].append(running_avg_accuracy.mean())
-        self.losses["predictor_train"].append(running_avg_loss.item())
+        self.losses["predictor_train"].append(running_avg_loss)
 
         logging.debug(f"Predictor loss on train data: {self.losses['predictor_train'][-1]}")
         logging.debug(f"Accuracy on train data: {self.accuracies['predictor_train'][-1]}")
@@ -244,14 +240,14 @@ class TrainingPredictor(TrainingBase):
 
                 accuracy = metric_prediction_accuracy(predicted_metric, self.__get_metric_config(batch, self.metric_type))
 
-                total_loss += errP.item()
+                total_loss     += errP.item()
                 total_accuracy += accuracy
 
-                running_avg_loss = total_loss / batch_count
+                running_avg_loss     = total_loss / batch_count
                 running_avg_accuracy = total_accuracy / batch_count
 
         self.losses["predictor_val"].append(running_avg_loss.mean())
-        self.accuracies["predictor_val"].append(running_avg_accuracy.item())
+        self.accuracies["predictor_val"].append(running_avg_accuracy)
 
         logging.debug(f"Predictor loss on validation data: {self.losses['predictor_val'][-1]}")
         logging.debug(f"Accuracy on validation data: {self.accuracies['predictor_val'][-1]}")
@@ -269,14 +265,14 @@ class TrainingPredictor(TrainingBase):
 
                 accuracy = metric_prediction_accuracy(predicted_metric, self.__get_metric_config(batch, self.metric_type))
 
-                total_loss += errP.item()
+                total_loss     += errP.item()
                 total_accuracy += accuracy
 
                 running_avg_loss     = total_loss / batch_count
                 running_avg_accuracy = total_accuracy / batch_count
 
         self.losses["predictor_test"].append(running_avg_loss.mean())
-        self.accuracies["predictor_test"].append(running_avg_accuracy.item())
+        self.accuracies["predictor_test"].append(running_avg_accuracy)
 
         logging.debug(f"Predictor loss on test data: {self.losses['predictor_test'][-1]}")
         logging.debug(f"Accuracy on test data: {self.accuracies['predictor_test'][-1]}")
