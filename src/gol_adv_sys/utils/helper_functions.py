@@ -106,7 +106,7 @@ def generate_new_batches(model_g: torch.nn.Module, n_batches: int, topology: str
 
 
 def test_models(model_g: torch.nn.Module, model_p: torch.nn.Module, topology: str,
-                init_config_initial_type: str, fixed_noise: torch.Tensor, metric_type: str, device: torch.device) -> dict:
+                init_config_initial_type: str, fixed_noise: torch.Tensor, target_config: str, device: torch.device) -> dict:
     """
     Function to test the models
 
@@ -116,7 +116,7 @@ def test_models(model_g: torch.nn.Module, model_p: torch.nn.Module, topology: st
         topology (str): The topology to use for simulating the configurations
         init_config_initial_type (str): The type of initial configuration to use
         fixed_noise (torch.Tensor): The fixed noise to use for testing the generator model
-        metric_type (str): The type of metric to predict
+        target_config (str): The type of configuration to predict (tipically the metric configuration)
         device (torch.device): The device used for computation
 
     Returns:
@@ -142,7 +142,7 @@ def test_models(model_g: torch.nn.Module, model_p: torch.nn.Module, topology: st
         data["simulated"], sim_metrics, _, _ = simulate_config(config=data["initial"], topology=topology,
                                                          steps=N_SIM_STEPS, calculate_final_config=False,
                                                          device=device)
-        data["metric"] = sim_metrics[metric_type]["config"]
+        data["metric"] = sim_metrics[target_config]["config"]
         data["predicted_metric"] = model_p(data["initial"])
 
     return data
@@ -191,21 +191,22 @@ def save_progress_plot(plot_data: dict, epoch: int, results_path: str):
 
 
 def test_predictor_model_dataset(test_set: torch.utils.data.DataLoader,
-                                 metric_type: str, model_p: torch.nn.Module, device: torch.device) -> dict:
+                                 config_type_pred_input: str,
+                                 target_config: str, model_p: torch.nn.Module, device: torch.device) -> dict:
     """
     Function to test the predictor model.
 
-
-
     Args:
         test_set (torch.utils.data.DataLoader): The test set containing data and metadata
-        metric_type (str): The type of metric to predict
+        target_config (str): The type of configuration to predict (tipically the metric configuration)
         model_p (torch.nn.Module): The predictor model
         device (torch.device): The device used for computation
 
     Returns:
         dict: The dictionary containing the test results.
+
     """
+
     model_p.eval()  # Set the model to evaluation mode
 
     batch_data = None
@@ -215,11 +216,8 @@ def test_predictor_model_dataset(test_set: torch.utils.data.DataLoader,
     with torch.no_grad():
         for batch, batch_metadata in test_set:
 
-            data = {CONFIG_INITIAL: get_config_from_batch(batch, CONFIG_INITIAL, device),
-                    CONFIG_FINAL: get_config_from_batch(batch, CONFIG_FINAL, device)}
-
             # Get prediction for the current batch
-            prediction = model_p(data[CONFIG_FINAL])
+            prediction = model_p(get_config_from_batch(batch, config_type_pred_input, device))
 
             # Aggregate batch data if already exists, else initialize
             batch_data = torch.cat((batch_data, batch), dim=0) if batch_data is not None else batch
@@ -241,7 +239,7 @@ def test_predictor_model_dataset(test_set: torch.utils.data.DataLoader,
         META_N_CELLS_FINAL: batch_metadata_aggregated[META_N_CELLS_FINAL],
         META_TRANSIENT_PHASE: batch_metadata_aggregated[META_TRANSIENT_PHASE],
         META_PERIOD: batch_metadata_aggregated[META_PERIOD],
-        "metric_type": metric_type,
+        "target_config": target_config
     }
 
     # Assuming __create_data_dict is a function that prepares your data dictionary
@@ -312,7 +310,7 @@ def save_progress_plot_dataset(plot_data: dict, epoch: int, results_path: str):
                 axs[i, j].patch.set_edgecolor('black')
                 axs[i, j].patch.set_linewidth(1)
                 if key == "metric" and i == 0:
-                    axs[i, j].set_title(f"metric - {plot_data['metadata']['metric_type']}", pad=6, fontsize=24)
+                    axs[i, j].set_title(f"metric - {plot_data['metadata']['target_config']}", pad=6, fontsize=24)
                 elif i == 0:
                     axs[i, j].set_title(titles[j], pad=6, fontsize=24)
                 else:
@@ -320,7 +318,7 @@ def save_progress_plot_dataset(plot_data: dict, epoch: int, results_path: str):
             else:
                 text_data = ""
                 for k in plot_data[key].keys():
-                    if k == "metric_type":
+                    if k == "target_config":
                         continue
                     text_data += f"{k}: {plot_data[key][k][indices[i]]}\n"
                 axs[i, j].text(0.1, 0.5, text_data, fontsize=18, ha='left', va='center', transform=axs[i, j].transAxes)
@@ -536,7 +534,7 @@ def __create_data_dict(batches: torch.Tensor, prediction: torch.Tensor, metadata
 
     initial = get_config_from_batch(batches, CONFIG_INITIAL, device)
     final   = get_config_from_batch(batches, CONFIG_FINAL, device)
-    metric  = get_config_from_batch(batches, metadata["metric_type"], device)
+    metric  = get_config_from_batch(batches, metadata["target_config"], device)
 
     data = {
         "metadata": metadata,

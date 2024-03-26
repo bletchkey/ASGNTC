@@ -1,16 +1,1 @@
-2024-03-26 18:02:12,281 - root - INFO - Training started at 26/03/2024 18:02:12
-Traceback (most recent call last):
-  File "main.py", line 89, in <module>
-    RETCODE = main()
-  File "main.py", line 83, in main
-    train_predictor()
-  File "main.py", line 75, in train_predictor
-    train_pred.run()
-  File "/home/bletchkey/ASGNTC/src/gol_adv_sys/TrainingPredictor.py", line 118, in run
-    self._fit()
-  File "/home/bletchkey/ASGNTC/src/gol_adv_sys/TrainingPredictor.py", line 162, in _fit
-    self.__log_training_epoch(epoch_elapsed_time)
-  File "/home/bletchkey/ASGNTC/src/gol_adv_sys/TrainingPredictor.py", line 274, in __log_training_epoch
-    str_err_p_test  = f"{self.losses[TEST][-1]:.6f}"
-IndexError: list index out of range
-2024-03-26 18:13:59,393 - root - INFO - Training started at 26/03/2024 18:13:59
+2024-03-26 19:48:32,431 - root - INFO - Training started at 26/03/2024 19:48:32Epoch 00020: reducing learning rate of group 0 to 7.9990e-03.

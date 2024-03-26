@@ -26,7 +26,7 @@ from src.gol_adv_sys.ModelManager   import ModelManager
 from src.gol_adv_sys.TrainingBase   import TrainingBase
 
 from src.gol_adv_sys.utils.losses import WeightedMSELoss, WeightedBCELoss
-from src.gol_adv_sys.utils.scores import metric_prediction_accuracy
+from src.gol_adv_sys.utils.scores import config_prediction_accuracy
 
 from src.gol_adv_sys.utils.helper_functions import save_progress_plot_dataset, save_loss_acc_plot, \
                                                    test_predictor_model_dataset, get_elapsed_time_str, \
@@ -46,7 +46,8 @@ class TrainingPredictor(TrainingBase):
         predictor (ModelManager): The model manager object used to manage the predictor model.
         lr_scheduler (torch.optim.lr_scheduler): The learning rate scheduler for the predictor model.
         warmup_phase (dict): The warm-up phase specifications.
-        metric_type (str): The type of metric to predict.
+        config_type_pred_input (str): The configuration type used as input for the predictor model (tipically the initial).
+        config_type_pred_target (str): The configuration type used as target for the predictor model (tipically the metric).
         current_epoch (int): The current epoch of the training session.
         n_times_trained_p (int): The number of times the predictor model was trained.
         learning_rates (list): The learning rates used during the training session.
@@ -83,7 +84,8 @@ class TrainingPredictor(TrainingBase):
                                                 WARMUP_TARGET_LR,
                                                 WARMUP_TOTAL_STEPS).tolist()}
 
-        self.metric_type = CONFIG_METRIC_STABLE
+        self.config_type_pred_input  = CONFIG_INITIAL
+        self.config_type_pred_target = CONFIG_METRIC_EASY
 
         self.current_epoch = 0
         self.n_times_trained_p = 0
@@ -224,11 +226,8 @@ class TrainingPredictor(TrainingBase):
                     logging.debug(f"Processing batch {batch_count} of epoch {self.current_epoch+1}/{NUM_EPOCHS}")
                     self.predictor.optimizer.zero_grad()
 
-                input_config = {CONFIG_INITIAL: self.__get_initial_config(batch),
-                                CONFIG_FINAL:   self.__get_final_config(batch)}
-
-                predicted_metric = self.predictor.model(input_config[CONFIG_FINAL])
-                errP = self.predictor.criterion(predicted_metric, self.__get_metric_config(batch, self.metric_type))
+                predicted = self.predictor.model(self.__get_config_type(batch, self.config_type_pred_input))
+                errP = self.predictor.criterion(predicted, self.__get_config_type(batch, self.config_type_pred_target))
 
                 if mode == TRAIN:
                     errP.backward()
@@ -240,7 +239,7 @@ class TrainingPredictor(TrainingBase):
                         logging.debug("Warm-up phase")
                         logging.debug(f"Learning rate: {self.predictor.get_learning_rate()}")
 
-                accuracy = metric_prediction_accuracy(predicted_metric, self.__get_metric_config(batch, self.metric_type))
+                accuracy = config_prediction_accuracy(predicted, self.__get_config_type(batch, self.config_type_pred_target))
 
                 total_loss     += errP.item()
                 total_accuracy += accuracy
@@ -356,7 +355,8 @@ class TrainingPredictor(TrainingBase):
             f"Training specifications:\n\n"
             f"Batch size: {BATCH_SIZE}\n"
             f"Epochs: {NUM_EPOCHS}\n"
-            f"Predicting metric type: {self.metric_type}\n\n\n"
+            f"Prediction input configuration type: {self.config_type_pred_input}\n"
+            f"Prediction target configuration type: {self.config_type_pred_target}\n\n\n"
             f"Training progress:\n\n"
         )
 
@@ -367,40 +367,16 @@ class TrainingPredictor(TrainingBase):
         return path
 
 
-    def __get_initial_config(self, batch) -> torch.Tensor:
+    def __get_config_type(self, batch, type) -> torch.Tensor:
         """
-        Function to get a batch of initial configurations from the batch.
+        Function to get a batch of the specified configuration type from the batch.
 
         Returns:
-            initial_config (torch.Tensor): The initial configurations.
+            config (torch.Tensor): The configurations.
 
         """
 
-        return get_config_from_batch(batch, CONFIG_INITIAL, self.device_manager.default_device)
-
-
-    def __get_final_config(self, batch) -> torch.Tensor:
-        """
-        Function to get a batch of final configurations from the batch.
-
-        Returns:
-            final_config (torch.Tensor): The final configurations.
-
-        """
-
-        return get_config_from_batch(batch, CONFIG_FINAL, self.device_manager.default_device)
-
-
-    def __get_metric_config(self, batch, metric_type) -> torch.Tensor:
-        """
-        Function to get a batch of the specified metric type from the batch.
-
-        Returns:
-            metric_config (torch.Tensor): The metric configurations.
-
-        """
-
-        return get_config_from_batch(batch, metric_type, self.device_manager.default_device)
+        return get_config_from_batch(batch, type, self.device_manager.default_device)
 
 
     def __test_predictor_model(self) -> dict:
@@ -408,25 +384,23 @@ class TrainingPredictor(TrainingBase):
         Function for testing the predictor model.
 
         Returns:
-            data (dict): Contains the generated configurations, initial configurations, simulated configurations,
-            simulated metrics and predicted metrics.
+            data (dict): Contains the results of the test, including the configurations and the predictions.
 
         """
 
         return test_predictor_model_dataset(self.dataloader[TEST],
-                                            self.metric_type, self.predictor.model,
+                                            self.predict_from_config_type,
+                                            self.config_type_pred_target, self.predictor.model,
                                             self.device_manager.default_device)
 
 
     def __save_progress_plot(self, data) -> None:
         """
         Function for saving the progress plot.
-        It save the plot that shows the generated configurations, initial configurations, simulated configurations,
-        simulated metrics and predicted metrics.
+        It save the plot that shows a visual representation of the progress of the predictor model.
 
         Args:
-            data (dict): Contains the generated configurations, initial configurations, simulated configurations,
-            simulated metrics and predicted metrics.
+            data (dict): Contains the results of the test, including the configurations and the predictions.
 
         """
 

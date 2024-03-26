@@ -5,7 +5,7 @@ import torch.nn as nn
 from typing import Tuple
 
 
-def metric_prediction_accuracy(prediction: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
+def config_prediction_accuracy(prediction: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
     """
     Calculate the binned accuracy score for each pixel in the prediction compared to the target.
     The values range from 0 to 1, and are binned into four categories. Scores are awarded based on
