@@ -4540,3 +4540,30 @@ tensor([[1.0000, 1.0000, 1.0000,  ..., 1.0000, 1.0000, 1.0000],
        device='cuda:0')
 2024-03-25 21:06:26,894 - root - INFO - Training started at 25/03/2024 21:06:26
 python3: can't open file 'plot_dataset_info.py': [Errno 2] No such file or directory
+2024-03-25 23:00:05,691 - root - INFO - Training started at 25/03/2024 23:00:05
+Epoch 00028: reducing learning rate of group 0 to 1.0000e-02.
+Epoch 00042: reducing learning rate of group 0 to 1.0000e-03.
+Epoch 00049: reducing learning rate of group 0 to 1.0000e-04.
+Epoch 00055: reducing learning rate of group 0 to 1.0000e-05.
+Epoch 00060: reducing learning rate of group 0 to 1.0000e-06.
+Epoch 00065: reducing learning rate of group 0 to 1.0000e-07.
+Epoch 00070: reducing learning rate of group 0 to 1.0000e-08.
+2024-03-26 08:27:30,507 - root - INFO - Training started at 26/03/2024 08:27:30
+Traceback (most recent call last):
+  File "main.py", line 111, in <module>
+    RETCODE = main()
+  File "main.py", line 104, in main
+    train_predictor()
+  File "main.py", line 95, in train_predictor
+    train_pred.run()
+  File "/home/bletchkey/ASGNTC/src/gol_adv_sys/TrainingPredictor.py", line 106, in run
+    self._fit()
+  File "/home/bletchkey/ASGNTC/src/gol_adv_sys/TrainingPredictor.py", line 153, in _fit
+    errP.backward()
+  File "/home/bletchkey/.local/lib/python3.8/site-packages/torch/_tensor.py", line 492, in backward
+    torch.autograd.backward(
+  File "/home/bletchkey/.local/lib/python3.8/site-packages/torch/autograd/__init__.py", line 244, in backward
+    grad_tensors_ = _make_grads(tensors, grad_tensors_, is_grads_batched=False)
+  File "/home/bletchkey/.local/lib/python3.8/site-packages/torch/autograd/__init__.py", line 117, in _make_grads
+    raise RuntimeError(
+RuntimeError: grad can be implicitly created only for scalar outputs

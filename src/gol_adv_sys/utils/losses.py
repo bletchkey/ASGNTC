@@ -26,10 +26,10 @@ class WeightedBCELoss(nn.Module):
     def forward(self, prediction: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
         eps = 1e-6
         loss = torch.mean(-target * torch.log(prediction + eps) -
-                    (1 - target) * torch.log(1 - prediction)) * self.__weight(target)
+                    (1 - target) * torch.log(1 - prediction) * self.__weight(target))
 
         loss += torch.mean(target * torch.log(target + eps) +
-                    (1 - target) * torch.log(1 - target)) * self.__weight(target)
+                    (1 - target) * torch.log(1 - target) * self.__weight(target))
 
         return loss
 

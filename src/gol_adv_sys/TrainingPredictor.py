@@ -49,7 +49,7 @@ class TrainingPredictor(TrainingBase):
         current_epoch (int): The current epoch of the training session.
         step_times_secs (list): The times in seconds for each step of the training session.
         losses (dict): The losses of the predictor model during the training session.
-        accuracy (list): The accuracy of the predictor model during the training session.
+        accuracies (list): The accuracy of the predictor model during the training session.
         learning_rates (list): The learning rates used during the training session.
         dataset (dict): The dataset used for the training session.
         dataloader (dict): The dataloaders used for the training session.
@@ -69,11 +69,11 @@ class TrainingPredictor(TrainingBase):
                               momentum=P_SGD_MOMENTUM,
                               weight_decay=P_SGD_WEIGHT_DECAY)
 
-        self.predictor = ModelManager(model=model, optimizer=optimizer, criterion=WeightedMSELoss(), device_manager=self.device_manager)
+        self.predictor = ModelManager(model=model, optimizer=optimizer, criterion=WeightedBCELoss(), device_manager=self.device_manager)
 
         self.simulation_topology = TOPOLOGY_TOROIDAL
         self.init_config_initial_type = INIT_CONFIG_INTIAL_THRESHOLD
-        self.metric_type = CONFIG_METRIC_EASY
+        self.metric_type = CONFIG_METRIC_STABLE
 
         self.current_epoch = 0
         self.n_times_trained_p = 0
