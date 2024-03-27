@@ -42,5 +42,7 @@ class TestConfigPredictionAccuracy(unittest.TestCase):
             config_prediction_accuracy(prediction, target)
         logging.info("Input dimension mismatch test passed.")
 
+
 if __name__ == '__main__':
     unittest.main()
+

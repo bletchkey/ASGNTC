@@ -5,7 +5,6 @@ from config.common import setup_base_directory, setup_logging
 from config.constants import *
 from config.paths import CONFIG_DIR
 
-
 from unit_tests.gol_adv_sys.utils.test_scores import TestConfigPredictionAccuracy
 
 
@@ -22,8 +21,11 @@ def main():
     suite.addTest(TestConfigPredictionAccuracy('test_input_shape_mismatch'))
     suite.addTest(TestConfigPredictionAccuracy('test_input_dimension_mismatch'))
 
+    # Run the suite
+    runner = unittest.TextTestRunner()
+    result = runner.run(suite)
 
-    return 0
+    return 0 if result.wasSuccessful() else 1
 
 
 if __name__ == '__main__':
