@@ -85,8 +85,8 @@ class TrainingPredictor(TrainingBase):
                                                 WARMUP_TARGET_LR,
                                                 WARMUP_TOTAL_STEPS).tolist()}
 
-        self.config_type_pred_input  = CONFIG_METRIC_EASY
-        self.config_type_pred_target = CONFIG_INITIAL
+        self.config_type_pred_input  = CONFIG_INITIAL
+        self.config_type_pred_target = CONFIG_METRIC_HARD
 
         self.current_epoch = 0
         self.n_times_trained_p = 0

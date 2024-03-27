@@ -1,14 +1,9 @@
-import logging
-import logging.config
-import json
 import sys
-import os
 import torch
-from pathlib import Path
 
-sys.path.append(str(Path(__file__).resolve().parents[1]))
-
-from config.paths import PROJECT_NAME, CONFIG_DIR
+from config.common import setup_base_directory, setup_logging
+from config.constants import *
+from config.paths import CONFIG_DIR
 
 from src.gol_adv_sys.TrainingPredictor import TrainingPredictor
 from src.gol_adv_sys.TrainingAdversarial import TrainingAdversarial
@@ -18,31 +13,6 @@ from src.gol_adv_sys.Predictor import Predictor_Baseline, Predictor_ResNet, \
                                       Predictor_UNet, Predictor_GloNet \
 
 from src.gol_adv_sys.Generator import Generator_DCGAN
-
-from config.constants import *
-
-
-def setup_base_dir():
-
-    dir = Path(__file__).resolve().parent.parent
-
-    if dir.name != PROJECT_NAME:
-        print(f"Error: The base directory is not set correctly. Expected: {PROJECT_NAME}, got: {dir.name}")
-        sys.exit(1)
-
-    os.chdir(dir)
-    sys.path.append(str(dir))
-
-
-def setup_logging(path, default_level=logging.INFO):
-    try:
-        with open(path, 'rt') as file:
-            config = json.load(file)
-        logging.config.dictConfig(config)
-        logging.debug(f"Logging configuration loaded from {path}")
-    except Exception as e:
-        logging.error(f"Error in logging configuration (using default settings): {e}")
-        logging.basicConfig(level=default_level)
 
 
 def playground():
@@ -77,8 +47,8 @@ def train_predictor():
 
 def main():
 
-    setup_base_dir()
-    setup_logging(path=CONFIG_DIR / "logging.json")
+    setup_base_directory()
+    setup_logging(path= CONFIG_DIR / "main_logging.json")
 
     train_predictor()
 
