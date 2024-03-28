@@ -1,18 +1,18 @@
 import sys
 import torch
 
-from config.common import setup_base_directory, setup_logging
-from config.constants import *
-from config.paths import CONFIG_DIR
+from configs.setup import setup_base_directory, setup_logging
+from configs.constants import *
+from configs.paths import CONFIG_DIR
 
-from src.gol_adv_sys.TrainingPredictor import TrainingPredictor
-from src.gol_adv_sys.TrainingAdversarial import TrainingAdversarial
-from src.gol_adv_sys.Playground import Playground
+from src.gol_pred_sys.training_pred import TrainingPredictor
+from src.gol_adv_sys.training_adv import TrainingAdversarial
+from src.common.playground import Playground
 
-from src.gol_adv_sys.Predictor import Predictor_Baseline, Predictor_ResNet, \
+from src.common.predictor import Predictor_Baseline, Predictor_ResNet, \
                                       Predictor_UNet, Predictor_GloNet \
 
-from src.gol_adv_sys.Generator import Generator_DCGAN
+from src.common.generator import Generator_DCGAN
 
 
 def playground():
