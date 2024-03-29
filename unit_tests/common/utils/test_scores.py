@@ -1,7 +1,7 @@
 import unittest
 import torch
 
-from src.common.utils.scores import config_prediction_accuracy
+from src.common.utils.scores import config_prediction_accuracy, calculate_stable_metric_complexity
 
 
 class TestConfigPredictionAccuracy(unittest.TestCase):
@@ -35,6 +35,24 @@ class TestConfigPredictionAccuracy(unittest.TestCase):
         target = torch.tensor([0.1, 0.2, 0.3, 0.4])  # Incorrect dimension
         with self.assertRaises(ValueError):
             config_prediction_accuracy(prediction, target)
+
+
+class TestCalculateStableMetricComplexity(unittest.TestCase):
+
+    def test_complexity_bs_one(self):
+        metrics = torch.tensor([[[[1, 0.5], [0, 0]]]])
+        complexity = calculate_stable_metric_complexity(metrics, mean=False)
+        self.assertAlmostEqual(complexity[0], 0.5)
+
+    def test_complexity_bs_two(self):
+        metrics = torch.tensor([[[[1, 0.5], [0, 0]]], [[[0.5, 0.5], [0.5, 0.5]]]])
+        complexity = calculate_stable_metric_complexity(metrics, mean=True)
+        self.assertAlmostEqual(complexity, 0.75)
+
+    def test_input_dimension_mismatch(self):
+        metrics = torch.tensor([0.1, 0.2, 0.3, 0.4])  # Incorrect dimension
+        with self.assertRaises(ValueError):
+            calculate_stable_metric_complexity(metrics, mean=True)
 
 
 if __name__ == '__main__':

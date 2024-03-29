@@ -1,12 +1,11 @@
-from typing import Tuple, Union
+from typing import Tuple
 import torch
 
 from configs.constants import *
 
 
 def simulate_config(config: torch.Tensor, topology: str, steps: int,
-                    calculate_final_config: bool,
-                    device: torch.device) -> Union[Tuple[torch.Tensor, dict, int, int], Tuple[dict, dict, int, int]]:
+                    device: torch.device) -> dict:
     """
     Simulates a configuration for a given number of steps using a specified topology.
 
@@ -14,21 +13,15 @@ def simulate_config(config: torch.Tensor, topology: str, steps: int,
         config (torch.Tensor): The initial configuration.
         topology (str): The topology type, either "toroidal" or "flat".
         steps (int): The number of simulation steps to perform.
-        calculate_final_config (bool): Whether to calculate and return the final configuration.
         device (torch.device): The computing device (CPU or GPU).
 
     Returns:
-        Tuple containing the final/simulated configuration and the dictionary of metrics for the easy, medium, and hard levels.
-
-        If calculate_final_config is True, the first element of the tuple is the final: a dictionary containing the final configuration, period, and anitperiod.
-
-        If calculate_final_config is False, the first element of the tuple is the simulated configuration (torch.Tensor).
-
-        The initial and final number of living cells are also returned.
+        dict: A dictionary containing the simulated configuration,
+              final configuration, metrics, and the number of living cells.
 
     """
     # count living cells in the initial configuration
-    n_cells_init = torch.sum(config, dim=[2, 3], dtype=torch.int32)
+    n_cells_initial = torch.sum(config, dim=[2, 3], dtype=torch.int32)
 
     # Mapping of topology types to their corresponding simulation functions
     simulation_functions = {
@@ -46,16 +39,16 @@ def simulate_config(config: torch.Tensor, topology: str, steps: int,
     kernel = torch.ones((1, 1, 3, 3), device=device)
     kernel[:, :, 1, 1] = 0  # Set the center to 0 to exclude self
 
-    # Optionally calculate the final configuration
-    final_config = None
-    if calculate_final_config == True:
-        final_config, stable_config, period, transient_phase = __calculate_final_configuration(config, _simulation_function, kernel, device)
+    final_config, stable_config, period, transient_phase = calculate_final_configuration(config,
+                                                                                         _simulation_function,
+                                                                                         kernel,
+                                                                                         device)
 
-        final = {
-            "config": final_config,
-            "period": period,
-            "transient_phase": transient_phase
-        }
+    final = {
+        "config": final_config,
+        "period": period,
+        "transient_phase": transient_phase
+    }
 
     # Simulate the configuration for the given number of steps
     sim_configs = []
@@ -63,20 +56,30 @@ def simulate_config(config: torch.Tensor, topology: str, steps: int,
         config = _simulation_function(config, kernel, device)
         sim_configs.append(config)
 
+    simulated = config.clone()
+
     # Calculate metrics from the simulated configurations and add stable metric to the dictionary
-    metrics = __calculate_metrics(sim_configs, stable_config, device)
+    all_metrics = __calculate_metrics(sim_configs, stable_config, device)
 
-    # Return the appropriate tuple based on whether the final configuration was calculated
-    if final_config is not None:
-        n_cells_after = torch.sum(final_config, dim=[2, 3], dtype=torch.int32)
-        return (final, metrics, n_cells_init, n_cells_after)
-    else:
-        n_cells_after = torch.sum(config, dim=[2, 3], dtype=torch.int32)
-        return (config, metrics, n_cells_init, n_cells_after)
+    # Count living cells in the final configuration
+    n_cells_simulated = torch.sum(simulated, dim=[2, 3], dtype=torch.int32)
+    n_cells_final     = torch.sum(final_config, dim=[2, 3], dtype=torch.int32)
+
+    results = {
+        "simulated": simulated,
+        "final": final["config"],
+        "all_metrics": all_metrics,
+        "period": final["period"],
+        "transient_phase": final["transient_phase"],
+        "n_cells_initial": n_cells_initial,
+        "n_cells_simulated": n_cells_simulated,
+        "n_cells_final": n_cells_final
+    }
+
+    return results
 
 
-
-def __calculate_final_configuration(config_batch: torch.Tensor, simulation_function, kernel: torch.Tensor,
+def calculate_final_configuration(config_batch: torch.Tensor, simulation_function, kernel: torch.Tensor,
                                     device: torch.device) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
     """
     Function for calculating the final configuration

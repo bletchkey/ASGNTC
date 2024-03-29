@@ -35,14 +35,18 @@ class Playground():
     def simulate(self, config: torch.Tensor, steps: int) -> torch.Tensor:
 
         config = config.to(self.__device_manager.default_device)
-        final, metrics, n_cells_init, n_cells_final = simulate_config(config, TOPOLOGY_TOROIDAL, steps=steps,
-                                                        calculate_final_config=True, device=self.__device_manager.default_device)
+        sim_results = simulate_config(config, TOPOLOGY_TOROIDAL, steps=steps,
+                                  device=self.__device_manager.default_device)
 
+        final           = sim_results["final"]
+        n_cells_initial = sim_results["n_cells_initial"]
+        n_cells_final   = sim_results["n_cells_final"]
+        metrics         = sim_results["all_metrics"]
 
         results = {
             META_PERIOD: final[META_PERIOD],
             META_TRANSIENT_PHASE: final[META_TRANSIENT_PHASE],
-            META_N_CELLS_INITIAL : n_cells_init,
+            META_N_CELLS_INITIAL : n_cells_initial,
             META_N_CELLS_FINAL: n_cells_final,
             CONFIG_FINAL: final[CONFIG_FINAL]["config"],
             CONFIG_METRIC_EASY: metrics[CONFIG_METRIC_EASY]["config"],

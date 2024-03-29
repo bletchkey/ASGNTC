@@ -100,13 +100,19 @@ class DatasetCreator():
                     initial_config[i, rows, cols] = 1.0
                 initial_config = initial_config.view(DATASET_BATCH_SIZE, 1, GRID_SIZE, GRID_SIZE)
                 with torch.no_grad():
-                    final, metrics, n_cells_init, n_cells_final = simulate_config(
-                                                            config=initial_config, topology=self.__simulation_topology,
-                                                            steps=DATASET_N_SIM_STEPS, calculate_final_config=True,
-                                                            device=self.device_manager.default_device)
+                    sim_results = simulate_config(config=initial_config, topology=self.__simulation_topology,
+                                              steps=DATASET_N_SIM_STEPS, device=self.device_manager.default_device)
+
+                    final           = sim_results["final"]
+                    metrics         = sim_results["all_metrics"]
+                    n_cells_initial = sim_results["n_cells_initial"]
+                    n_cells_final   = sim_results["n_cells_final"]
+                    period          = sim_results["period"]
+                    transient_phase = sim_results["transient_phase"]
+
                 configs.append({
                     CONFIG_INITIAL: initial_config,
-                    CONFIG_FINAL: final["config"],
+                    CONFIG_FINAL: final,
                     CONFIG_METRIC_EASY: metrics[CONFIG_METRIC_EASY]["config"],
                     CONFIG_METRIC_MEDIUM: metrics[CONFIG_METRIC_MEDIUM]["config"],
                     CONFIG_METRIC_HARD: metrics[CONFIG_METRIC_HARD]["config"],
@@ -114,10 +120,10 @@ class DatasetCreator():
                 })
                 metadata.append({
                     META_ID: ids[batch_number*DATASET_BATCH_SIZE: (batch_number+1)*DATASET_BATCH_SIZE],
-                    META_N_CELLS_INITIAL : n_cells_init,
+                    META_N_CELLS_INITIAL : n_cells_initial,
                     META_N_CELLS_FINAL: n_cells_final,
-                    META_TRANSIENT_PHASE: final["transient_phase"],
-                    META_PERIOD: final["period"],
+                    META_TRANSIENT_PHASE: transient_phase,
+                    META_PERIOD: period,
                     META_EASY_MIN: metrics[CONFIG_METRIC_EASY]["minimum"],
                     META_EASY_MAX: metrics[CONFIG_METRIC_EASY]["maximum"],
                     META_EASY_Q1: metrics[CONFIG_METRIC_EASY]["q1"],

@@ -5,7 +5,6 @@ import torch
 from pathlib import Path
 
 from configs.constants import *
-from src.common.utils.simulation_functions import simulate_config
 
 
 def get_elapsed_time_str(times: list) -> str:

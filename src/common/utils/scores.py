@@ -1,10 +1,12 @@
 import torch
 import torch.nn as nn
+from typing import Union
 
 from configs.constants import *
 
 
-def config_prediction_accuracy(prediction: torch.Tensor, target: torch.Tensor) -> float:
+def config_prediction_accuracy(prediction: torch.Tensor,
+                               target: torch.Tensor) -> float:
     """
     Calculate the mean accuracy score for the prediction compared to the target.
     The values range from 0 to 1, and are binned into four categories. Scores are awarded based on
@@ -43,4 +45,36 @@ def config_prediction_accuracy(prediction: torch.Tensor, target: torch.Tensor) -
     mean_scores = score.mean()
 
     return mean_scores.item()
+
+
+def calculate_stable_metric_complexity(metrics: torch.Tensor,
+                                       mean: bool = False) -> Union[torch.Tensor, float]:
+    """
+    Calculate the complexity of the stable metric. The complexity is calculated
+    by counting the numbers of pixels that are > eps and dividing by the total
+    number of pixels.
+
+    Parameters:
+        metrics (torch.Tensor): The metrics tensor with shape (N, C, H, W).
+
+    Returns:
+        torch.Tensor: The complexity of the stable metrics.
+
+    Raises:
+        ValueError: If the input tensor is not 4-dimensional.
+
+    """
+    if metrics.dim() != 4:
+        raise ValueError("Metrics tensor must have a 4-dimensional shape.")
+
+    eps = 0.05
+
+    complexity = torch.where(metrics > eps,
+                             torch.tensor(1, device=metrics.device, dtype=torch.float),
+                             torch.tensor(0, device=metrics.device, dtype=torch.float))
+
+    if mean:
+        return complexity.mean().item()
+    else:
+        return complexity.sum(dim=(1, 2, 3)).float() / (metrics.size(2) * metrics.size(3))
 
