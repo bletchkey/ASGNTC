@@ -6,7 +6,42 @@ from pathlib import Path
 
 from configs.constants import *
 
-from src.common.utils.helpers import get_config_from_batch
+
+def get_config_from_batch(batch: torch.Tensor, type: str, device: torch.device) -> torch.Tensor:
+    """
+    Function to get a batch of a certain type of configuration from the batch itself
+
+    Args:
+        batch (torch.Tensor): The batch containing the configurations
+        type (str): The type of configuration to retrieve
+        device (torch.device): The device to use for computation
+
+    Returns:
+        torch.Tensor: The configuration specified by the type
+
+    """
+    # Ensure the batch has the expected dimensions (5D tensor)
+    if batch.dim() != 5:
+        raise RuntimeError(f"Expected batch to have 5 dimensions, got {batch.dim()}")
+
+    # Mapping from type to index in the batch
+    config_indices = {
+        CONFIG_INITIAL: 0,
+        CONFIG_FINAL: 1,
+        CONFIG_METRIC_EASY: 2,
+        CONFIG_METRIC_MEDIUM: 3,
+        CONFIG_METRIC_HARD: 4,
+        CONFIG_METRIC_STABLE: 5,
+    }
+
+    # Validate and retrieve the configuration index
+    if type not in config_indices:
+        raise ValueError(f"Invalid type: {type}. Valid types are {list(config_indices.keys())}")
+
+    config_index = config_indices[type]
+
+    # Extract and return the configuration
+    return batch[:, config_index, :, :, :].to(device)
 
 
 def test_predictor_model_dataset(test_set: torch.utils.data.DataLoader,

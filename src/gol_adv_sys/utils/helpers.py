@@ -94,6 +94,44 @@ def save_progress_plot(plot_data: dict, epoch: int, results_path: str) -> None:
     plt.close(fig)
 
 
+def get_config_from_batch(batch: torch.Tensor, type: str, device: torch.device) -> torch.Tensor:
+    """
+    Function to get a batch of a certain type of configuration from the batch itself
+
+    Args:
+        batch (torch.Tensor): The batch containing the configurations
+        type (str): The type of configuration to retrieve
+        device (torch.device): The device to use for computation
+
+    Returns:
+        torch.Tensor: The configuration specified by the type
+
+    """
+    # Ensure the batch has the expected dimensions (5D tensor)
+    if batch.dim() != 5:
+        raise RuntimeError(f"Expected batch to have 5 dimensions, got {batch.dim()}")
+
+    # Mapping from type to index in the batch
+    config_indices = {
+        CONFIG_INITIAL: 0,
+        CONFIG_SIMULATED: 1,
+        CONFIG_FINAL: 2,
+        CONFIG_METRIC_EASY: 3,
+        CONFIG_METRIC_MEDIUM: 4,
+        CONFIG_METRIC_HARD: 5,
+        CONFIG_METRIC_STABLE: 6,
+    }
+
+    # Validate and retrieve the configuration index
+    if type not in config_indices:
+        raise ValueError(f"Invalid type: {type}. Valid types are {list(config_indices.keys())}")
+
+    config_index = config_indices[type]
+
+    # Extract and return the configuration
+    return batch[:, config_index, :, :, :].to(device)
+
+
 def get_data_tensor(data_tensor: torch.Tensor, model_g: torch.nn.Module,
                     topology: str, init_config_initial_type: str, device: torch.device) -> torch.Tensor:
     """
@@ -133,13 +171,33 @@ def get_data_tensor(data_tensor: torch.Tensor, model_g: torch.nn.Module,
         else:
             data_tensor = combined_tensor
 
-    logging.info(f"Data tensor shape: {data_tensor.shape}, used for creating the dataloader.")
+    logging.debug(f"Data tensor shape: {data_tensor.shape}, used for creating the dataloader.")
 
     return data_tensor
 
 
+def get_initialized_initial_config(config: torch.Tensor, init_config_initial_type: str) -> torch.Tensor:
+    """
+    Function to get the initial configuration from the generated configuration
+
+    Args:
+        config (torch.Tensor): The generated configuration
+        init_config_initial_type (str): The type of initial configuration to use
+
+    Returns:
+        torch.Tensor: The initial configuration
+
+    """
+    if init_config_initial_type == INIT_CONFIG_INTIAL_THRESHOLD:
+        return __initialize_config_threshold(config)
+    elif init_config_initial_type == INIT_CONFIG_INITAL_N_CELLS:
+        return __initialize_config_n_living_cells(config)
+    else:
+        raise ValueError(f"Invalid init configuration type: {init_config_initial_type}")
+
+
 def generate_new_batches(model_g: torch.nn.Module, n_batches: int, topology: str,
-                         init_config_initial_type: str, device: torch.device) -> torch.Tensor:
+                           init_config_initial_type: str, device: torch.device) -> torch.Tensor:
 
     """
     Function to generate new batches of configurations
@@ -168,11 +226,13 @@ def generate_new_batches(model_g: torch.nn.Module, n_batches: int, topology: str
                                           steps=N_SIM_STEPS, device=device)
 
         simulated_config = sim_results["simulated"]
-        metrics = sim_results["all_metrics"]
+        metrics          = sim_results["all_metrics"]
+        final_config     = sim_results["final"]
 
         configs.append({
             CONFIG_INITIAL: initial_config,
             CONFIG_SIMULATED:  simulated_config,
+            CONFIG_FINAL: final_config,
             CONFIG_METRIC_EASY: metrics[CONFIG_METRIC_EASY]["config"],
             CONFIG_METRIC_MEDIUM: metrics[CONFIG_METRIC_MEDIUM]["config"],
             CONFIG_METRIC_HARD: metrics[CONFIG_METRIC_HARD]["config"],
@@ -191,26 +251,6 @@ def generate_new_batches(model_g: torch.nn.Module, n_batches: int, topology: str
     data = data[torch.randperm(data.size(0))]
 
     return data
-
-
-def get_initialized_initial_config(config: torch.Tensor, init_config_initial_type: str) -> torch.Tensor:
-    """
-    Function to get the initial configuration from the generated configuration
-
-    Args:
-        config (torch.Tensor): The generated configuration
-        init_config_initial_type (str): The type of initial configuration to use
-
-    Returns:
-        torch.Tensor: The initial configuration
-
-    """
-    if init_config_initial_type == INIT_CONFIG_INTIAL_THRESHOLD:
-        return __initialize_config_threshold(config)
-    elif init_config_initial_type == INIT_CONFIG_INITAL_N_CELLS:
-        return __initialize_config_n_living_cells(config)
-    else:
-        raise ValueError(f"Invalid init configuration type: {init_config_initial_type}")
 
 
 def __initialize_config_n_living_cells(config: torch.Tensor) -> torch.Tensor:

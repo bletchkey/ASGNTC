@@ -29,10 +29,10 @@ from src.gol_pred_sys.dataset_manager import FixedDataset, PairedDataset
 from src.common.utils.losses import WeightedMSELoss, WeightedBCELoss, CustomGoLLoss
 from src.common.utils.scores import config_prediction_accuracy
 
-from src.common.utils.helpers import get_elapsed_time_str, get_config_from_batch
+from src.common.utils.helpers import get_elapsed_time_str
 
 from src.gol_pred_sys.utils.helpers import test_predictor_model_dataset, save_progress_plot_dataset, \
-                                           save_loss_acc_plot
+                                           save_loss_acc_plot, get_config_from_batch
 
 
 class TrainingPredictor(TrainingBase):
