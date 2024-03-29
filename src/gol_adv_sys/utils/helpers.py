@@ -104,11 +104,11 @@ def save_progress_plot(plot_data: dict, epoch: int, results_path: str) -> None:
     # Plot each data in a subplot
     for i in range(len(indices)):
         for j, key in enumerate(plot_data.keys()):
+
             if key != "metadata":
                 axs[i, j].imshow(plot_data[key][indices[i]], cmap='gray', vmin=vmin, vmax=vmax)
-                axs[i, j].set_title(titles[j])
 
-            elif key == "metadata":
+            if key == "metadata":
                 text_data = ""
                 for k in plot_data[key].keys():
                     if k.startswith("n_cells"):
@@ -117,7 +117,7 @@ def save_progress_plot(plot_data: dict, epoch: int, results_path: str) -> None:
                         value = plot_data[key][k][indices[i]]
                         text_data += f"{k}: {value:.4f}\n"
                     elif k == "target_name":
-                        text_data += f"{k}: {plot_data[key][k]}\n"
+                        continue
                     else:
                         text_data += f"{k}: {plot_data[key][k][indices[i]]}\n"
                 axs[i, j].text(0.1, 0.5, text_data, fontsize=18, ha='left', va='center', transform=axs[i, j].transAxes)
@@ -125,20 +125,15 @@ def save_progress_plot(plot_data: dict, epoch: int, results_path: str) -> None:
                     axs[i, j].set_title(titles[j])
 
             elif key == "initial":
-                axs[i, j].imshow(plot_data[key][indices[i]], cmap='gray', vmin=vmin, vmax=vmax)
                 axs[i, j].set_title(titles[j] + f" - {plot_data['metadata']['n_cells_initial'][indices[i]].item()} cells")
-
             elif key == "simulated":
-                axs[i, j].imshow(plot_data[key][indices[i]], cmap='gray', vmin=vmin, vmax=vmax)
                 axs[i, j].set_title(titles[j] + f" - {N_SIM_STEPS} steps - {plot_data['metadata']['n_cells_simulated'][indices[i]].item()} cells")
-
             elif key == "final":
-                axs[i, j].imshow(plot_data[key][indices[i]], cmap='gray', vmin=vmin, vmax=vmax)
                 axs[i, j].set_title(titles[j] + f" - {plot_data['metadata']['n_cells_final'][indices[i]].item()} cells")
-
             elif key == "target":
-                axs[i, j].imshow(plot_data[key][indices[i]], cmap='gray', vmin=vmin, vmax=vmax)
                 axs[i, j].set_title(titles[j] + f" - {plot_data['metadata']['target_name']} ")
+            else:
+                axs[i, j].set_title(titles[j])
 
             axs[i, j].axis('off')
 

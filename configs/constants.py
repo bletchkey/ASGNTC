@@ -19,7 +19,7 @@ N_CONFIGS = N_BATCHES * BATCH_SIZE
 N_MAX_CONFIGS = N_MAX_BATCHES * BATCH_SIZE
 
 # Number of steps for training with a certain dataset in an epoch
-NUM_TRAINING_STEPS = 10
+NUM_TRAINING_STEPS = 2
 
 # Average loss of P threshold before training G
 THRESHOLD_AVG_LOSS_P = 0.05
