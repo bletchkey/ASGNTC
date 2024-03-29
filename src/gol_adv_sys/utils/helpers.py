@@ -6,6 +6,7 @@ from pathlib import Path
 
 from configs.constants import *
 from src.common.utils.simulation_functions import simulate_config
+from src.common.utils.scores import calculate_stable_metric_complexity
 
 
 def test_models(model_g: torch.nn.Module, model_p: torch.nn.Module, topology: str,
@@ -30,9 +31,11 @@ def test_models(model_g: torch.nn.Module, model_p: torch.nn.Module, topology: st
     data = {
         "generated": None,
         "initial": None,
+        "final": None,
         "simulated": None,
-        "metric": None,
+        "target": None,
         "predicted": None,
+        "metadata" : None
     }
 
     # Test the models on the fixed noise
@@ -45,9 +48,23 @@ def test_models(model_g: torch.nn.Module, model_p: torch.nn.Module, topology: st
         sim_results = simulate_config(config=data["initial"], topology=topology,
                                       steps=N_SIM_STEPS, device=device)
 
+        data["final"]     = sim_results["final"]
         data["simulated"] = sim_results["simulated"]
-        data["metric"]    = sim_results["all_metrics"][target_config]["config"]
+        data["target"]    = sim_results["all_metrics"][target_config]["config"]
         data["predicted"] = model_p(data["initial"])
+        data["metadata"]  = {
+            "n_cells_initial":   sim_results["n_cells_initial"],
+            "n_cells_simulated": sim_results["n_cells_simulated"],
+            "n_cells_final":     sim_results["n_cells_final"],
+            "transient_phase":   sim_results["transient_phase"],
+            "period":            sim_results["period"],
+            "target_minmum":     sim_results["all_metrics"][target_config]["minimum"],
+            "target_maximum":    sim_results["all_metrics"][target_config]["maximum"],
+            "target_q1":         sim_results["all_metrics"][target_config]["q1"],
+            "target_q2":         sim_results["all_metrics"][target_config]["q2"],
+            "target_q3":         sim_results["all_metrics"][target_config]["q3"],
+            "target_name":       target_config
+        }
 
     return data
 
@@ -70,7 +87,8 @@ def save_progress_plot(plot_data: dict, epoch: int, results_path: str) -> None:
 
     # Convert to NumPy
     for key in plot_data.keys():
-        plot_data[key] = plot_data[key].detach().cpu().numpy().squeeze()
+        if isinstance(plot_data[key], torch.Tensor):
+            plot_data[key] = plot_data[key].detach().cpu().numpy().squeeze()
         titles.append(key)
 
     current_epoch = epoch+1
@@ -86,10 +104,45 @@ def save_progress_plot(plot_data: dict, epoch: int, results_path: str) -> None:
     # Plot each data in a subplot
     for i in range(len(indices)):
         for j, key in enumerate(plot_data.keys()):
-            axs[i, j].imshow(plot_data[key][indices[i]], cmap='gray', vmin=vmin, vmax=vmax)
-            axs[i, j].set_title(titles[j])
+            if key != "metadata":
+                axs[i, j].imshow(plot_data[key][indices[i]], cmap='gray', vmin=vmin, vmax=vmax)
+                axs[i, j].set_title(titles[j])
 
-    plt.tight_layout()
+            elif key == "metadata":
+                text_data = ""
+                for k in plot_data[key].keys():
+                    if k.startswith("n_cells"):
+                        continue
+                    elif k.startswith("target") and k != "target_name":
+                        value = plot_data[key][k][indices[i]]
+                        text_data += f"{k}: {value:.4f}\n"
+                    elif k == "target_name":
+                        text_data += f"{k}: {plot_data[key][k]}\n"
+                    else:
+                        text_data += f"{k}: {plot_data[key][k][indices[i]]}\n"
+                axs[i, j].text(0.1, 0.5, text_data, fontsize=18, ha='left', va='center', transform=axs[i, j].transAxes)
+                if i == 0:
+                    axs[i, j].set_title(titles[j])
+
+            elif key == "initial":
+                axs[i, j].imshow(plot_data[key][indices[i]], cmap='gray', vmin=vmin, vmax=vmax)
+                axs[i, j].set_title(titles[j] + f" - {plot_data['metadata']['n_cells_initial'][indices[i]].item()} cells")
+
+            elif key == "simulated":
+                axs[i, j].imshow(plot_data[key][indices[i]], cmap='gray', vmin=vmin, vmax=vmax)
+                axs[i, j].set_title(titles[j] + f" - {N_SIM_STEPS} steps - {plot_data['metadata']['n_cells_simulated'][indices[i]].item()} cells")
+
+            elif key == "final":
+                axs[i, j].imshow(plot_data[key][indices[i]], cmap='gray', vmin=vmin, vmax=vmax)
+                axs[i, j].set_title(titles[j] + f" - {plot_data['metadata']['n_cells_final'][indices[i]].item()} cells")
+
+            elif key == "target":
+                axs[i, j].imshow(plot_data[key][indices[i]], cmap='gray', vmin=vmin, vmax=vmax)
+                axs[i, j].set_title(titles[j] + f" - {plot_data['metadata']['target_name']} ")
+
+            axs[i, j].axis('off')
+
+    plt.tight_layout(rect=[0, 0.03, 1, 0.95])
     plt.savefig(Path(results_path, f"epoch_{current_epoch}.png"), dpi=300)
     plt.close(fig)
 
@@ -155,6 +208,11 @@ def get_data_tensor(data_tensor: torch.Tensor, model_g: torch.nn.Module,
     """
     new_configs = generate_new_batches(model_g, N_BATCHES, topology, init_config_initial_type, device)
 
+    # Calculate the average complexity of the stable metrics
+    stable_metrics = get_config_from_batch(new_configs, CONFIG_METRIC_STABLE, device)
+    stable_metric_complexity = calculate_stable_metric_complexity(stable_metrics)
+    avg_stable_metric_complexity = stable_metric_complexity.mean().item()
+
     # If data_tensor is None, initialize it with new_configs
     if data_tensor is None:
         data_tensor = new_configs
@@ -173,7 +231,7 @@ def get_data_tensor(data_tensor: torch.Tensor, model_g: torch.nn.Module,
 
     logging.debug(f"Data tensor shape: {data_tensor.shape}, used for creating the dataloader.")
 
-    return data_tensor
+    return data_tensor, avg_stable_metric_complexity
 
 
 def get_initialized_initial_config(config: torch.Tensor, init_config_initial_type: str) -> torch.Tensor:

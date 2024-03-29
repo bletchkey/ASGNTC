@@ -52,6 +52,7 @@ class TrainingAdversarial(TrainingBase):
         config_type_pred_target (str): The type of configuration to predict.
         current_epoch (int): The current epoch of the training session.
         step_times_secs (list): A list of lists containing the time in seconds for each step in each epoch.
+        complexity_stable_metrics (list): A list containing the avg complexity of stable metrics of the new generated configurations.
         losses (dict): A dictionary containing the losses of the generator and predictor models.
         lr_each_epoch (dict): A dictionary containing the learning rate of the generator and predictor models for each epoch.
         n_times_trained_p (int): The number of times the predictor model has been trained.
@@ -83,6 +84,8 @@ class TrainingAdversarial(TrainingBase):
         self.n_times_trained_g = 0
         self.current_epoch     = 0
         self.step_times_secs   = []
+
+        self.complexity_stable_metrics= []
 
         self.losses        = {GENERATOR: [], PREDICTOR: []}
         self.lr_each_epoch = {PREDICTOR: [], GENERATOR: []}
@@ -126,11 +129,11 @@ class TrainingAdversarial(TrainingBase):
         """
         torch.autograd.set_detect_anomaly(True)
 
-        logging.info(f"Training started at {datetime.datetime.now().strftime('%d/%m/%Y %H:%M:%S')}")
+        logging.info(f"Adversarial training started at {datetime.datetime.now().strftime('%d/%m/%Y %H:%M:%S')}")
 
         self._fit()
 
-        logging.info(f"Training ended at {datetime.datetime.now().strftime('%d/%m/%Y %H:%M:%S')}")
+        logging.info(f"Adversarial training ended at {datetime.datetime.now().strftime('%d/%m/%Y %H:%M:%S')}")
 
 
     def _fit(self) -> None:
@@ -147,9 +150,19 @@ class TrainingAdversarial(TrainingBase):
             self.__get_train_dataloader()
 
             with open(self.path_log_file, "a") as log:
+                log_content = (
+                    f"\nEpoch: {epoch+1}/{NUM_EPOCHS}\n"
+                    f"Number of generated configurations in the dataset: {len(self.train_dataloader) * BATCH_SIZE}\n"
+                )
 
-                log.write(f"\nEpoch: {epoch+1}/{NUM_EPOCHS}\n")
-                log.write(f"Number of generated configurations in the dataset: {len(self.train_dataloader)*BATCH_SIZE}\n\n")
+                if len(self.complexity_stable_metrics) > 0:
+                    log_content += (
+                        f"Average complexity of the stable metrics on the last "
+                        f"{N_BATCHES * BATCH_SIZE} generated configurations: "
+                        f"{100*self.complexity_stable_metrics[-1]:.1f}/100\n\n"
+                    )
+
+                log.write(log_content)
                 log.flush()
 
             for step in range(NUM_TRAINING_STEPS):
@@ -175,7 +188,8 @@ class TrainingAdversarial(TrainingBase):
             data = self.__test_models()
             self.__save_progress_plot(data)
             self.__save_models()
-            self.__resource_cleanup()
+
+            self.device_manager.clear_resources()
 
 
     def __log_training_step(self, step) -> None:
@@ -281,7 +295,7 @@ class TrainingAdversarial(TrainingBase):
             f"Optimizer P: {self.predictor.optimizer.__class__.__name__}\n"
             f"Criterion P: {self.generator.criterion.__class__.__name__}\n"
             f"{generator_info}"
-            f"\nTraining progress:\n\n"
+            f"\nTraining progress:\n\n\n"
         )
 
         with open(path, "w") as log_file:
@@ -307,10 +321,12 @@ class TrainingAdversarial(TrainingBase):
 
         """
 
-        data = get_data_tensor(self.data_tensor, self.generator.model,
-                               self.simulation_topology, self.init_config_initial_type, self.device_manager.default_device)
+        data, avg_stable_metric_complexity = get_data_tensor(self.data_tensor, self.generator.model,
+                                                             self.simulation_topology, self.init_config_initial_type,
+                                                             self.device_manager.default_device)
 
         self.data_tensor = data
+        self.complexity_stable_metrics.append(avg_stable_metric_complexity)
 
         # Create the dataloader from the tensor
         self.train_dataloader = DataLoader(self.data_tensor, batch_size=BATCH_SIZE, shuffle=True)
@@ -403,8 +419,8 @@ class TrainingAdversarial(TrainingBase):
         for _ in range(n):
             batch = self.__get_one_new_batch()
             self.generator.optimizer.zero_grad()
-            predicted = self.model_p(self.__get_config_type(batch, CONFIG_FINAL))
-            errG = self.criterion_g(predicted, self.__get_config_type(batch, self.config_type_pred_target))
+            predicted = self.predictor.model(self.__get_config_type(batch, CONFIG_FINAL))
+            errG = self.generator.criterion(predicted, self.__get_config_type(batch, self.config_type_pred_target))
             errG.backward()
             self.generator.optimizer.step()
             loss += (-1 * errG.item())
@@ -570,20 +586,9 @@ class TrainingAdversarial(TrainingBase):
 
             if self.properties_g["can_train"]:
                 # +1 because the current epoch is 0-based, +2 because the generator can be trained from the next epoch
-                logging.info(f"Generator can start training from next epoch. The next epoch is number {self.current_epoch + 2}")
+                logging.debug(f"Generator can start training from next epoch. The next epoch is number {self.current_epoch + 2}")
 
         return self.properties_g["can_train"]
-
-
-    def __resource_cleanup(self) -> None:
-        """
-        Function for cleaning up the resources used by the training session.
-        If the device used for training is a GPU, the CUDA cache is cleared.
-
-        """
-
-        if self.device.type == "cuda":
-            torch.cuda.empty_cache()
 
 
     def __initialize_seed(self) -> None:
