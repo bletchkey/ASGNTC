@@ -15,7 +15,7 @@ class WeightedMSELoss(nn.Module):
         torch.Tensor: Weighted Mean Squared Error Loss
 
     """
-    def __init__(self, alpha: float = 5.0):
+    def __init__(self, alpha: float = 9.0):
         super(WeightedMSELoss, self).__init__()
         self.alpha = alpha
 
@@ -40,7 +40,7 @@ class WeightedBCELoss(nn.Module):
 
     """
 
-    def __init__(self, alpha: float = 2.0):
+    def __init__(self, alpha: float = 9.0):
         super(WeightedBCELoss, self).__init__()
         self.alpha = alpha
 
@@ -74,14 +74,14 @@ class CustomGoLLoss(nn.Module):
     """
     def __init__(self):
         super(CustomGoLLoss, self).__init__()
-        self.alpha = 10.0
+        self.alpha = 9.0
 
     def forward(self, prediction: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
 
-        loss = ((target - prediction) ** 2) * self.__weight(target, prediction)
+        loss = abs(target - prediction) * self.__weight(target)
 
         return torch.mean(loss)
 
     def __weight(self, target, prediction):
-        return 1 + (self.alpha * torch.abs(target - prediction))
+        return 1 + (self.alpha * target)
 

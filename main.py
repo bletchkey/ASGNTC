@@ -50,8 +50,8 @@ def main():
     setup_base_directory()
     setup_logging(path= CONFIG_DIR / "main_logging.json")
 
-    # train_predictor()
-    train_adversarial()
+    train_predictor()
+    # train_adversarial()
 
     return 0
 

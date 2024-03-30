@@ -205,8 +205,7 @@ def get_data_tensor(data_tensor: torch.Tensor, model_g: torch.nn.Module,
 
     # Calculate the average complexity of the stable metrics
     stable_metrics = get_config_from_batch(new_configs, CONFIG_METRIC_STABLE, device)
-    stable_metric_complexity = calculate_stable_metric_complexity(stable_metrics)
-    avg_stable_metric_complexity = stable_metric_complexity.mean().item()
+    avg_stable_metric_complexity = calculate_stable_metric_complexity(stable_metrics, mean=True)
 
     # If data_tensor is None, initialize it with new_configs
     if data_tensor is None:
