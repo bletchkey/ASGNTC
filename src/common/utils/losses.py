@@ -72,9 +72,9 @@ class CustomGoLLoss(nn.Module):
         torch.Tensor: Custom Game of Life Loss
 
     """
-    def __init__(self):
+    def __init__(self, alpha: float = 9.0):
         super(CustomGoLLoss, self).__init__()
-        self.alpha = 9.0
+        self.alpha = alpha
 
     def forward(self, prediction: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
 
@@ -82,6 +82,6 @@ class CustomGoLLoss(nn.Module):
 
         return torch.mean(loss)
 
-    def __weight(self, target, prediction):
+    def __weight(self, target):
         return 1 + (self.alpha * target)
 
