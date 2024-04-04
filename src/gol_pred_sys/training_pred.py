@@ -74,7 +74,7 @@ class TrainingPredictor(TrainingBase):
                                                     lr=P_SGD_LR,
                                                     momentum=P_SGD_MOMENTUM,
                                                     weight_decay=P_SGD_WEIGHT_DECAY),
-                                      criterion=CustomGoLLoss(),
+                                      criterion=WeightedMSELoss(),
                                       device_manager=self.device_manager)
 
         self.lr_scheduler = optim.lr_scheduler.ReduceLROnPlateau(

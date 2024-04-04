@@ -1,4 +1,5 @@
 import typing
+import numpy as np
 import matplotlib.pyplot as plt
 import torch
 from matplotlib.gridspec import GridSpec
@@ -34,25 +35,34 @@ class Playground():
 
     def simulate(self, config: torch.Tensor, steps: int) -> torch.Tensor:
 
+        initial = config
         config = config.to(self.__device_manager.default_device)
         sim_results = simulate_config(config, TOPOLOGY_TOROIDAL, steps=steps,
-                                  device=self.__device_manager.default_device)
+                                      device=self.__device_manager.default_device)
 
-        final           = sim_results["final"]
-        n_cells_initial = sim_results["n_cells_initial"]
-        n_cells_final   = sim_results["n_cells_final"]
-        metrics         = sim_results["all_metrics"]
+        period            = sim_results["period"].item()
+        transient_phase   = sim_results["transient_phase"].item()
+        simulated         = sim_results["simulated"]
+        final             = sim_results["final"]
+        n_cells_initial   = sim_results["n_cells_initial"].item()
+        n_cells_simulated = sim_results["n_cells_simulated"].item()
+        n_cells_final     = sim_results["n_cells_final"].item()
+        metrics           = sim_results["all_metrics"]
 
         results = {
-            META_PERIOD: final[META_PERIOD],
-            META_TRANSIENT_PHASE: final[META_TRANSIENT_PHASE],
-            META_N_CELLS_INITIAL : n_cells_initial,
-            META_N_CELLS_FINAL: n_cells_final,
-            CONFIG_FINAL: final[CONFIG_FINAL]["config"],
-            CONFIG_METRIC_EASY: metrics[CONFIG_METRIC_EASY]["config"],
-            CONFIG_METRIC_MEDIUM: metrics[CONFIG_METRIC_MEDIUM]["config"],
-            CONFIG_METRIC_HARD: metrics[CONFIG_METRIC_HARD]["config"],
-            CONFIG_METRIC_STABLE: metrics[CONFIG_METRIC_STABLE]["config"]
+            "period": period,
+            "transient_phase": transient_phase,
+            "n_cells_initial" : n_cells_initial,
+            "n_cells_simulated": n_cells_simulated,
+            "n_cells_final": n_cells_final,
+            "initial": initial,
+            "simulated": simulated,
+            "final": final,
+            "steps": steps,
+            "easy": metrics[CONFIG_METRIC_EASY]["config"],
+            "medium": metrics[CONFIG_METRIC_MEDIUM]["config"],
+            "hard": metrics[CONFIG_METRIC_HARD]["config"],
+            "stable": metrics[CONFIG_METRIC_STABLE]["config"]
         }
 
         return results
@@ -94,7 +104,7 @@ class Playground():
             return self.__predictor["model"](config)
 
 
-    def plot_record(self, record: dict) -> None:
+    def plot_record_db(self, record: dict) -> None:
         fig = plt.figure(figsize=(24, 12))
 
         gs = GridSpec(2, 6, figure=fig, height_ratios=[6, 1], hspace=0.1, wspace=0.1)
@@ -157,6 +167,72 @@ class Playground():
         plt.close(fig)
 
 
+    def plot_record_sim(self, record: dict) -> None:
+        fig = plt.figure(figsize=(24, 12))
+
+        gs = GridSpec(2, 7, figure=fig, height_ratios=[7, 1], hspace=0.1, wspace=0.1)
+
+        imshow_kwargs = {'cmap': 'gray', 'vmin': 0, 'vmax': 1}
+
+        titles = ["Initial Configuration", "Simulated Configuration","Final Configuration", "Easy Metric",
+                  "Medium Metric", "Hard Metric", "Stable Metric"]
+
+        # Image plots in the first row
+        for i, config in enumerate(["initial", "simulated", "final", "easy", "medium", "hard", "stable"]):
+            if i == 0:
+                ax = fig.add_subplot(gs[0, i])
+                ax.imshow(record[f"{config}"].detach().cpu().numpy().squeeze(), **imshow_kwargs)
+                ax.set_title(f"Initial - {record['n_cells_initial']} cells", fontsize=16)
+                ax.axis('off')
+                continue
+            if i == 1:
+                ax = fig.add_subplot(gs[0, i])
+                ax.imshow(record[f"{config}"].detach().cpu().numpy().squeeze(), **imshow_kwargs)
+                ax.set_title(f"Simulated - {record['n_cells_simulated']} cells", fontsize=16)
+                ax.axis('off')
+                continue
+            if i == 2:
+                ax = fig.add_subplot(gs[0, i])
+                ax.imshow(record[f"{config}"].detach().cpu().numpy().squeeze(), **imshow_kwargs)
+                ax.set_title(f"Final - {record['n_cells_final']} cells", fontsize=16)
+                ax.axis('off')
+                continue
+
+            ax = fig.add_subplot(gs[0, i])
+            ax.imshow(record[f"{config}"].detach().cpu().numpy().squeeze(), **imshow_kwargs)
+            ax.set_title(f"{titles[i]}", fontsize=16)
+
+            ax.axis('off')
+
+        # Text plot for metrics in the first row
+        configs_types_list = ["initial", "simulated", "final",
+                              "easy", "medium", "hard", "stable"]
+
+        for i, config in enumerate(configs_types_list):
+            ax = fig.add_subplot(gs[1, i])
+
+            if config == "simulated":
+                text_str = f"Steps: {record['steps']}"
+                ax.text(0.1, 0, text_str, ha="left", va="center", fontsize=14, wrap=True)
+                ax.axis('off')
+                continue
+
+            if config == "final":
+                text_str = f"Transient phase: {record['transient_phase']}\nPeriod: {record['period']}"
+                ax.text(0.1, 0, text_str, ha="left", va="center", fontsize=14, wrap=True)
+                ax.axis('off')
+                continue
+
+            ax.axis('off')
+
+        # Adjust layout for padding and spacing
+        plt.subplots_adjust(left=0.05, right=0.95, top=0.5, bottom=0.1, wspace=0.1, hspace=0)
+
+        # Save and close
+        plt.savefig(f"simulation_results.png", dpi = 600, bbox_inches='tight')
+        plt.close(fig)
+
+
     def __load_train_dataset(self):
 
         train_data_path = DATASET_DIR / f"{DATASET_NAME}_train.pt"
@@ -214,4 +290,44 @@ class Playground():
         }
 
         return informations
+
+
+    def ulam_spiral(self, size: int) -> torch.Tensor:
+
+        spiral = torch.zeros((size, size), dtype=torch.float32, device=self.__device_manager.default_device)
+
+        # Define the starting point and the initial direction
+        x, y = size // 2, size // 2
+        spiral[x, y] = 0
+
+        # Define movement directions (right, up, left, down)
+        directions = [(0, 1), (-1, 0), (0, -1), (1, 0)]
+        direction_index = 0  # Start with moving right
+        num = 1  # Start with the first number
+        steps = 1  # Steps to take in the current direction
+        num_changes = 0  # Count when we change direction
+
+        while 0 <= x < size and 0 <= y < size:
+            for _ in range(2):  # Change direction twice after completing two sides of a square
+                for _ in range(steps):
+                    if 0 <= x < size and 0 <= y < size:
+                        # Check if num is prime
+                        if num > 1:
+                            is_prime = True
+                            for i in range(2, int(torch.sqrt(torch.tensor(num)).item()) + 1):
+                                if num % i == 0:
+                                    is_prime = False
+                                    break
+                            spiral[x, y] = 1 if is_prime else 0
+                        num += 1
+                    # Move in the current direction
+                    dx, dy = directions[direction_index]
+                    x += dx
+                    y += dy
+                direction_index = (direction_index + 1) % 4  # Change direction
+                num_changes += 1
+                if num_changes % 2 == 0:
+                    steps += 1  # Increase steps after completing a layer
+
+        return spiral
 
