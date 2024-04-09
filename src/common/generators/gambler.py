@@ -18,22 +18,45 @@ class Gambler(nn.Module):
 
         self.softmax = nn.Softmax(dim=1)
 
-
     def forward(self, x) -> Tuple[torch.Tensor, torch.Tensor]:
-
 
         log_probability = torch.zeros(x.size(0), device=x.device)
 
-        for n in range(N_LIVING_CELLS_INITIAL):
+        for conv in self.convs:
+            x = conv(x)
 
-            for conv in self.convs:
-                x = conv(x)
+        x = self.softmax(x.view(x.size(0), -1)).view_as(x)
 
-            x = self.softmax(x.view(x.size(0), -1)).view_as(x)
-            distribution = torch.distributions.Categorical(x.view(x.size(0), -1))
+        distribution = torch.distributions.Categorical(x.view(x.size(0), -1))
+        category = distribution.sample(torch.Size([N_LIVING_CELLS_INITIAL]))
 
-            category = distribution.sample()
-            log_probability += distribution.log_prob(category)
+        log_probability = distribution.log_prob(category).sum(0)
+
+        y = torch.zeros_like(x.view(x.size(0), -1))
+        for i in range(N_LIVING_CELLS_INITIAL):
+            y.scatter_(1, category[i].unsqueeze(1), 1)
+
+        y = y.view_as(x)
+
+        x = y
 
         return x, -log_probability
+
+    # def forward(self, x) -> Tuple[torch.Tensor, torch.Tensor]:
+
+
+    #     log_probability = torch.zeros(x.size(0), device=x.device)
+
+    #     for n in range(N_LIVING_CELLS_INITIAL):
+
+    #         for conv in self.convs:
+    #             x = conv(x)
+
+    #         x = self.softmax(x.view(x.size(0), -1)).view_as(x)
+    #         distribution = torch.distributions.Categorical(x.view(x.size(0), -1))
+
+    #         category = distribution.sample()
+    #         log_probability += distribution.log_prob(category)
+
+    #     return x, -log_probability
 

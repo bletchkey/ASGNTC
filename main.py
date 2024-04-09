@@ -45,7 +45,8 @@ def playground():
 
     for c in config:
         print(c)
-        print(torch.argmax(c.view(-1), dim=0))
+        print(torch.argmax(c.view(-1)))
+        print(torch.sum(c.view(-1)))
 
     print(f"Prob: {prob}")
 
@@ -72,8 +73,8 @@ def main():
     setup_logging(path= CONFIG_DIR / "main_logging.json")
 
     # train_predictor()
-    # train_adversarial()
-    playground()
+    train_adversarial()
+    # playground()
 
     return 0
 

@@ -172,7 +172,7 @@ class TrainingAdversarial(TrainingBase):
 
                 step_start_time = time.time()
 
-                # self.__train_predictor()
+                self.__train_predictor()
 
                 if self.properties_g["enabled"] and self.properties_g["can_train"]:
                     self.__train_generator()
@@ -398,8 +398,13 @@ class TrainingAdversarial(TrainingBase):
         for batch_count, batch in enumerate(self.train_dataloader, start=1):
 
             self.predictor.optimizer.zero_grad()
-            predicted = self.predictor.model(self.__get_config_type(batch, CONFIG_INITIAL))
-            errP = self.predictor.criterion(predicted , self.__get_config_type(batch, self.config_type_pred_target))
+
+            config_initial = self.__get_config_type(batch, CONFIG_INITIAL).detach()
+            target_config  = self.__get_config_type(batch, self.config_type_pred_target).detach()
+
+            predicted = self.predictor.model(config_initial)
+            errP      = self.predictor.criterion(predicted, target_config)
+
             errP.backward()
             self.predictor.optimizer.step()
 
