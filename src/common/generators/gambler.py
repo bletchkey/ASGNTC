@@ -12,8 +12,9 @@ class Gambler(nn.Module):
         super(Gambler, self).__init__()
 
         self.convs = nn.ModuleList([
-            nn.Conv2d(N_CHANNELS, 8, kernel_size=3, stride=1, padding=1),
-            nn.Conv2d(8, N_CHANNELS, kernel_size=3, stride=1, padding=1)
+            nn.Conv2d(N_CHANNELS, 32, kernel_size=3, stride=1, padding=1),
+            nn.Conv2d(32,         32, kernel_size=3, stride=1, padding=1),
+            nn.Conv2d(32, N_CHANNELS, kernel_size=3, stride=1, padding=1)
         ])
 
         self.softmax = nn.Softmax(dim=1)
@@ -36,11 +37,10 @@ class Gambler(nn.Module):
         for i in range(N_LIVING_CELLS_INITIAL):
             y.scatter_(1, category[i].unsqueeze(1), 1)
 
-        y = y.view_as(x)
-
-        x = y
+        x = y.view_as(x)
 
         return x, -log_probability
+
 
     # def forward(self, x) -> Tuple[torch.Tensor, torch.Tensor]:
 

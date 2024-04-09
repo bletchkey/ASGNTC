@@ -434,12 +434,13 @@ class TrainingAdversarial(TrainingBase):
         self.generator.model.train()
 
         for i in range(N_BATCHES):
-            batch, probabilities = self.__get_one_new_batch()
             self.generator.optimizer.zero_grad()
+
+            batch, probabilities = self.__get_one_new_batch()
             predicted = self.predictor.model(self.__get_config_type(batch, CONFIG_INITIAL))
-            errG = self.generator.criterion(predicted,
-                                            self.__get_config_type(batch, self.config_type_pred_target),
-                                            probabilities[0])
+            errG      = self.generator.criterion(predicted,
+                                                 self.__get_config_type(batch, self.config_type_pred_target),
+                                                 probabilities[0])
 
             errG.backward()
 

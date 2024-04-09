@@ -13,7 +13,7 @@ from src.common.predictor import Predictor_Baseline, Predictor_ResNet, \
                                  Predictor_UNet, Predictor_GloNet, \
                                  Predictor_Transformer
 
-from src.common.generator import Generator_DCGAN, Generator_Gambler
+from src.common.generator import Generator_DCGAN, Generator_Gambler, Generator_Gambler_Gumble
 
 
 def playground():
@@ -58,7 +58,7 @@ def playground():
 
 def train_adversarial():
     train_adv = TrainingAdversarial(model_p=Predictor_Baseline(),
-                                    model_g=Generator_Gambler())
+                                    model_g=Generator_Gambler_Gumble())
     train_adv.run()
 
 

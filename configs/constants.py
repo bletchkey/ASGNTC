@@ -128,7 +128,7 @@ N_SIM_STEPS = 20
 N_MAX_SIM_STEPS = 1000
 
 # Number of living cells in the initial configuration
-N_LIVING_CELLS_INITIAL = 32
+N_LIVING_CELLS_INITIAL = 128
 
 # Threshold for the value of the cells in the generated configurations
 THRESHOLD_CELL_VALUE = 0.5
