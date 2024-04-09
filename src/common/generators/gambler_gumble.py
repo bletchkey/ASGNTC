@@ -14,31 +14,36 @@ class GamblerGumble(nn.Module):
             nn.Conv2d(32, 32, kernel_size=3, stride=1, padding=1),
             nn.Conv2d(32, N_CHANNELS, kernel_size=3, stride=1, padding=1)
         ])
+
         self.softmax = nn.Softmax(dim=1)
 
-    def forward(self, x) -> Tuple[torch.Tensor, torch.Tensor]:
-        log_probability = torch.zeros(x.size(0), device=x.device)
+    def forward(self, x):
+
+        batch_size = x.size(0)
+        log_probability = torch.zeros(batch_size, device=x.device)
 
         for conv in self.convs:
             x = conv(x)
 
-        # Flatten and apply softmax
-        x = self.softmax(x.view(x.size(0), -1))
+        x_flat = self.softmax(x.view(batch_size, -1))
 
-        # Apply Gumbel-Softmax
-        gumbel_output = self.gumbel_softmax(x, tau=1.0, dim=1)
+        # Generate a continuous probability distribution using Gumbel-Softmax
+        gumbel_output = self.gumbel_softmax(x_flat, tau=1.0, dim=1)
 
-        # Sample categories based on Gumbel-Softmax output
-        _, category = gumbel_output.max(dim=1)
+        # Select N_LIVING_CELLS_INITIAL pixels by choosing the top probabilities
+        values, indices = torch.topk(gumbel_output, N_LIVING_CELLS_INITIAL, dim=1)
 
-        # Assuming you need to log the probability of selected actions
-        log_probability = torch.log(gumbel_output[range(gumbel_output.shape[0]), category])
+        # Create a new zero tensor and set the selected indices to 1
+        y = torch.zeros_like(x_flat)
+        y.scatter_(1, indices, 1)
 
-        # Convert the sample indices into one-hot encoded form and reshape
-        y = F.one_hot(category, num_classes=GRID_SIZE * GRID_SIZE).to(x.dtype)
-        y = y.view(-1, N_CHANNELS, GRID_SIZE, GRID_SIZE)
+        log_probability = torch.log(values).sum(dim=1)
+
+        # Reshape the output to have the correct dimensions
+        y = y.view(batch_size, N_CHANNELS, GRID_SIZE, GRID_SIZE)
 
         return y, -log_probability
+
 
     def gumbel_softmax(self, logits, tau=1.0, dim=-1):
         gumbels = -torch.empty_like(logits).exponential_().log()  # Generate Gumbel noise

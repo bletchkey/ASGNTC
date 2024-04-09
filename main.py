@@ -58,7 +58,7 @@ def playground():
 
 def train_adversarial():
     train_adv = TrainingAdversarial(model_p=Predictor_Baseline(),
-                                    model_g=Generator_Gambler_Gumble())
+                                    model_g=Generator_Gambler())
     train_adv.run()
 
 
