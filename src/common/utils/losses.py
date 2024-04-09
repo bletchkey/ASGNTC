@@ -76,11 +76,17 @@ class CustomGoLLoss(nn.Module):
         super(CustomGoLLoss, self).__init__()
         self.alpha = alpha
 
-    def forward(self, prediction: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
+    def forward(self,
+                prediction: torch.Tensor,
+                target: torch.Tensor,
+                log_probability: torch.Tensor) -> torch.Tensor:
 
-        loss = abs(target - prediction) * self.__weight(target)
+        log_probability = log_probability.view(-1, 1, 1, 1).expand_as(target)
+        weighted_error  = (target - prediction) ** 2 * self.__weight(target)
 
-        return torch.mean(loss)
+        loss = -1 * torch.mean(log_probability * weighted_error)
+
+        return loss
 
     def __weight(self, target):
         return 1 + (self.alpha * target)

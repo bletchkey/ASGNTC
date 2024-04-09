@@ -161,7 +161,6 @@ def __calculate_metrics(configs: list, stable_config: torch.Tensor, device: torc
             sim_metrics["medium"][-step:] = [x * (1 - eps_medium) for x in sim_metrics["medium"][-step:]]
             sim_metrics["hard"][-step:]   = [x * (1 - eps_hard) for x in sim_metrics["hard"][-step:]]
 
-
     """
 
     steps = len(configs)

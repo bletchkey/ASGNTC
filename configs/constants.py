@@ -9,13 +9,13 @@ BATCH_SIZE = 128
 # Number of batches to generate at each epoch
 N_BATCHES = 128
 
-# Max number of batches in the dataset
+# Max number of batches in the dataloader
 N_MAX_BATCHES = 10*N_BATCHES
 
 # Number of new configurations to generate at each epoch
 N_CONFIGS = N_BATCHES * BATCH_SIZE
 
-# Max number of configurations in dataset
+# Max number of configurations in the dataloader
 N_MAX_CONFIGS = N_MAX_BATCHES * BATCH_SIZE
 
 # Number of steps for training with a certain dataset in an epoch
@@ -128,7 +128,7 @@ N_SIM_STEPS = 20
 N_MAX_SIM_STEPS = 1000
 
 # Number of living cells in the initial configuration
-N_LIVING_CELLS_VALUE = 2 * GRID_SIZE
+N_LIVING_CELLS_INITIAL = 8
 
 # Threshold for the value of the cells in the generated configurations
 THRESHOLD_CELL_VALUE = 0.5

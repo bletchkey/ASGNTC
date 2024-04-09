@@ -12,6 +12,7 @@ import os
 import random
 import time
 from pathlib import Path
+from typing  import Tuple
 import logging
 
 import torch
@@ -30,7 +31,7 @@ from src.common.device_manager import DeviceManager
 from src.common.training_base  import TrainingBase
 from src.common.model_manager  import ModelManager
 
-from src.common.utils.losses import WeightedMSELoss
+from src.common.utils.losses import WeightedMSELoss, CustomGoLLoss
 
 from src.common.utils.helpers import get_elapsed_time_str
 
@@ -90,16 +91,13 @@ class TrainingAdversarial(TrainingBase):
         self.losses        = {GENERATOR: [], PREDICTOR: []}
         self.lr_each_epoch = {PREDICTOR: [], GENERATOR: []}
 
-
-        criterion = WeightedMSELoss()
-
         self.generator = ModelManager(model=model_g,
                                       optimizer=optim.AdamW(model_g.parameters(),
                                                     lr=G_ADAMW_LR,
                                                     betas=(G_ADAMW_B1, G_ADAMW_B2),
                                                     eps=G_ADAMW_EPS,
                                                     weight_decay=G_ADAMW_WEIGHT_DECAY),
-                                      criterion=lambda x, y: -criterion(x, y),
+                                      criterion=CustomGoLLoss(),
                                       device_manager=self.device_manager)
 
         self.predictor = ModelManager(model=model_p,
@@ -107,13 +105,16 @@ class TrainingAdversarial(TrainingBase):
                                                     lr=P_SGD_LR,
                                                     momentum=P_SGD_MOMENTUM,
                                                     weight_decay=P_SGD_WEIGHT_DECAY),
-                                      criterion=criterion,
+                                      criterion=WeightedMSELoss(),
                                       device_manager=self.device_manager)
 
 
         self.fixed_noise  = torch.randn(BATCH_SIZE, N_Z, 1, 1, device=self.device_manager.default_device)
 
-        self.properties_g = {"enabled": True, "can_train": False}
+        self.fixed_input  = torch.zeros(BATCH_SIZE, N_CHANNELS, GRID_SIZE, GRID_SIZE, device=self.device_manager.default_device)
+        self.fixed_input[:, :, GRID_SIZE // 2, GRID_SIZE // 2] = 1
+
+        self.properties_g = {"enabled": True, "can_train": True}
 
         self.data_tensor  = None
 
@@ -144,6 +145,8 @@ class TrainingAdversarial(TrainingBase):
 
         for epoch in range(NUM_EPOCHS):
 
+            logging.info(f"Adversarial training epoch {epoch+1}/{NUM_EPOCHS}")
+
             self.step_times_secs.append([])
             self.current_epoch = epoch
 
@@ -169,7 +172,7 @@ class TrainingAdversarial(TrainingBase):
 
                 step_start_time = time.time()
 
-                self.__train_predictor()
+                # self.__train_predictor()
 
                 if self.properties_g["enabled"] and self.properties_g["can_train"]:
                     self.__train_generator()
@@ -202,7 +205,7 @@ class TrainingAdversarial(TrainingBase):
         """
         str_step_time = f"{get_elapsed_time_str(self.step_times_secs[self.current_epoch][step])}"
         str_step      = f"{step+1}/{NUM_TRAINING_STEPS}"
-        str_err_p     = f"{self.losses[PREDICTOR][-1]}"
+        str_err_p     = f"{self.losses[PREDICTOR][-1]}" if len(self.losses[PREDICTOR]) > 0 else "N/A"
         str_err_g     = f"{self.losses[GENERATOR][-1]}" if len(self.losses[GENERATOR]) > 0 else "N/A"
 
 
@@ -264,7 +267,7 @@ class TrainingAdversarial(TrainingBase):
                                 f"Threshold for the value of the cells: {THRESHOLD_CELL_VALUE}\n")
         elif init_config_initial_type == INIT_CONFIG_INITAL_N_CELLS:
             init_config_info = (f"Initial configuration type: n_living_cells\n"
-                                f"Number of living cells in initial grid: {N_LIVING_CELLS_VALUE}\n")
+                                f"Number of living cells in initial grid: {N_LIVING_CELLS_INITIAL}\n")
         else:
             init_config_info = "Initial configuration type: unknown\n"
 
@@ -293,7 +296,7 @@ class TrainingAdversarial(TrainingBase):
             f"\nPredicting config type: {self.config_type_pred_target}\n"
             f"\nModel specs:\n"
             f"Optimizer P: {self.predictor.optimizer.__class__.__name__}\n"
-            f"Criterion P: {self.generator.criterion.__class__.__name__}\n"
+            f"Criterion P: {self.predictor.criterion.__class__.__name__}\n"
             f"{generator_info}"
             f"\nTraining progress:\n\n\n"
         )
@@ -331,10 +334,12 @@ class TrainingAdversarial(TrainingBase):
         # Create the dataloader from the tensor
         self.train_dataloader = DataLoader(self.data_tensor, batch_size=BATCH_SIZE, shuffle=True)
 
+        logging.debug(f"Dataloader updated, batches in dataloader: {len(self.train_dataloader)}/{N_MAX_BATCHES}")
+
         return self.train_dataloader
 
 
-    def __get_new_batches(self, n_batches) -> torch.Tensor:
+    def __get_new_batches(self, n_batches) -> Tuple[torch.Tensor, list]:
         """
         Generate new configurations using the generator model.
 
@@ -343,6 +348,7 @@ class TrainingAdversarial(TrainingBase):
 
         Returns:
             new_configs (list): A list of dictionaries containing information about the generated configurations.
+            probabilities (list): A list of the probabilities associated with the generated configurations.
 
         """
 
@@ -350,12 +356,13 @@ class TrainingAdversarial(TrainingBase):
                                      self.init_config_initial_type, self.device_manager.default_device)
 
 
-    def __get_one_new_batch(self) -> torch.Tensor:
+    def __get_one_new_batch(self) -> Tuple[torch.Tensor, list]:
         """
         Generate one new batch of configurations using the generator model.
 
         Returns:
             new_config (dict): A dictionary containing information about the generated configurations.
+            probabilities (list): A list of the probabilities associated with the generated configurations.
 
         """
 
@@ -383,21 +390,25 @@ class TrainingAdversarial(TrainingBase):
 
         """
 
+        logging.debug(f"Training predictor model")
+
         loss = 0
         self.predictor.model.train()
 
-        for batch in self.train_dataloader:
+        for batch_count, batch in enumerate(self.train_dataloader, start=1):
+
             self.predictor.optimizer.zero_grad()
             predicted = self.predictor.model(self.__get_config_type(batch, CONFIG_INITIAL))
             errP = self.predictor.criterion(predicted , self.__get_config_type(batch, self.config_type_pred_target))
             errP.backward()
             self.predictor.optimizer.step()
+
             loss += errP.item()
+            running_avg_loss = loss / batch_count
 
         self.n_times_trained_p += 1
 
-        loss /= len(self.train_dataloader)
-        self.losses[PREDICTOR].append(loss)
+        self.losses[PREDICTOR].append(running_avg_loss)
 
         return loss
 
@@ -411,24 +422,30 @@ class TrainingAdversarial(TrainingBase):
 
         """
 
+        logging.debug(f"Training generator model")
+
         loss = 0
-        n = N_BATCHES
 
         self.generator.model.train()
 
-        for _ in range(n):
-            batch = self.__get_one_new_batch()
+        for i in range(N_BATCHES):
+            batch, probabilities = self.__get_one_new_batch()
             self.generator.optimizer.zero_grad()
-            predicted = self.predictor.model(self.__get_config_type(batch, CONFIG_FINAL))
-            errG = self.generator.criterion(predicted, self.__get_config_type(batch, self.config_type_pred_target))
+            predicted = self.predictor.model(self.__get_config_type(batch, CONFIG_INITIAL))
+            errG = self.generator.criterion(predicted,
+                                            self.__get_config_type(batch, self.config_type_pred_target),
+                                            probabilities[0])
+
             errG.backward()
+
             self.generator.optimizer.step()
-            loss += (-1 * errG.item())
+
+            loss += errG.item()
+            running_avg_loss = loss / (i + 1)
 
         self.n_times_trained_g += 1
 
-        loss /= n
-        self.losses[GENERATOR].append(loss)
+        self.losses[GENERATOR].append(running_avg_loss)
 
         return loss
 
@@ -525,7 +542,7 @@ class TrainingAdversarial(TrainingBase):
         """
 
         return test_models(self.generator.model, self.predictor.model, self.simulation_topology,
-                           self.init_config_initial_type, self.fixed_noise, self.config_type_pred_target,
+                           self.init_config_initial_type, self.fixed_input, self.config_type_pred_target,
                            self.device_manager.default_device)
 
 
