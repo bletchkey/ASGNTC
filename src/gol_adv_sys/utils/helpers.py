@@ -2,6 +2,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import logging
 import torch
+from typing import Tuple
 from pathlib import Path
 
 from configs.constants import *
@@ -368,7 +369,8 @@ def generate_new_batches(model_g: torch.nn.Module, n_batches: int, topology: str
     return data, probabilities
 
 
-def __generate_initial_config(model_g: torch.nn.Module, device: torch.device) -> torch.Tensor:
+def __generate_initial_config(model_g: torch.nn.Module,
+                              device: torch.device) -> Tuple[torch.Tensor, torch.Tensor]:
 
     """
     Function to generate the initial configuration
@@ -395,9 +397,9 @@ def __generate_initial_config(model_g: torch.nn.Module, device: torch.device) ->
     input_config = torch.zeros(BATCH_SIZE, N_CHANNELS, GRID_SIZE, GRID_SIZE, device=device)
     input_config[:, :, GRID_SIZE // 2, GRID_SIZE // 2] = 1
 
-    generated_config = model_g(input_config)
+    generated_config, log_probabilities = model_g(input_config)
 
-    return generated_config
+    return generated_config, log_probabilities
 
 
 def __initialize_config_n_living_cells(config: torch.Tensor) -> torch.Tensor:

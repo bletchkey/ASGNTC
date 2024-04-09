@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 
 from typing import Tuple
 
@@ -20,6 +21,7 @@ class Gambler(nn.Module):
 
     def forward(self, x) -> Tuple[torch.Tensor, torch.Tensor]:
 
+
         log_probability = torch.zeros(x.size(0), device=x.device)
 
         for n in range(N_LIVING_CELLS_INITIAL):
@@ -29,6 +31,7 @@ class Gambler(nn.Module):
 
             x = self.softmax(x.view(x.size(0), -1)).view_as(x)
             distribution = torch.distributions.Categorical(x.view(x.size(0), -1))
+
             category = distribution.sample()
             log_probability += distribution.log_prob(category)
 

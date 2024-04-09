@@ -21,7 +21,7 @@ def simulate_config(config: torch.Tensor, topology: str, steps: int,
 
     """
     # count living cells in the initial configuration
-    n_cells_initial = torch.sum(config, dim=[2, 3], dtype=torch.int32)
+    n_cells_initial = torch.sum(config, dim=[2, 3], dtype=torch.float32)
 
     # Mapping of topology types to their corresponding simulation functions
     simulation_functions = {

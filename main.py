@@ -36,9 +36,22 @@ def playground():
 
     pg = Playground()
 
-    inital_config = pg.ulam_spiral(GRID_SIZE)
-    inital_config = inital_config.unsqueeze(0).unsqueeze(0)
-    results       = pg.simulate(inital_config, steps=1)
+    # inital_config = pg.ulam_spiral(GRID_SIZE)
+    # inital_config = inital_config.unsqueeze(0).unsqueeze(0)
+    # results       = pg.simulate(inital_config, steps=1)
+    # pg.plot_record_sim(results)
+
+    config, prob = pg.generate_gambler(4)
+
+    for c in config:
+        print(c)
+        print(torch.argmax(c.view(-1), dim=0))
+
+    print(f"Prob: {prob}")
+
+
+    config, prob = pg.generate_gambler(BATCH_SIZE)
+    results = pg.simulate(config, steps=20)
     pg.plot_record_sim(results)
 
 
@@ -59,8 +72,8 @@ def main():
     setup_logging(path= CONFIG_DIR / "main_logging.json")
 
     # train_predictor()
-    train_adversarial()
-    # playground()
+    # train_adversarial()
+    playground()
 
     return 0
 

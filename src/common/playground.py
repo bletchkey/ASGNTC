@@ -10,7 +10,9 @@ from configs.constants import *
 from configs.paths import DATASET_DIR, TRAINED_MODELS_DIR
 
 from src.gol_pred_sys.dataset_manager import FixedDataset
-from src.common.device_manager import DeviceManager
+from src.common.device_manager        import DeviceManager
+
+from src.common.generator import Generator_Gambler
 
 
 class Playground():
@@ -40,13 +42,13 @@ class Playground():
         sim_results = simulate_config(config, TOPOLOGY_TOROIDAL, steps=steps,
                                       device=self.__device_manager.default_device)
 
-        period            = sim_results["period"].item()
-        transient_phase   = sim_results["transient_phase"].item()
+        period            = sim_results["period"].detach().cpu().numpy()
+        transient_phase   = sim_results["transient_phase"].detach().cpu().numpy()
         simulated         = sim_results["simulated"]
         final             = sim_results["final"]
-        n_cells_initial   = sim_results["n_cells_initial"].item()
-        n_cells_simulated = sim_results["n_cells_simulated"].item()
-        n_cells_final     = sim_results["n_cells_final"].item()
+        n_cells_initial   = sim_results["n_cells_initial"].detach().cpu().numpy()
+        n_cells_simulated = sim_results["n_cells_simulated"].detach().cpu().numpy()
+        n_cells_final     = sim_results["n_cells_final"].detach().cpu().numpy()
         metrics           = sim_results["all_metrics"]
 
         results = {
@@ -330,4 +332,19 @@ class Playground():
                     steps += 1  # Increase steps after completing a layer
 
         return spiral
+
+
+    def generate_gambler(self, batch_size:int) -> torch.Tensor:
+
+        generator = Generator_Gambler().to(self.__device_manager.default_device)
+
+        generator.eval()
+
+        config = torch.zeros(batch_size, N_CHANNELS, GRID_SIZE, GRID_SIZE,
+                             device=self.__device_manager.default_device)
+        config[:, :, GRID_SIZE // 2, GRID_SIZE // 2] = 1
+
+        generated_config, probabilities = generator(config)
+
+        return generated_config, probabilities
 
