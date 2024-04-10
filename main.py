@@ -9,11 +9,13 @@ from src.gol_pred_sys.training_pred import TrainingPredictor
 from src.gol_adv_sys.training_adv   import TrainingAdversarial
 from src.common.playground          import Playground
 
-from src.common.predictor import Predictor_Baseline, Predictor_ResNet, \
-                                 Predictor_UNet, Predictor_GloNet, \
-                                 Predictor_Transformer
+from src.common.predictor import Predictor_Baseline, Predictor_Baseline_v2, \
+                                 Predictor_ResNet, Predictor_UNet, \
+                                 Predictor_Transformer, Predictor_GloNet \
 
-from src.common.generator import Generator_DCGAN, Generator_Gambler, Generator_Gambler_Gumble
+
+from src.common.generator import Generator_DCGAN, Generator_Gambler, \
+                                 Generator_Gambler_Gumble, Generator_Gambler_v2
 
 
 def playground():
@@ -52,13 +54,13 @@ def playground():
 
 
     config, prob = pg.generate_gambler(BATCH_SIZE)
-    results = pg.simulate(config, steps=20)
+    results      = pg.simulate(config, steps=20)
     pg.plot_record_sim(results)
 
 
 def train_adversarial():
-    train_adv = TrainingAdversarial(model_p=Predictor_Baseline(),
-                                    model_g=Generator_Gambler())
+    train_adv = TrainingAdversarial(model_p=Predictor_Baseline_v2(),
+                                    model_g=Generator_Gambler_v2())
     train_adv.run()
 
 

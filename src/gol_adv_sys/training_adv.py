@@ -31,9 +31,9 @@ from src.common.device_manager import DeviceManager
 from src.common.training_base  import TrainingBase
 from src.common.model_manager  import ModelManager
 
-from src.common.utils.losses import WeightedMSELoss, CustomGoLLoss
+from src.common.utils.losses   import WeightedMSELoss, CustomGoLLoss
 
-from src.common.utils.helpers import get_elapsed_time_str
+from src.common.utils.helpers  import get_elapsed_time_str
 
 from src.gol_adv_sys.utils.helpers import get_data_tensor, generate_new_batches, \
                                           test_models, save_progress_plot, get_config_from_batch
@@ -97,7 +97,7 @@ class TrainingAdversarial(TrainingBase):
                                                     betas=(G_ADAMW_B1, G_ADAMW_B2),
                                                     eps=G_ADAMW_EPS,
                                                     weight_decay=G_ADAMW_WEIGHT_DECAY),
-                                      criterion=CustomGoLLoss(),
+                                      criterion= CustomGoLLoss(model=GENERATOR),
                                       device_manager=self.device_manager)
 
         self.predictor = ModelManager(model=model_p,
@@ -105,7 +105,7 @@ class TrainingAdversarial(TrainingBase):
                                                     lr=P_SGD_LR,
                                                     momentum=P_SGD_MOMENTUM,
                                                     weight_decay=P_SGD_WEIGHT_DECAY),
-                                      criterion=WeightedMSELoss(),
+                                      criterion=CustomGoLLoss(model=PREDICTOR),
                                       device_manager=self.device_manager)
 
 
@@ -173,9 +173,11 @@ class TrainingAdversarial(TrainingBase):
                 step_start_time = time.time()
 
                 self.__train_predictor()
+                self.device_manager.clear_resources()
 
                 if self.properties_g["enabled"] and self.properties_g["can_train"]:
                     self.__train_generator()
+                    self.device_manager.clear_resources()
 
                 step_end_time = time.time()
                 self.step_times_secs[self.current_epoch].append(step_end_time - step_start_time)
@@ -441,6 +443,8 @@ class TrainingAdversarial(TrainingBase):
             errG      = self.generator.criterion(predicted,
                                                  self.__get_config_type(batch, self.config_type_pred_target),
                                                  probabilities[0])
+
+            logging.debug(f"Average probability: {probabilities[0].sum().item()/BATCH_SIZE}")
 
             errG.backward()
 

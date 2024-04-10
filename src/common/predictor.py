@@ -1,14 +1,22 @@
 import logging
 
 from configs.constants import *
-from src.common.predictors.baseline    import Baseline
+from src.common.predictors.baseline    import Baseline, Baseline_v2
 from src.common.predictors.unet        import UNet
 from src.common.predictors.resnet      import ResNet
 from src.common.predictors.glonet      import GloNet
 from src.common.predictors.transformer import GoLTransformer
 
+
 def Predictor_Baseline():
     model = Baseline()
+    logging.debug(model)
+
+    return model
+
+
+def Predictor_Baseline_v2():
+    model = Baseline_v2()
     logging.debug(model)
 
     return model

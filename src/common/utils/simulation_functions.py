@@ -62,8 +62,8 @@ def simulate_config(config: torch.Tensor, topology: str, steps: int,
     all_metrics = __calculate_metrics(sim_configs, stable_config, device)
 
     # Count living cells in the final configuration
-    n_cells_simulated = torch.sum(simulated, dim=[2, 3], dtype=torch.int32)
-    n_cells_final     = torch.sum(final_config, dim=[2, 3], dtype=torch.int32)
+    n_cells_simulated = torch.sum(simulated, dim=[2, 3], dtype=torch.float32)
+    n_cells_final     = torch.sum(final_config, dim=[2, 3], dtype=torch.float32)
 
     results = {
         "simulated": simulated,
@@ -71,9 +71,9 @@ def simulate_config(config: torch.Tensor, topology: str, steps: int,
         "all_metrics": all_metrics,
         "transient_phase": final["transient_phase"],
         "period": final["period"],
-        "n_cells_initial": n_cells_initial,
-        "n_cells_simulated": n_cells_simulated,
-        "n_cells_final": n_cells_final
+        "n_cells_initial": n_cells_initial.int(),
+        "n_cells_simulated": n_cells_simulated.int(),
+        "n_cells_final": n_cells_final.int()
     }
 
     return results

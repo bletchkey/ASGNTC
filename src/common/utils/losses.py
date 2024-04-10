@@ -66,28 +66,36 @@ class CustomGoLLoss(nn.Module):
     Custom loss function for the Game of Life task.
 
     Args:
-        None
+        model (str):   Model type
+        alpha (float): Weighting factor to be applied to the loss
 
     Returns:
-        torch.Tensor: Custom Game of Life Loss
+        torch.Tensor: Custom loss for the Generator/Predictor
 
     """
-    def __init__(self, alpha: float = 9.0):
+    def __init__(self, model:str, alpha: float = 9.0):
         super(CustomGoLLoss, self).__init__()
         self.alpha = alpha
+        self.model = model
 
     def forward(self,
                 prediction: torch.Tensor,
                 target: torch.Tensor,
-                log_probability: torch.Tensor) -> torch.Tensor:
+                probability: torch.Tensor = None) -> torch.Tensor:
 
-        log_probability = log_probability.view(-1, 1, 1, 1).expand_as(target)
-        weighted_error  = (target - prediction) ** 2 * self.__weight(target)
+        loss = 0
+        weigthed_mse = (target - prediction) ** 2 * self.__weight(target)
 
-        loss = -1 * torch.mean(log_probability * weighted_error)
+        if self.model == PREDICTOR:
+            loss = torch.mean(weigthed_mse)
+
+        elif self.model == GENERATOR:
+            probability     = probability.view(-1, 1, 1, 1).expand_as(target)
+            loss            = torch.mean(probability * weigthed_mse)
+        else:
+            raise ValueError(f"Invalid model type: {self.model}")
 
         return loss
 
     def __weight(self, target):
         return 1 + (self.alpha * target)
-

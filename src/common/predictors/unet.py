@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 
-from src.common.predictors.utils.toroidal import toroidal_Conv2d
+from src.common.utils.helpers import toroidal_Conv2d
 from configs.constants import *
 
 

@@ -334,8 +334,8 @@ def generate_new_batches(model_g: torch.nn.Module, n_batches: int, topology: str
 
     for _ in range(n_batches):
 
-        initial_config, log_probabilities = __generate_initial_config(model_g, device)
-        probabilities.append(log_probabilities)
+        initial_config, probs = __generate_initial_config(model_g, device)
+        probabilities.append(probs)
 
         with torch.no_grad():
             sim_results = simulate_config(config=initial_config, topology=topology,
@@ -397,9 +397,9 @@ def __generate_initial_config(model_g: torch.nn.Module,
     input_config = torch.zeros(BATCH_SIZE, N_CHANNELS, GRID_SIZE, GRID_SIZE, device=device)
     input_config[:, :, GRID_SIZE // 2, GRID_SIZE // 2] = 1
 
-    generated_config, log_probabilities = model_g(input_config)
+    generated_config, probabilities = model_g(input_config)
 
-    return generated_config, log_probabilities
+    return generated_config, probabilities
 
 
 def __initialize_config_n_living_cells(config: torch.Tensor) -> torch.Tensor:
