@@ -91,7 +91,7 @@ class CustomGoLLoss(nn.Module):
 
         elif self.model == GENERATOR:
             probability     = probability.view(-1, 1, 1, 1).expand_as(target)
-            loss            = torch.mean(probability * weigthed_mse)
+            loss            = -1 * torch.mean(probability * weigthed_mse)
         else:
             raise ValueError(f"Invalid model type: {self.model}")
 
@@ -99,3 +99,4 @@ class CustomGoLLoss(nn.Module):
 
     def __weight(self, target):
         return 1 + (self.alpha * target)
+

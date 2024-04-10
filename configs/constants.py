@@ -4,7 +4,7 @@
 NUM_EPOCHS = 200
 
 # Batch size during training
-BATCH_SIZE = 16
+BATCH_SIZE = 32
 
 # Number of batches to generate at each epoch
 N_BATCHES = 128
