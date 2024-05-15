@@ -27,7 +27,6 @@ def Generator_Gambler():
 
     return model
 
-
 def Generator_Gambler_v2():
     model = Gambler_v2()
     logging.debug(model)
