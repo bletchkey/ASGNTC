@@ -1,12 +1,12 @@
-### ADVERSARIAL TRAINING PARAMETERS #################################################################
+### PREDICTOR TRAINING PARAMETERS ###################################################
 
 # Number of training epochs
 P_NUM_EPOCHS = 100
 
 # Batch size during training
-P_BATCH_SIZE = 128
+P_BATCH_SIZE = 64
 
-### ADVERSARIAL TRAINING PARAMETERS #################################################################
+### ADVERSARIAL TRAINING PARAMETERS #################################################
 
 # Number of training epochs
 NUM_EPOCHS = 200
@@ -32,6 +32,8 @@ NUM_TRAINING_STEPS = 2
 # Average loss of P threshold before training G
 THRESHOLD_AVG_LOSS_P = 0.05
 
+### TRAINING GENERAL ##############################################################
+
 # File name for monitoring the training progress
 FILE_NAME_TRAINING_PROGRESS = "training_progress.txt"
 
@@ -49,7 +51,7 @@ DATASET_VAL_RATIO = 0.1
 # Ratio of the dataset to use for testing
 DATASET_TEST_RATIO = 0.1
 
-# Batch size for the dataset
+# Batch size used in the generation of the dataset
 DATASET_BATCH_SIZE = 128
 
 # Metric steps for the dataset
@@ -59,7 +61,7 @@ DATASET_N_SIM_STEPS = 1000
 DATASET_NAME = "gol_dataset"
 
 
-# NAMING CONVENTIONS ####################################################################
+# NAMING CONVENTIONS #############################################################
 
 # Dataset keys
 TRAIN      = "train"
@@ -194,7 +196,6 @@ P_SGD_WEIGHT_DECAY = 1e-4
 
 
 # Warmup phase parameters
-WARMUP_TOTAL_STEPS = (int(DATASET_N_TOTAL_CONFIGS * DATASET_TRAIN_RATIO) // DATASET_BATCH_SIZE)
+WARMUP_TOTAL_STEPS = (int(DATASET_N_TOTAL_CONFIGS * DATASET_TRAIN_RATIO) // P_BATCH_SIZE)
 WARMUP_INITIAL_LR  = 1e-6
 WARMUP_TARGET_LR   = 0.1
-

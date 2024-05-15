@@ -61,7 +61,7 @@ class TrainingPredictor(TrainingBase):
 
     """
 
-    def __init__(self, model=None) -> None:
+    def __init__(self, model, target_type) -> None:
 
         self.__date = datetime.datetime.now()
         self.__initialize_seed()
@@ -88,7 +88,7 @@ class TrainingPredictor(TrainingBase):
                                                 WARMUP_TOTAL_STEPS).tolist()}
 
         self.config_type_pred_input  = CONFIG_INITIAL
-        self.config_type_pred_target = CONFIG_METRIC_MEDIUM
+        self.config_type_pred_target = target_type
 
         self.current_epoch = 0
         self.n_times_trained_p = 0
@@ -178,7 +178,7 @@ class TrainingPredictor(TrainingBase):
             self.__save_loss_acc_plot()
 
             # Save the model every n epochs
-            n = 5
+            n = 1
             if (epoch > 0) and (epoch % n == 0) and (self.n_times_trained_p > 0):
                 path = self.__folders.models_folder / f"predictor_{epoch}.pth.tar"
                 self.predictor.save(path)
@@ -355,6 +355,7 @@ class TrainingPredictor(TrainingBase):
             f"Default device: {self.device_manager.default_device}\n"
             f"{balanced_gpu_info}\n"
             f"Training specifications:\n\n"
+            f"Predictor model: {self.predictor.model.name()}\n"
             f"Batch size: {P_BATCH_SIZE}\n"
             f"Epochs: {P_NUM_EPOCHS}\n"
             f"Prediction input configuration type: {self.config_type_pred_input}\n"
