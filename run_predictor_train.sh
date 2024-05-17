@@ -1,4 +1,6 @@
 #!/bin/bash
 
-nohup stdbuf -oL python3 -u main_predictors.py --cuda > output.txt 2>&1 &
+current_date=$(date +"%Y-%m-%d_%H-%M-%S")
+output_file="output_predictor_$current_date.txt"
+nohup stdbuf -oL python3 -u main_predictors.py --cuda > "$output_file" 2>&1 &
 

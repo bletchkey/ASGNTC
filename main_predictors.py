@@ -48,13 +48,13 @@ def plot_data_base_toro_vs_zero(tor_loss_train, tor_loss_val,
     plt.savefig("baseline_comparison_toro_vs_zero.png")
 
 def train_baseline(target_type, topology):
-    train_pred    = TrainingPredictor(Predictor_Baseline(topology), target_type)
+    train_pred = TrainingPredictor(Predictor_Baseline(topology), target_type)
     res = train_pred.run()
 
     return res
 
 def train_unet(target_type):
-    train_pred    = TrainingPredictor(Predictor_UNet(), target_type)
+    train_pred = TrainingPredictor(Predictor_UNet(), target_type)
     res = train_pred.run()
 
     return res
@@ -80,7 +80,6 @@ def main():
               zerobase['accuracies'][TRAIN],
               zerobase['accuracies'][VALIDATION],
               target_type)
-
 
     return 0
 
