@@ -14,9 +14,9 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from   pathlib import Path
-from   torch.utils.data import DataLoader, SubsetRandomSampler
+from   torch.utils.data import DataLoader
 
-from configs.paths     import DATASET_DIR, TRAINED_MODELS_DIR
+from configs.paths     import DATASET_DIR
 from configs.constants import *
 
 from src.common.folder_manager  import FolderManager

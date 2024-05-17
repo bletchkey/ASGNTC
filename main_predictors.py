@@ -5,10 +5,11 @@ import torch
 
 from configs.setup import setup_base_directory, setup_logging
 from configs.constants import *
-from configs.paths import CONFIG_DIR
+from configs.paths import CONFIG_DIR, TRAININGS_DIR
 
 from src.gol_pred_sys.training_pred import TrainingPredictor
 
+from src.common.utils.helpers import retrieve_log_data
 from src.common.predictor import Predictor_Baseline, Predictor_ResNet, Predictor_UNet
 
 def plot_data_base_toro_vs_zero(tor_loss_train, tor_loss_val,
@@ -66,20 +67,20 @@ def main():
     setup_logging(path= CONFIG_DIR / "main_logging.json")
 
     target_type = CONFIG_METRIC_MEDIUM
+    # train_baseline(target_type, TOPOLOGY_FLAT)
 
-    torobase = train_baseline(target_type, TOPOLOGY_TOROIDAL)
+    data_toro = retrieve_log_data(log_path= TRAININGS_DIR / "ResNet_Baseline_Medium_Toroidal/logs/training_progress.txt")
+    data_zero = retrieve_log_data(log_path= TRAININGS_DIR / "2024-05-17_22-04-15/logs/training_progress.txt")
 
-    zerobase = train_baseline(target_type, TOPOLOGY_FLAT)
-
-    plot_data_base_toro_vs_zero(torobase['losses'][TRAIN],
-              torobase['losses'][VALIDATION],
-              torobase['accuracies'][TRAIN],
-              torobase['accuracies'][VALIDATION],
-              zerobase['losses'][TRAIN],
-              zerobase['losses'][VALIDATION],
-              zerobase['accuracies'][TRAIN],
-              zerobase['accuracies'][VALIDATION],
-              target_type)
+    plot_data_base_toro_vs_zero(data_toro["train_losses"],
+                                data_toro["val_losses"],
+                                data_toro["train_accuracies"],
+                                data_toro["val_accuracies"],
+                                data_zero["train_losses"],
+                                data_zero["val_losses"],
+                                data_zero["train_accuracies"],
+                                data_zero["val_accuracies"],
+                                target_type)
 
     return 0
 
