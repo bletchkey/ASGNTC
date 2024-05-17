@@ -7,9 +7,7 @@ from configs.paths import CONFIG_DIR
 from src.gol_pred_sys.training_pred import TrainingPredictor
 from src.gol_adv_sys.training_adv   import TrainingAdversarial
 
-from src.common.predictor import Predictor_Baseline, Predictor_Baseline_v2, \
-                                 Predictor_ResNet, Predictor_UNet, \
-                                 Predictor_Transformer, Predictor_GloNet \
+from src.common.predictor import Predictor_Baseline, Predictor_ResNet, Predictor_UNet
 
 
 from src.common.generator import Generator_DCGAN, Generator_Gambler, \
@@ -19,7 +17,7 @@ from src.common.generator import Generator_DCGAN, Generator_Gambler, \
 
 
 def train_adversarial():
-    train_adv = TrainingAdversarial(model_p=Predictor_Baseline_v2(),
+    train_adv = TrainingAdversarial(model_p=Predictor_Baseline(),
                                     model_g=Generator_Gambler_Bernoullian())
     train_adv.run()
 

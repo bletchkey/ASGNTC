@@ -114,6 +114,9 @@ class TrainingPredictor(TrainingBase):
         """
         Function used for running the training session.
 
+        returns:
+            results (dict): Contains the losses and accuracies of the predictor model on the training, validation and test sets.
+
         """
 
         torch.autograd.set_detect_anomaly(True)
@@ -121,9 +124,11 @@ class TrainingPredictor(TrainingBase):
         logging.info(f"Training started at {datetime.datetime.now().strftime('%d/%m/%Y %H:%M:%S')}")
 
         self.__init_data()
-        self._fit()
+        results = self._fit()
 
         logging.info(f"Training ended at {datetime.datetime.now().strftime('%d/%m/%Y %H:%M:%S')}")
+
+        return results
 
 
     def _fit(self) -> None:
@@ -134,6 +139,9 @@ class TrainingPredictor(TrainingBase):
         The Warm-up phase lasts for WARMUP_TOTAL_STEPS steps.
 
         The training loop consists of P_NUM_EPOCHS epochs.
+
+        returns:
+            results (dict): Contains the losses and accuracies of the predictor model on the training, validation and test sets.
 
         """
 
@@ -185,6 +193,8 @@ class TrainingPredictor(TrainingBase):
                 logging.debug(f"Predictor model saved at {path}")
 
             self.device_manager.clear_resources()
+
+        return {"losses": self.losses, "accuracies": self.accuracies}
 
 
     def process_predictor_model(self, mode) -> None:

@@ -5,7 +5,7 @@ from torch.distributions import Bernoulli
 
 from typing import Tuple
 
-from src.common.utils.helpers import toroidal_Conv2d
+from src.common.utils.toroidal import ToroidalConv2d
 
 from configs.constants import *
 
@@ -15,8 +15,8 @@ class Gambler(nn.Module):
         super(Gambler, self).__init__()
 
         self.convs = nn.ModuleList([
-            nn.Conv2d(GRID_NUM_CHANNELS, 32, kernel_size=3, stride=1, padding=0),
-            nn.Conv2d(32,         32, kernel_size=3, stride=1, padding=0),
+            ToroidalConv2d(nn.Conv2d(GRID_NUM_CHANNELS, 32, kernel_size=3, stride=1, padding=0)),
+            ToroidalConv2d(nn.Conv2d(32,         32, kernel_size=3, stride=1, padding=0)),
         ])
         self.last_conv = nn.Conv2d(32, GRID_NUM_CHANNELS, kernel_size=1, stride=1, padding=0)
 
@@ -28,7 +28,7 @@ class Gambler(nn.Module):
         log_probability = torch.zeros(x.size(0), device=x.device)
 
         for conv in self.convs:
-            x = toroidal_Conv2d(x, conv, padding=1)
+            x = conv(x)
             x = self.relu(x)
 
         x = self.last_conv(x)
@@ -52,9 +52,9 @@ class Gambler_v2(nn.Module):
     def __init__(self) -> None:
         super(Gambler_v2, self).__init__()
 
-        self.in_conv   = nn.Conv2d(GRID_NUM_CHANNELS,  8, kernel_size=3, stride=1, padding=0)
-        self.conv_1    = nn.Conv2d(8,          16, kernel_size=3, stride=1, padding=0)
-        self.conv_2    = nn.Conv2d(16,         32, kernel_size=3, stride=1, padding=0)
+        self.in_conv   = ToroidalConv2d(nn.Conv2d(GRID_NUM_CHANNELS,  8, kernel_size=3, stride=1, padding=0))
+        self.conv_1    = ToroidalConv2d(nn.Conv2d(8,          16, kernel_size=3, stride=1, padding=0))
+        self.conv_2    = ToroidalConv2d(nn.Conv2d(16,         32, kernel_size=3, stride=1, padding=0))
         self.out_conv  = nn.Conv2d(32, GRID_NUM_CHANNELS, kernel_size=1, stride=1, padding=0)
 
         self.linear_1  = nn.Linear(64, GRID_SIZE * GRID_SIZE)
@@ -72,16 +72,16 @@ class Gambler_v2(nn.Module):
         batch_size      = x.size(0)
         config          = torch.zeros_like(x)
 
-        x = toroidal_Conv2d(x, self.in_conv, padding=1)
+        x = self.in_conv(x)
         x = self.bn1(x)
         x = self.relu(x)
 
-        x = toroidal_Conv2d(x, self.conv_1, padding=1)
+        x = self.conv_1(x)
         x = self.bn2(x)
         x = self.relu(x)
         x = self.pool(x)
 
-        x = toroidal_Conv2d(x, self.conv_2, padding=1)
+        x = self.conv_2(x)
         x = self.bn3(x)
         x = self.relu(x)
         x = self.pool(x)
@@ -105,8 +105,8 @@ class Gambler_v3(nn.Module):
     def __init__(self) -> None:
         super(Gambler_v3, self).__init__()
 
-        self.in_conv   = nn.Conv2d(GRID_NUM_CHANNELS,  8, kernel_size=3, stride=1, padding=0)
-        self.conv_1    = nn.Conv2d(8,          16, kernel_size=3, stride=1, padding=0)
+        self.in_conv   = ToroidalConv2d(nn.Conv2d(GRID_NUM_CHANNELS,  8, kernel_size=3, stride=1, padding=0))
+        self.conv_1    = ToroidalConv2d(nn.Conv2d(8,          16, kernel_size=3, stride=1, padding=0))
         self.out_conv  = nn.Conv2d(16, GRID_NUM_CHANNELS, kernel_size=1, stride=1, padding=0)
         self.linear_1  = nn.Linear(256, GRID_SIZE * GRID_SIZE)
 
@@ -124,10 +124,10 @@ class Gambler_v3(nn.Module):
 
         for _ in range(N_LIVING_CELLS_INITIAL):
 
-            x = toroidal_Conv2d(x, self.in_conv, padding=1)
+            x = self.in_conv(x)
             x = self.relu(x)
 
-            x = toroidal_Conv2d(x, self.conv_1, padding=1)
+            x = self.conv_1(x)
             x = self.relu(x)
             x = self.pool(x)
 
@@ -158,8 +158,8 @@ class Gambler_v4(nn.Module):
     def __init__(self) -> None:
         super(Gambler_v4, self).__init__()
 
-        self.in_conv   = nn.Conv2d(GRID_NUM_CHANNELS,  8, kernel_size=3, stride=1, padding=0)
-        self.conv_1    = nn.Conv2d(8,          16, kernel_size=3, stride=1, padding=0)
+        self.in_conv   = ToroidalConv2d(nn.Conv2d(GRID_NUM_CHANNELS,  8, kernel_size=3, stride=1, padding=0))
+        self.conv_1    = ToroidalConv2d(nn.Conv2d(8,          16, kernel_size=3, stride=1, padding=0))
         self.out_conv  = nn.Conv2d(16, GRID_NUM_CHANNELS, kernel_size=1, stride=1, padding=0)
         self.linear_1  = nn.Linear(256, GRID_SIZE * GRID_SIZE)
 
@@ -177,10 +177,10 @@ class Gambler_v4(nn.Module):
 
         for _ in range(N_LIVING_CELLS_INITIAL):
 
-            x = toroidal_Conv2d(x, self.in_conv, padding=1)
+            x = self.in_conv(x)
             x = self.relu(x)
 
-            x = toroidal_Conv2d(x, self.conv_1, padding=1)
+            x = self.conv_1(x)
             x = self.relu(x)
             x = self.pool(x)
 
@@ -210,8 +210,8 @@ class GamblerBernoullian(nn.Module):
     def __init__(self) -> None:
         super(GamblerBernoullian, self).__init__()
 
-        self.in_conv   = nn.Conv2d(GRID_NUM_CHANNELS,  8, kernel_size=3, stride=1, padding=1)
-        self.conv_1    = nn.Conv2d(8,          16, kernel_size=3, stride=1, padding=1)
+        self.in_conv   = ToroidalConv2d(nn.Conv2d(GRID_NUM_CHANNELS,  8, kernel_size=3, stride=1, padding=0))
+        self.conv_1    = ToroidalConv2d(nn.Conv2d(8,          16, kernel_size=3, stride=1, padding=0))
         self.out_conv  = nn.Conv2d(16, GRID_NUM_CHANNELS, kernel_size=1, stride=1, padding=0)
         self.linear_1  = nn.Linear(256, GRID_SIZE * GRID_SIZE)  # Check if 256 is correct
 
@@ -249,8 +249,8 @@ class GamblerGumble(nn.Module):
     def __init__(self) -> None:
         super(GamblerGumble, self).__init__()
 
-        self.in_conv   = nn.Conv2d(GRID_NUM_CHANNELS,  8, kernel_size=3, stride=1, padding=0)
-        self.conv_1    = nn.Conv2d(8,          16, kernel_size=3, stride=1, padding=0)
+        self.in_conv   = ToroidalConv2d(nn.Conv2d(GRID_NUM_CHANNELS,  8, kernel_size=3, stride=1, padding=0))
+        self.conv_1    = ToroidalConv2d(nn.Conv2d(8,          16, kernel_size=3, stride=1, padding=0))
         self.out_conv  = nn.Conv2d(16, GRID_NUM_CHANNELS, kernel_size=1, stride=1, padding=0)
         self.linear_1  = nn.Linear(256, GRID_SIZE * GRID_SIZE)
 
@@ -267,10 +267,10 @@ class GamblerGumble(nn.Module):
 
         for _ in range(N_LIVING_CELLS_INITIAL):
 
-            x = toroidal_Conv2d(x, self.in_conv, padding=1)
+            x = self.in_conv(x)
             x = self.relu(x)
 
-            x = toroidal_Conv2d(x, self.conv_1, padding=1)
+            x = self.conv_1(x)
             x = self.relu(x)
             x = self.pool(x)
 
@@ -306,9 +306,9 @@ class GamblerGumble(nn.Module):
 class GamblerGumble_v2(nn.Module):
     def __init__(self):
         super(GamblerGumble_v2, self).__init__()
-        self.in_conv   = nn.Conv2d(GRID_NUM_CHANNELS,  8, kernel_size=3, stride=1, padding=0)
-        self.conv_1    = nn.Conv2d(8,          16, kernel_size=3, stride=1, padding=0)
-        self.conv_2    = nn.Conv2d(16,         32, kernel_size=3, stride=1, padding=0)
+        self.in_conv   = ToroidalConv2d(nn.Conv2d(GRID_NUM_CHANNELS,  8, kernel_size=3, stride=1, padding=0))
+        self.conv_1    = ToroidalConv2d(nn.Conv2d(8,          16, kernel_size=3, stride=1, padding=0))
+        self.conv_2    = ToroidalConv2d(nn.Conv2d(16,         32, kernel_size=3, stride=1, padding=0))
         self.out_conv  = nn.Conv2d(32, GRID_NUM_CHANNELS, kernel_size=1, stride=1, padding=0)
 
         self.linear_1  = nn.Linear(64, 256)
@@ -325,16 +325,16 @@ class GamblerGumble_v2(nn.Module):
 
         batch_size      = x.size(0)
 
-        x = toroidal_Conv2d(x, self.in_conv, padding=1)
+        x = self.in_conv(x)
         x = self.bn1(x)
         x = self.relu(x)
 
-        x = toroidal_Conv2d(x, self.conv_1, padding=1)
+        x = self.conv_1(x)
         x = self.bn2(x)
         x = self.relu(x)
         x = self.pool(x)
 
-        x = toroidal_Conv2d(x, self.conv_2, padding=1)
+        x = self.conv_2(x)
         x = self.bn3(x)
         x = self.relu(x)
         x = self.pool(x)
