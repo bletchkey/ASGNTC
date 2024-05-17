@@ -6,6 +6,13 @@
 # Log files
 *.log
 
+# Image files
+*.jpg
+*.jpeg
+*.png
+*.gif
+*.svg
+
 # docs
 docs/
 *.txt
