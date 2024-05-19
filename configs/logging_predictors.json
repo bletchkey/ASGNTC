@@ -14,7 +14,7 @@
         },
         "file": {
             "class": "logging.FileHandler",
-            "filename": "main.log",
+            "filename": "{log_directory}/predictors.log",
             "formatter": "standard",
             "level": "DEBUG"
         }

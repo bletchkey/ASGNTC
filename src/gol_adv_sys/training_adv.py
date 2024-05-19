@@ -74,12 +74,12 @@ class TrainingAdversarial(TrainingBase):
 
         self.__initialize_seed()
 
-        self.folders        = FolderManager(self.__date)
+        self.folders        = FolderManager(TRAINING_TYPE_ADVERSARIAL, self.__date)
         self.device_manager = DeviceManager()
 
         self.simulation_topology      = TOPOLOGY_TOROIDAL
         self.init_config_initial_type = INIT_CONFIG_INTIAL_THRESHOLD
-        self.config_type_pred_target  = CONFIG_METRIC_MEDIUM
+        self.config_type_pred_target  = CONFIG_TARGET_MEDIUM
 
         self.n_times_trained_p = 0
         self.n_times_trained_g = 0

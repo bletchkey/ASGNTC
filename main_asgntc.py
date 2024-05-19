@@ -23,7 +23,7 @@ def train_adversarial():
 def main():
 
     setup_base_directory()
-    setup_logging(path= CONFIG_DIR / "main_logging.json")
+    setup_logging(path= CONFIG_DIR / "logging_asgntc.json")
 
     train_adversarial()
 

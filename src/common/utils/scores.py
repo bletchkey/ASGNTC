@@ -5,7 +5,7 @@ from typing import Union
 from configs.constants import *
 
 
-def config_prediction_accuracy(prediction: torch.Tensor,
+def config_prediction_accuracy_bins(prediction: torch.Tensor,
                                target: torch.Tensor) -> float:
     """
     Calculate the mean accuracy score for the prediction compared to the target.
@@ -45,6 +45,44 @@ def config_prediction_accuracy(prediction: torch.Tensor,
     mean_scores = score.mean()
 
     return mean_scores.item()
+
+
+def config_prediction_accuracy_tolerance(prediction: torch.Tensor, target: torch.Tensor, tolerance: float) -> float:
+    """
+    Calculate the accuracy score for the prediction compared to the target based on a tolerance.
+    Each predicted value within the specified tolerance of the target value is considered correct.
+
+    Parameters:
+        prediction (torch.Tensor): The prediction tensor with shape (N, C, H, W).
+        target (torch.Tensor): The target tensor with shape (N, C, H, W).
+        tolerance (float): The tolerance level for considering a prediction as accurate.
+
+    Returns:
+        float: The mean accuracy score for the prediction compared to the target.
+
+    Raises:
+        ValueError: If the input tensors do not have matching shapes or are not 4-dimensional.
+    """
+    if target.size() != prediction.size() or target.dim() != 4:
+        raise ValueError("Target and prediction tensors must have the same 4-dimensional shape.")
+
+    # Flatten the last three dimensions to compute accuracy
+    target_flat     = target.contiguous().view(-1)
+    prediction_flat = prediction.contiguous().view(-1)
+
+    # Calculate the absolute difference
+    difference = torch.abs(prediction_flat - target_flat)
+
+    # Calculate the tolerance based on the target value
+    tolerance_values = tolerance * torch.abs(target_flat)
+
+    # Determine which predictions are within the tolerance
+    correct_predictions = (difference <= tolerance_values).float()
+
+    # Calculate mean accuracy
+    mean_accuracy = correct_predictions.mean().item()
+
+    return mean_accuracy
 
 
 def calculate_stable_metric_complexity(metrics: torch.Tensor,

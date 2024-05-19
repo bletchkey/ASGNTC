@@ -202,7 +202,7 @@ def __calculate_metrics(configs: list, stable_config: torch.Tensor, device: torc
     stacked_configs = stacked_configs.permute(1, 0, 2, 3, 4)
 
     sim_metrics = {
-        CONFIG_METRIC_EASY: {
+        CONFIG_TARGET_EASY: {
             "config": stacked_configs.clone(),
             "maximum": None,
             "minimum": None,
@@ -210,7 +210,7 @@ def __calculate_metrics(configs: list, stable_config: torch.Tensor, device: torc
             "q2": None,
             "q3": None
         },
-        CONFIG_METRIC_MEDIUM: {
+        CONFIG_TARGET_MEDIUM: {
             "config": stacked_configs.clone(),
             "maximum": None,
             "minimum": None,
@@ -218,7 +218,7 @@ def __calculate_metrics(configs: list, stable_config: torch.Tensor, device: torc
             "q2": None,
             "q3": None
         },
-        CONFIG_METRIC_HARD: {
+        CONFIG_TARGET_HARD: {
             "config": stacked_configs.clone(),
             "maximum": None,
             "minimum": None,
@@ -226,7 +226,7 @@ def __calculate_metrics(configs: list, stable_config: torch.Tensor, device: torc
             "q2": None,
             "q3": None
         },
-        CONFIG_METRIC_STABLE: {
+        CONFIG_TARGET_STABLE: {
             "config": stable_config,
             "maximum": None,
             "minimum": None,
@@ -237,24 +237,24 @@ def __calculate_metrics(configs: list, stable_config: torch.Tensor, device: torc
     }
 
     eps = {
-        CONFIG_METRIC_EASY:   __calculate_eps(half_step=METRIC_EASY_HALF_STEP),
-        CONFIG_METRIC_MEDIUM: __calculate_eps(half_step=METRIC_MEDIUM_HALF_STEP),
-        CONFIG_METRIC_HARD:   __calculate_eps(half_step=METRIC_HARD_HALF_STEP)
+        CONFIG_TARGET_EASY:   __calculate_eps(half_step=METRIC_EASY_HALF_STEP),
+        CONFIG_TARGET_MEDIUM: __calculate_eps(half_step=METRIC_MEDIUM_HALF_STEP),
+        CONFIG_TARGET_HARD:   __calculate_eps(half_step=METRIC_HARD_HALF_STEP)
     }
 
-    correction_factor_easy   = eps[CONFIG_METRIC_EASY] / (1 - ((1 - eps[CONFIG_METRIC_EASY]) ** steps))
-    correction_factor_medium = eps[CONFIG_METRIC_MEDIUM] / (1 - ((1 - eps[CONFIG_METRIC_MEDIUM]) ** steps))
-    correction_factor_hard   = eps[CONFIG_METRIC_HARD] / (1 - ((1 - eps[CONFIG_METRIC_HARD]) ** steps))
+    correction_factor_easy   = eps[CONFIG_TARGET_EASY] / (1 - ((1 - eps[CONFIG_TARGET_EASY]) ** steps))
+    correction_factor_medium = eps[CONFIG_TARGET_MEDIUM] / (1 - ((1 - eps[CONFIG_TARGET_MEDIUM]) ** steps))
+    correction_factor_hard   = eps[CONFIG_TARGET_HARD] / (1 - ((1 - eps[CONFIG_TARGET_HARD]) ** steps))
 
     # Combine the correction factors into a dictionary
     correction_factors = {
-        CONFIG_METRIC_EASY:   correction_factor_easy,
-        CONFIG_METRIC_MEDIUM: correction_factor_medium,
-        CONFIG_METRIC_HARD:   correction_factor_hard,
+        CONFIG_TARGET_EASY:   correction_factor_easy,
+        CONFIG_TARGET_MEDIUM: correction_factor_medium,
+        CONFIG_TARGET_HARD:   correction_factor_hard,
     }
 
     # Apply decay and correction for each difficulty level
-    for difficulty in [CONFIG_METRIC_EASY, CONFIG_METRIC_MEDIUM, CONFIG_METRIC_HARD]:
+    for difficulty in [CONFIG_TARGET_EASY, CONFIG_TARGET_MEDIUM, CONFIG_TARGET_HARD]:
 
         # Efficient decay rates calculation
         step_indices = torch.arange(steps, dtype=torch.float32, device=device)
@@ -276,12 +276,12 @@ def __calculate_metrics(configs: list, stable_config: torch.Tensor, device: torc
         sim_metrics[difficulty]["q3"]      = results[4]
 
     # Calculate quartiles for the stable configuration
-    results = __calculate_quartiles(sim_metrics[CONFIG_METRIC_STABLE]["config"])
-    sim_metrics[CONFIG_METRIC_STABLE]["maximum"] = results[0]
-    sim_metrics[CONFIG_METRIC_STABLE]["minimum"] = results[1]
-    sim_metrics[CONFIG_METRIC_STABLE]["q1"]      = results[2]
-    sim_metrics[CONFIG_METRIC_STABLE]["q2"]      = results[3]
-    sim_metrics[CONFIG_METRIC_STABLE]["q3"]      = results[4]
+    results = __calculate_quartiles(sim_metrics[CONFIG_TARGET_STABLE]["config"])
+    sim_metrics[CONFIG_TARGET_STABLE]["maximum"] = results[0]
+    sim_metrics[CONFIG_TARGET_STABLE]["minimum"] = results[1]
+    sim_metrics[CONFIG_TARGET_STABLE]["q1"]      = results[2]
+    sim_metrics[CONFIG_TARGET_STABLE]["q2"]      = results[3]
+    sim_metrics[CONFIG_TARGET_STABLE]["q3"]      = results[4]
 
     return sim_metrics
 

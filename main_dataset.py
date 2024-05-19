@@ -1,6 +1,6 @@
-import numpy as np
 from pathlib import Path
-import sys
+
+import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.gridspec import GridSpec
 from matplotlib.ticker import MaxNLocator
@@ -8,6 +8,9 @@ import torch
 
 from configs.setup import setup_base_directory, setup_logging
 from configs.paths import CONFIG_DIR
+
+from src.gol_pred_sys.dataset_manager import DatasetCreator
+from src.common.device_manager        import DeviceManager
 
 from configs.paths import DATASET_DIR
 from configs.constants import *
@@ -88,7 +91,6 @@ def check_dataset_configs(saving_path, dataset, metadata, total_indices=50, n_pe
         plt.savefig(Path(saving_path) / f"configs_{png_idx+1}.png", dpi=300, bbox_inches='tight')
         plt.close(fig)
 
-
 def check_transient_phases(saving_path, metadata):
     pairs = [(meta[META_ID], meta[META_TRANSIENT_PHASE]) for meta in metadata]
     ids, transient_phases = zip(*pairs)
@@ -128,7 +130,6 @@ def check_transient_phases(saving_path, metadata):
     plt.savefig(Path(saving_path) / "transient_phases.png", dpi=300, bbox_inches='tight')
     plt.close(fig)
 
-
 def check_dataset_distribution(saving_path, dataset):
     n = GRID_SIZE ** 2
     bins = torch.zeros(n + 1, dtype=torch.int64)
@@ -157,11 +158,7 @@ def check_dataset_distribution(saving_path, dataset):
     plt.savefig(plot_path, dpi=300)
     plt.close()
 
-
-def main():
-
-    setup_base_directory()
-    setup_logging(path=CONFIG_DIR / "main_logging.json")
+def plot_dataset_infos():
 
     base_saving_path = DATASET_DIR / "plots"
     base_saving_path.mkdir(exist_ok=True)
@@ -178,11 +175,25 @@ def main():
         dataset = torch.load(ds_path)
         metadata = torch.load(metadata_path)
 
-        #check_dataset_configs(saving_path, dataset, metadata)
-        #check_transient_phases(saving_path, metadata)
-        #check_dataset_distribution(saving_path, dataset)
+        check_dataset_configs(saving_path, dataset, metadata)
+        check_transient_phases(saving_path, metadata)
+        check_dataset_distribution(saving_path, dataset)
+
         print(f"Dataset {name} checked.")
 
+def dataset_creator():
+    device_manager = DeviceManager()
+    dataset        = DatasetCreator(device_manager=device_manager)
+    dataset.create_dataset()
+    dataset.save_tensors()
+
+def main():
+    setup_base_directory()
+    setup_logging(path= CONFIG_DIR / "logging_dataset.json")
+
+    dataset_creator()
+
+    # plot_dataset_infos()
 
 if __name__ == "__main__":
     return_code = main()

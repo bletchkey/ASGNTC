@@ -229,10 +229,10 @@ def get_config_from_batch(batch: torch.Tensor, type: str, device: torch.device) 
         CONFIG_INITIAL: 0,
         CONFIG_SIMULATED: 1,
         CONFIG_FINAL: 2,
-        CONFIG_METRIC_EASY: 3,
-        CONFIG_METRIC_MEDIUM: 4,
-        CONFIG_METRIC_HARD: 5,
-        CONFIG_METRIC_STABLE: 6,
+        CONFIG_TARGET_EASY: 3,
+        CONFIG_TARGET_MEDIUM: 4,
+        CONFIG_TARGET_HARD: 5,
+        CONFIG_TARGET_STABLE: 6,
     }
 
     # Validate and retrieve the configuration index
@@ -269,7 +269,7 @@ def get_data_tensor(data_tensor: torch.Tensor, model_g: torch.nn.Module,
     new_configs, _ = generate_new_batches(model_g, N_BATCHES, topology, init_config_initial_type, device)
 
     # Calculate the average complexity of the stable metrics
-    stable_metrics = get_config_from_batch(new_configs, CONFIG_METRIC_STABLE, device)
+    stable_metrics = get_config_from_batch(new_configs, CONFIG_TARGET_STABLE, device)
     avg_stable_metric_complexity = calculate_stable_metric_complexity(stable_metrics, mean=True)
 
     # If data_tensor is None, initialize it with new_configs
@@ -349,10 +349,10 @@ def generate_new_batches(model_g: torch.nn.Module, n_batches: int, topology: str
             CONFIG_INITIAL: initial_config,
             CONFIG_SIMULATED:  simulated_config,
             CONFIG_FINAL: final_config,
-            CONFIG_METRIC_EASY: metrics[CONFIG_METRIC_EASY]["config"],
-            CONFIG_METRIC_MEDIUM: metrics[CONFIG_METRIC_MEDIUM]["config"],
-            CONFIG_METRIC_HARD: metrics[CONFIG_METRIC_HARD]["config"],
-            CONFIG_METRIC_STABLE: metrics[CONFIG_METRIC_STABLE]["config"]
+            CONFIG_TARGET_EASY: metrics[CONFIG_TARGET_EASY]["config"],
+            CONFIG_TARGET_MEDIUM: metrics[CONFIG_TARGET_MEDIUM]["config"],
+            CONFIG_TARGET_HARD: metrics[CONFIG_TARGET_HARD]["config"],
+            CONFIG_TARGET_STABLE: metrics[CONFIG_TARGET_STABLE]["config"]
         })
 
     # Create a tensor from the list of configurations

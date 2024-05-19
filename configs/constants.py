@@ -63,6 +63,14 @@ DATASET_NAME = "gol_dataset"
 
 # NAMING CONVENTIONS #############################################################
 
+# Training types
+TRAINING_TYPE_PREDICTOR   = "training_predictor"
+TRAINING_TYPE_ADVERSARIAL = "training_adversarial"
+
+# Accuracy scores
+ACCURACY_BINS      = "accuracy_bins"
+ACCURACY_TOLERANCE = "accuracy_tolerance"
+
 # Dataset keys
 TRAIN      = "train"
 VALIDATION = "validation"
@@ -72,7 +80,6 @@ TRAIN_METADATA      = TRAIN      + "_metadata"
 VALIDATION_METADATA = VALIDATION + "_metadata"
 TEST_METADATA       = TEST       + "_metadata"
 
-
 # Model keys
 GENERATOR = "generator"
 PREDICTOR = "predictor"
@@ -81,10 +88,10 @@ PREDICTOR = "predictor"
 CONFIG_INITIAL       = "initial"
 CONFIG_FINAL         = "final"
 CONFIG_SIMULATED     = "simulated"
-CONFIG_METRIC_EASY   = "easy"
-CONFIG_METRIC_MEDIUM = "medium"
-CONFIG_METRIC_HARD   = "hard"
-CONFIG_METRIC_STABLE = "stable"
+CONFIG_TARGET_EASY   = "easy"
+CONFIG_TARGET_MEDIUM = "medium"
+CONFIG_TARGET_HARD   = "hard"
+CONFIG_TARGET_STABLE = "stable"
 
 # Metadata keys
 META_ID              = "id"

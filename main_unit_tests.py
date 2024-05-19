@@ -12,7 +12,7 @@ from unit_tests.common.utils.test_scores import TestConfigPredictionAccuracy, \
 def main():
 
     setup_base_directory()
-    setup_logging(path= CONFIG_DIR / "unit_tests_logging.json")
+    setup_logging(path= CONFIG_DIR / "logging_ut.json")
 
     suite = unittest.TestSuite()
 

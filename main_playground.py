@@ -93,8 +93,8 @@ def playground():
 
     # results = pg.simulate(init_config, steps=10)
 
-    # print(f"Stable min: {results[CONFIG_METRIC_STABLE].min()}")
-    # print(f"Stable max: {results[CONFIG_METRIC_STABLE].max()}")
+    # print(f"Stable min: {results[CONFIG_TARGET_STABLE].min()}")
+    # print(f"Stable max: {results[CONFIG_TARGET_STABLE].max()}")
 
     # data = pg.get_record_from_id(200000)
     # pg.plot_record_db(data)
@@ -124,7 +124,7 @@ def playground():
 def main():
 
     setup_base_directory()
-    setup_logging(path= CONFIG_DIR / "main_logging.json")
+    setup_logging(path= CONFIG_DIR / "logging_playground.json")
 
     simulate_heart()
 

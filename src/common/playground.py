@@ -61,10 +61,10 @@ class Playground():
             "simulated": simulated,
             "final": final,
             "steps": steps,
-            "easy": metrics[CONFIG_METRIC_EASY]["config"],
-            "medium": metrics[CONFIG_METRIC_MEDIUM]["config"],
-            "hard": metrics[CONFIG_METRIC_HARD]["config"],
-            "stable": metrics[CONFIG_METRIC_STABLE]["config"]
+            "easy": metrics[CONFIG_TARGET_EASY]["config"],
+            "medium": metrics[CONFIG_TARGET_MEDIUM]["config"],
+            "hard": metrics[CONFIG_TARGET_HARD]["config"],
+            "stable": metrics[CONFIG_TARGET_STABLE]["config"]
         }
 
         return results
@@ -137,8 +137,8 @@ class Playground():
 
         # Text plot for metrics in the first row
         configs_types_list = [CONFIG_INITIAL, CONFIG_FINAL,
-                              CONFIG_METRIC_EASY, CONFIG_METRIC_MEDIUM,
-                              CONFIG_METRIC_HARD, CONFIG_METRIC_STABLE]
+                              CONFIG_TARGET_EASY, CONFIG_TARGET_MEDIUM,
+                              CONFIG_TARGET_HARD, CONFIG_TARGET_STABLE]
         for i, config in enumerate(configs_types_list):
             ax = fig.add_subplot(gs[1, i])
             if config == CONFIG_INITIAL:

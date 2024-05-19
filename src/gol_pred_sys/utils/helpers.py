@@ -6,6 +6,8 @@ from pathlib import Path
 
 from configs.constants import *
 
+from src.common.utils.scores import config_prediction_accuracy_bins, config_prediction_accuracy_tolerance
+
 
 def get_config_from_batch(batch: torch.Tensor, type: str, device: torch.device) -> torch.Tensor:
     """
@@ -28,10 +30,10 @@ def get_config_from_batch(batch: torch.Tensor, type: str, device: torch.device) 
     config_indices = {
         CONFIG_INITIAL: 0,
         CONFIG_FINAL: 1,
-        CONFIG_METRIC_EASY: 2,
-        CONFIG_METRIC_MEDIUM: 3,
-        CONFIG_METRIC_HARD: 4,
-        CONFIG_METRIC_STABLE: 5,
+        CONFIG_TARGET_EASY: 2,
+        CONFIG_TARGET_MEDIUM: 3,
+        CONFIG_TARGET_HARD: 4,
+        CONFIG_TARGET_STABLE: 5,
     }
 
     # Validate and retrieve the configuration index
@@ -46,7 +48,9 @@ def get_config_from_batch(batch: torch.Tensor, type: str, device: torch.device) 
 
 def test_predictor_model_dataset(test_set: torch.utils.data.DataLoader,
                                  config_type_pred_input: str,
-                                 target_config: str, model_p: torch.nn.Module, device: torch.device) -> dict:
+                                 target_config: str,
+                                 model_p: torch.nn.Module,
+                                 device: torch.device) -> dict:
     """
     Function to test the predictor model.
 

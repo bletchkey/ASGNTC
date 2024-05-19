@@ -1,0 +1,39 @@
+{
+    "version": 1,
+    "disable_existing_loggers": false,
+    "formatters": {
+        "standard": {
+            "format": "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+        }
+    },
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
+            "formatter": "standard",
+            "level": "INFO"
+        },
+        "file": {
+            "class": "logging.FileHandler",
+            "filename": "{log_directory}/unit_tests.log",
+            "formatter": "standard",
+            "level": "DEBUG"
+        }
+    },
+    "root": {
+        "handlers": [
+            "console",
+            "file"
+        ],
+        "level": "DEBUG"
+    },
+    "loggers": {
+        "matplotlib": {
+            "level": "INFO",
+            "handlers": [
+                "console",
+                "file"
+            ],
+            "propagate": false
+        }
+    }
+}

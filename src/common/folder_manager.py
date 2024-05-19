@@ -1,7 +1,7 @@
 from pathlib import Path
 from datetime import datetime
 
-from configs.paths import TRAININGS_DIR
+from configs.paths import TRAININGS_DIR, TRAININGS_PREDICTOR_DIR, TRAININGS_ADVERSARIAL_DIR
 from configs.constants import *
 
 class FolderManager:
@@ -19,11 +19,18 @@ class FolderManager:
 
     """
 
-    def __init__(self, date: datetime) -> None:
+    def __init__(self, training_type:str, date: datetime) -> None:
 
         TRAININGS_DIR.mkdir(parents=True, exist_ok=True)
 
-        self.__base_folder = TRAININGS_DIR / date.strftime("%Y-%m-%d_%H-%M-%S")
+        if training_type == TRAINING_TYPE_PREDICTOR:
+            base = TRAININGS_PREDICTOR_DIR / date.strftime("%Y-%m-%d_%H-%M-%S")
+        elif training_type == TRAINING_TYPE_ADVERSARIAL:
+            base = TRAININGS_ADVERSARIAL_DIR / date.strftime("%Y-%m-%d_%H-%M-%S")
+        else:
+            raise ValueError(f"Invalid training type: {training_type}")
+
+        self.__base_folder = base
         self.__results_dir = self.__base_folder / "results"
         self.__models_dir  = self.__base_folder / "models"
         self.__logs_dir    = self.__base_folder / "logs"

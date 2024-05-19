@@ -36,6 +36,8 @@ def retrieve_log_data(log_path: str):
     epoch_pattern      = re.compile(r"Epoch: (\d+)/\d+")
     train_loss_pattern = re.compile(r"Losses P \[train: ([0-9.]+), val: ([0-9.]+)\]")
     train_acc_pattern  = re.compile(r"Accuracies P \[train: ([0-9.]+)%, val: ([0-9.]+)%\]")
+    target_type        = re.compile(r"Prediction target configuration type: (\w+)")
+    input_type         = re.compile(r"Prediction input configuration type: (\w+)")
 
     # Lists to store extracted data
     epochs = []
@@ -46,9 +48,9 @@ def retrieve_log_data(log_path: str):
 
     # Iterate through each line in the log
     for line in log.split('\n'):
-        epoch_match = epoch_pattern.search(line)
+        epoch_match      = epoch_pattern.search(line)
         train_loss_match = train_loss_pattern.search(line)
-        train_acc_match = train_acc_pattern.search(line)
+        train_acc_match  = train_acc_pattern.search(line)
 
         if epoch_match and train_loss_match and train_acc_match:
             epochs.append(int(epoch_match.group(1)))
@@ -57,11 +59,21 @@ def retrieve_log_data(log_path: str):
             train_accuracies.append(float(train_acc_match.group(1)))
             val_accuracies.append(float(train_acc_match.group(2)))
 
+    # Extract target type
+    target_type_match = target_type.search(log)
+    target_type = target_type_match.group(1) if target_type_match else "unknown"
+
+    # Extract input type
+    input_type_match = input_type.search(log)
+    input_type = input_type_match.group(1) if input_type_match else "unknown"
+
     training_data = {
         "train_losses": train_losses,
         "val_losses": val_losses,
         "train_accuracies": train_accuracies,
-        "val_accuracies": val_accuracies
+        "val_accuracies": val_accuracies,
+        "target_type": target_type,
+        "input_type": input_type
     }
 
     return training_data

@@ -14,7 +14,7 @@
         },
         "file": {
             "class": "logging.FileHandler",
-            "filename": "unit_tests.log",
+            "filename": "{log_directory}/dataset.log",
             "formatter": "standard",
             "level": "DEBUG"
         }

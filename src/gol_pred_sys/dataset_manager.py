@@ -2,7 +2,7 @@ import numpy as np
 import logging
 
 import torch
-from torch.utils.data import Dataset
+from   torch.utils.data import Dataset
 
 
 from configs.paths import DATASET_DIR
@@ -113,10 +113,10 @@ class DatasetCreator():
                 configs.append({
                     CONFIG_INITIAL: initial_config,
                     CONFIG_FINAL: final,
-                    CONFIG_METRIC_EASY: metrics[CONFIG_METRIC_EASY]["config"],
-                    CONFIG_METRIC_MEDIUM: metrics[CONFIG_METRIC_MEDIUM]["config"],
-                    CONFIG_METRIC_HARD: metrics[CONFIG_METRIC_HARD]["config"],
-                    CONFIG_METRIC_STABLE: metrics[CONFIG_METRIC_STABLE]["config"]
+                    CONFIG_TARGET_EASY: metrics[CONFIG_TARGET_EASY]["config"],
+                    CONFIG_TARGET_MEDIUM: metrics[CONFIG_TARGET_MEDIUM]["config"],
+                    CONFIG_TARGET_HARD: metrics[CONFIG_TARGET_HARD]["config"],
+                    CONFIG_TARGET_STABLE: metrics[CONFIG_TARGET_STABLE]["config"]
                 })
                 metadata.append({
                     META_ID: ids[batch_number*DATASET_BATCH_SIZE: (batch_number+1)*DATASET_BATCH_SIZE],
@@ -124,26 +124,26 @@ class DatasetCreator():
                     META_N_CELLS_FINAL: n_cells_final,
                     META_TRANSIENT_PHASE: transient_phase,
                     META_PERIOD: period,
-                    META_EASY_MIN: metrics[CONFIG_METRIC_EASY]["minimum"],
-                    META_EASY_MAX: metrics[CONFIG_METRIC_EASY]["maximum"],
-                    META_EASY_Q1: metrics[CONFIG_METRIC_EASY]["q1"],
-                    META_EASY_Q2: metrics[CONFIG_METRIC_EASY]["q2"],
-                    META_EASY_Q3: metrics[CONFIG_METRIC_EASY]["q3"],
-                    META_MEDIUM_MIN: metrics[CONFIG_METRIC_MEDIUM]["minimum"],
-                    META_MEDIUM_MAX: metrics[CONFIG_METRIC_MEDIUM]["maximum"],
-                    META_MEDIUM_Q1: metrics[CONFIG_METRIC_MEDIUM]["q1"],
-                    META_MEDIUM_Q2: metrics[CONFIG_METRIC_MEDIUM]["q2"],
-                    META_MEDIUM_Q3: metrics[CONFIG_METRIC_MEDIUM]["q3"],
-                    META_HARD_MIN: metrics[CONFIG_METRIC_MEDIUM]["minimum"],
-                    META_HARD_MAX: metrics[CONFIG_METRIC_MEDIUM]["maximum"],
-                    META_HARD_Q1: metrics[CONFIG_METRIC_MEDIUM]["q1"],
-                    META_HARD_Q2: metrics[CONFIG_METRIC_MEDIUM]["q2"],
-                    META_HARD_Q3: metrics[CONFIG_METRIC_MEDIUM]["q3"],
-                    META_STABLE_MIN: metrics[CONFIG_METRIC_MEDIUM]["minimum"],
-                    META_STABLE_MAX: metrics[CONFIG_METRIC_MEDIUM]["maximum"],
-                    META_STABLE_Q1: metrics[CONFIG_METRIC_MEDIUM]["q1"],
-                    META_STABLE_Q2: metrics[CONFIG_METRIC_MEDIUM]["q2"],
-                    META_STABLE_Q3: metrics[CONFIG_METRIC_MEDIUM]["q3"]
+                    META_EASY_MIN: metrics[CONFIG_TARGET_EASY]["minimum"],
+                    META_EASY_MAX: metrics[CONFIG_TARGET_EASY]["maximum"],
+                    META_EASY_Q1: metrics[CONFIG_TARGET_EASY]["q1"],
+                    META_EASY_Q2: metrics[CONFIG_TARGET_EASY]["q2"],
+                    META_EASY_Q3: metrics[CONFIG_TARGET_EASY]["q3"],
+                    META_MEDIUM_MIN: metrics[CONFIG_TARGET_MEDIUM]["minimum"],
+                    META_MEDIUM_MAX: metrics[CONFIG_TARGET_MEDIUM]["maximum"],
+                    META_MEDIUM_Q1: metrics[CONFIG_TARGET_MEDIUM]["q1"],
+                    META_MEDIUM_Q2: metrics[CONFIG_TARGET_MEDIUM]["q2"],
+                    META_MEDIUM_Q3: metrics[CONFIG_TARGET_MEDIUM]["q3"],
+                    META_HARD_MIN: metrics[CONFIG_TARGET_HARD]["minimum"],
+                    META_HARD_MAX: metrics[CONFIG_TARGET_HARD]["maximum"],
+                    META_HARD_Q1: metrics[CONFIG_TARGET_HARD]["q1"],
+                    META_HARD_Q2: metrics[CONFIG_TARGET_HARD]["q2"],
+                    META_HARD_Q3: metrics[CONFIG_TARGET_HARD]["q3"],
+                    META_STABLE_MIN: metrics[CONFIG_TARGET_STABLE]["minimum"],
+                    META_STABLE_MAX: metrics[CONFIG_TARGET_STABLE]["maximum"],
+                    META_STABLE_Q1: metrics[CONFIG_TARGET_STABLE]["q1"],
+                    META_STABLE_Q2: metrics[CONFIG_TARGET_STABLE]["q2"],
+                    META_STABLE_Q3: metrics[CONFIG_TARGET_STABLE]["q3"]
                 })
 
         # Configs

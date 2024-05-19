@@ -108,3 +108,4 @@ class DeviceManager:
 
         if self.__default_device.type == "cuda":
             torch.cuda.empty_cache()
+

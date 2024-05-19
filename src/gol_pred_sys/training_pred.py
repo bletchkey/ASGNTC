@@ -27,7 +27,7 @@ from src.common.training_base   import TrainingBase
 from src.gol_pred_sys.dataset_manager import FixedDataset, PairedDataset
 
 from src.common.utils.losses import WeightedMSELoss, WeightedBCELoss, CustomGoLLoss
-from src.common.utils.scores import config_prediction_accuracy
+from src.common.utils.scores import config_prediction_accuracy_bins
 
 from src.common.utils.helpers import get_elapsed_time_str
 
@@ -65,7 +65,7 @@ class TrainingPredictor(TrainingBase):
 
         self.__date = datetime.datetime.now()
         self.__initialize_seed()
-        self.__folders = FolderManager(self.__date)
+        self.__folders = FolderManager(TRAINING_TYPE_PREDICTOR, self.__date)
 
         self.device_manager = DeviceManager()
 
@@ -164,9 +164,7 @@ class TrainingPredictor(TrainingBase):
 
             self.process_predictor_model(TRAIN)
             self.process_predictor_model(VALIDATION)
-
-            if self.current_epoch+1 == P_NUM_EPOCHS:
-                self.process_predictor_model(TEST)
+            self.process_predictor_model(TEST)
 
             if self.current_epoch > 0:
                 self.lr_scheduler.step(self.losses[VALIDATION][-1])
@@ -179,18 +177,14 @@ class TrainingPredictor(TrainingBase):
 
             self.__log_training_epoch(epoch_elapsed_time)
 
+            self.__save_loss_acc_plot()
+
             # Test the predictor model
             logging.debug(f"Plotting the progress of the predictor model using the test set")
             data = self.__test_predictor_model()
             self.__save_progress_plot(data)
-            self.__save_loss_acc_plot()
 
-            # Save the model every n epochs
-            n = 1
-            if (epoch > 0) and (epoch % n == 0) and (self.n_times_trained_p > 0):
-                path = self.__folders.models_folder / f"predictor_{epoch}.pth.tar"
-                self.predictor.save(path)
-                logging.debug(f"Predictor model saved at {path}")
+            self.__save_model()
 
             self.device_manager.clear_resources()
 
@@ -251,7 +245,7 @@ class TrainingPredictor(TrainingBase):
                         logging.debug("Warm-up phase")
                         logging.debug(f"Learning rate: {self.predictor.get_learning_rate()}")
 
-                accuracy = config_prediction_accuracy(predicted, self.__get_config_type(batch, self.config_type_pred_target))
+                accuracy = config_prediction_accuracy_bins(predicted, self.__get_config_type(batch, self.config_type_pred_target))
 
                 total_loss     += errP.item()
                 total_accuracy += accuracy
@@ -264,6 +258,22 @@ class TrainingPredictor(TrainingBase):
 
         logging.debug(f"Predictor loss on {mode} data: {self.losses[mode][-1]}")
         logging.debug(f"Accuracy on {mode} data: {self.accuracies[mode][-1]}")
+
+
+    def __test_predictor_model(self) -> dict:
+        """
+        Function for testing the predictor model.
+
+        Returns:
+            data (dict): Contains the results of the test, including the configurations and the predictions.
+
+        """
+
+        return test_predictor_model_dataset(self.dataloader[TEST],
+                                            self.config_type_pred_input,
+                                            self.config_type_pred_target,
+                                            self.predictor.model,
+                                            self.device_manager.default_device)
 
 
     def __init_data(self) -> bool:
@@ -392,21 +402,6 @@ class TrainingPredictor(TrainingBase):
         return get_config_from_batch(batch, type, self.device_manager.default_device)
 
 
-    def __test_predictor_model(self) -> dict:
-        """
-        Function for testing the predictor model.
-
-        Returns:
-            data (dict): Contains the results of the test, including the configurations and the predictions.
-
-        """
-
-        return test_predictor_model_dataset(self.dataloader[TEST],
-                                            self.config_type_pred_input,
-                                            self.config_type_pred_target, self.predictor.model,
-                                            self.device_manager.default_device)
-
-
     def __save_progress_plot(self, data) -> None:
         """
         Function for saving the progress plot.
@@ -447,4 +442,42 @@ class TrainingPredictor(TrainingBase):
             torch.cuda.manual_seed(self.__seed)
         except Exception as e:
             logging.error(f"Error initializing the seed: {e}")
+
+        logging.debug(f"Seed: {self.__seed}")
+
+
+    def __save_model(self) -> None:
+        """
+        Save the model's state dictionary, optimizer state dictionary, and other relevant training information.
+
+        """
+
+        path = self.__folders.models_folder / f"predictor_{self.current_epoch+1}.pth.tar"
+
+        if isinstance(self.predictor.model, nn.DataParallel):
+            model_state_dict = self.predictor.model.module.state_dict()
+        else:
+            model_state_dict = self.predictor.model.state_dict()
+
+        save_dict = {
+            'model': self.predictor.model,
+            'model_state_dict': model_state_dict,
+            'optimizer_state_dict': self.predictor.optimizer.state_dict(),
+            'current_epoch': self.current_epoch,
+            'train_loss': self.losses[TRAIN],
+            'val_loss': self.losses[VALIDATION],
+            'test_loss': self.losses[TEST],
+            'seed': self.__seed,
+            'seed_type': self.__seed_type,
+            'date': str(self.__date),
+            'n_times_trained_p': self.n_times_trained_p,
+            'config_type_pred_input': self.config_type_pred_input,
+            'config_type_pred_target': self.config_type_pred_target
+        }
+
+        try:
+            torch.save(save_dict, path)
+            logging.info(f"Model saved to {path} - epoch: {self.current_epoch+1}")
+        except Exception as e:
+            logging.error(f"Error saving the model: {e}")
 

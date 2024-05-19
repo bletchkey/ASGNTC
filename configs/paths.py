@@ -11,5 +11,10 @@ SRC_DIR            = ROOT_DIR / "src"
 
 DATASET_DIR        = MEDIA_DIR / PROJECT_NAME / "data"
 TRAININGS_DIR      = MEDIA_DIR / PROJECT_NAME / "trainings"
+
+TRAININGS_PREDICTOR_DIR   = TRAININGS_DIR / "predictor"
+TRAININGS_ADVERSARIAL_DIR = TRAININGS_DIR / "adversarial"
+
 TRAINED_MODELS_DIR = MEDIA_DIR / PROJECT_NAME / "trained_models"
 
+APP_LOGS_DIR        = MEDIA_DIR / PROJECT_NAME / "app_logs"

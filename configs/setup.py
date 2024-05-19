@@ -6,7 +6,7 @@ import sys
 
 from pathlib import Path
 
-from configs.paths import PROJECT_NAME
+from configs.paths import PROJECT_NAME, APP_LOGS_DIR
 
 def setup_base_directory():
     """
@@ -32,8 +32,20 @@ def setup_logging(path, default_level=logging.INFO):
 
     try:
         with open(path, 'rt') as file:
-            config = json.load(file)
-        logging.config.dictConfig(config)
+            logging_config = json.load(file)
+
+        # Replace the placeholder with the actual log directory
+        log_filename = logging_config['handlers']['file']['filename'].format(log_directory=APP_LOGS_DIR)
+
+        # Ensure the log directory exists
+        log_directory_path = Path(log_filename).parent
+        log_directory_path.mkdir(parents=True, exist_ok=True)
+
+        # Update the filename in the configuration
+        logging_config['handlers']['file']['filename'] = log_filename
+
+        # Apply the logging configuration
+        logging.config.dictConfig(logging_config)
         logging.debug(f"Logging configuration loaded from {path}")
     except Exception as e:
         logging.error(f"Error in logging configuration (using default settings): {e}")
