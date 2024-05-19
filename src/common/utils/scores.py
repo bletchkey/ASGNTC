@@ -5,7 +5,7 @@ from typing import Union
 from configs.constants import *
 
 
-def config_prediction_accuracy_bins(prediction: torch.Tensor,
+def prediction_accuracy_bins(prediction: torch.Tensor,
                                target: torch.Tensor) -> float:
     """
     Calculate the mean accuracy score for the prediction compared to the target.
@@ -46,8 +46,7 @@ def config_prediction_accuracy_bins(prediction: torch.Tensor,
 
     return mean_scores.item()
 
-
-def config_prediction_accuracy_tolerance(prediction: torch.Tensor, target: torch.Tensor, tolerance: float) -> float:
+def prediction_accuracy_tolerance(prediction: torch.Tensor, target: torch.Tensor, tolerance: float) -> float:
     """
     Calculate the accuracy score for the prediction compared to the target based on a tolerance.
     Each predicted value within the specified tolerance of the target value is considered correct.
@@ -83,7 +82,6 @@ def config_prediction_accuracy_tolerance(prediction: torch.Tensor, target: torch
     mean_accuracy = correct_predictions.mean().item()
 
     return mean_accuracy
-
 
 def calculate_stable_metric_complexity(metrics: torch.Tensor,
                                        mean: bool = False) -> Union[torch.Tensor, float]:

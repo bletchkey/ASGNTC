@@ -1,6 +1,8 @@
 from pathlib import Path
 
+import logging
 import numpy as np
+import seaborn as sns
 import matplotlib.pyplot as plt
 from matplotlib.gridspec import GridSpec
 from matplotlib.ticker import MaxNLocator
@@ -160,6 +162,7 @@ def check_dataset_distribution(saving_path, dataset):
 
 def plot_dataset_infos():
 
+
     base_saving_path = DATASET_DIR / "plots"
     base_saving_path.mkdir(exist_ok=True)
 
@@ -169,10 +172,10 @@ def plot_dataset_infos():
         saving_path = base_saving_path / name
         saving_path.mkdir(exist_ok=True)
 
-        ds_path = DATASET_DIR / f"{DATASET_NAME}_{name}.pt"
+        ds_path       = DATASET_DIR / f"{DATASET_NAME}_{name}.pt"
         metadata_path = DATASET_DIR / f"{DATASET_NAME}_metadata_{name}.pt"
 
-        dataset = torch.load(ds_path)
+        dataset  = torch.load(ds_path)
         metadata = torch.load(metadata_path)
 
         check_dataset_configs(saving_path, dataset, metadata)
@@ -189,11 +192,10 @@ def dataset_creator():
 
 def main():
     setup_base_directory()
+
     setup_logging(path= CONFIG_DIR / "logging_dataset.json")
 
-    dataset_creator()
-
-    # plot_dataset_infos()
+    plot_dataset_infos()
 
 if __name__ == "__main__":
     return_code = main()

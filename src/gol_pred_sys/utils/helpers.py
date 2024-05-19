@@ -6,7 +6,7 @@ from pathlib import Path
 
 from configs.constants import *
 
-from src.common.utils.scores import config_prediction_accuracy_bins, config_prediction_accuracy_tolerance
+from src.common.utils.scores import prediction_accuracy_bins, prediction_accuracy_tolerance
 
 
 def get_config_from_batch(batch: torch.Tensor, type: str, device: torch.device) -> torch.Tensor:
@@ -93,7 +93,7 @@ def test_predictor_model_dataset(test_set: torch.utils.data.DataLoader,
     # Construct metadata from aggregated data
     metadata = {
         META_ID: batch_metadata_aggregated[META_ID],
-        META_N_CELLS_INITIAL : batch_metadata_aggregated[META_N_CELLS_INITIAL ],
+        META_N_CELLS_INITIAL : batch_metadata_aggregated[META_N_CELLS_INITIAL],
         META_N_CELLS_FINAL: batch_metadata_aggregated[META_N_CELLS_FINAL],
         META_TRANSIENT_PHASE: batch_metadata_aggregated[META_TRANSIENT_PHASE],
         META_PERIOD: batch_metadata_aggregated[META_PERIOD],
@@ -124,8 +124,12 @@ def save_progress_plot_dataset(plot_data: dict, epoch: int, results_path: str) -
     titles = [key for key in plot_data.keys()]
 
     # IDs
-    ids = [8154, 87646, 96922, 115472, 179702, 248104]
-    id_tensor = plot_data["metadata"]["id"]
+    # ids = [8154, 87646, 96922, 115472, 179702, 248104]
+
+    # Get the IDs from the metadata
+    ids = plot_data["metadata"][META_ID][:6]
+
+    id_tensor = plot_data["metadata"][META_ID]
 
     # Check and ensure id_tensor is a PyTorch tensor
     if not isinstance(id_tensor, torch.Tensor):

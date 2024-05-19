@@ -2,7 +2,7 @@ import numpy as np
 import logging
 
 import torch
-from   torch.utils.data import Dataset
+from   torch.utils.data import Dataset, DataLoader
 
 
 from configs.paths import DATASET_DIR
@@ -41,14 +41,14 @@ class DatasetCreator():
         self.__simulation_topology = TOPOLOGY_TOROIDAL
 
         self.dataset_entire_path = DATASET_DIR / f"{DATASET_NAME}.pt"
-        self.dataset_train_path  = DATASET_DIR / f"{DATASET_NAME}_train.pt"
-        self.dataset_val_path    = DATASET_DIR / f"{DATASET_NAME}_val.pt"
-        self.dataset_test_path   = DATASET_DIR / f"{DATASET_NAME}_test.pt"
+        self.dataset_train_path  = DATASET_DIR / f"{DATASET_NAME}_{TRAIN}.pt"
+        self.dataset_val_path    = DATASET_DIR / f"{DATASET_NAME}_{VALIDATION}.pt"
+        self.dataset_test_path   = DATASET_DIR / f"{DATASET_NAME}_{TEST}.pt"
 
         self.metadata_entire_path = DATASET_DIR / f"{DATASET_NAME}_metadata.pt"
-        self.metadata_train_path  = DATASET_DIR / f"{DATASET_NAME}_metadata_train.pt"
-        self.metadata_val_path    = DATASET_DIR / f"{DATASET_NAME}_metadata_val.pt"
-        self.metadata_test_path   = DATASET_DIR / f"{DATASET_NAME}_metadata_test.pt"
+        self.metadata_train_path  = DATASET_DIR / f"{DATASET_NAME}_metadata_{TRAIN}.pt"
+        self.metadata_val_path    = DATASET_DIR / f"{DATASET_NAME}_metadata_{VALIDATION}.pt"
+        self.metadata_test_path   = DATASET_DIR / f"{DATASET_NAME}_metadata_{TEST}.pt"
 
         self.total_configs = 0
 
@@ -321,4 +321,83 @@ class PairedDataset(Dataset):
         data = self.data_set[idx]
         meta = self.meta_set[idx]
         return data, meta
+
+
+class DatasetManager():
+    def __init__(self) -> None:
+
+        try:
+            train_path = DATASET_DIR / f"{DATASET_NAME}_{TRAIN}.pt"
+            val_path   = DATASET_DIR / f"{DATASET_NAME}_{VALIDATION}.pt"
+            test_path  = DATASET_DIR / f"{DATASET_NAME}_{TEST}.pt"
+
+            train_meta_path = DATASET_DIR / f"{DATASET_NAME}_metadata_{TRAIN}.pt"
+            val_meta_path   = DATASET_DIR / f"{DATASET_NAME}_metadata_{VALIDATION}.pt"
+            test_meta_path  = DATASET_DIR / f"{DATASET_NAME}_metadata_{TEST}.pt"
+
+            self.dataset = {
+                TRAIN: None,
+                VALIDATION: None,
+                TEST: None,
+                TRAIN_METADATA: None,
+                VALIDATION_METADATA: None,
+                TEST_METADATA: None
+            }
+
+            self.dataset[TRAIN]      = FixedDataset(train_path)
+            self.dataset[VALIDATION] = FixedDataset(val_path)
+            self.dataset[TEST]       = FixedDataset(test_path)
+
+            self.dataset[TRAIN_METADATA]      = FixedDataset(train_meta_path)
+            self.dataset[VALIDATION_METADATA] = FixedDataset(val_meta_path)
+            self.dataset[TEST_METADATA]       = FixedDataset(test_meta_path)
+
+            self.paired_dataset = {
+                TRAIN: None,
+                VALIDATION: None,
+                TEST: None
+            }
+
+            self.paired_dataset[TRAIN]      = PairedDataset(self.dataset[TRAIN],
+                                                            self.dataset[TRAIN_METADATA])
+
+            self.paired_dataset[VALIDATION] = PairedDataset(self.dataset[VALIDATION],
+                                                            self.dataset[VALIDATION_METADATA])
+
+            self.paired_dataset[TEST]       = PairedDataset(self.dataset[TEST],
+                                                            self.dataset[TEST_METADATA])
+
+        except Exception as e:
+            logging.error(f"Error initializing the data: {e}")
+            raise e
+
+
+    def get_dataloader(self,
+                       dataset_name: str,
+                       batch_size: int,
+                       shuffle: bool = True) -> DataLoader:
+        """
+        Returns the DataLoader for the specified dataset.
+
+        Parameters:
+            dataset_name (str): The name of the dataset to retrieve the DataLoader for.
+
+        Returns:
+            DataLoader: The DataLoader for the specified dataset.
+        """
+
+        return DataLoader(self.paired_dataset[dataset_name], batch_size=batch_size, shuffle=shuffle)
+
+
+    def get_dataset(self, dataset_name: str) -> FixedDataset:
+        """
+        Returns the DataLoader for the specified dataset.
+
+        Parameters:
+            dataset_name (str): The name of the dataset to retrieve the DataLoader for.
+
+        Returns:
+            DataLoader: The DataLoader for the specified dataset.
+        """
+        return self.dataset[dataset_name]
 

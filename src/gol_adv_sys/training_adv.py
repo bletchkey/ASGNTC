@@ -584,12 +584,12 @@ class TrainingAdversarial(TrainingBase):
         epoch = self.current_epoch + 1
 
         if (epoch > 0) and (epoch % n == 0) and (self.n_times_trained_p > 0):
-            self.path_p = self.folders.models_folder / f"predictor_{epoch}.pth.tar"
+            self.path_p = self.folders.checkpoints_folder / f"predictor_{epoch}.pth.tar"
             self.predictor.save(self.path_p)
 
 
         if (epoch > 0) and (epoch % n == 0) and (self.n_times_trained_g > 0):
-            self.path_g = self.folders.models_folder / f"generator_{epoch}.pth.tar"
+            self.path_g = self.folders.checkpoints_folder / f"generator_{epoch}.pth.tar"
             self.generator.save(self.path_g)
 
 

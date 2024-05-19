@@ -1,4 +1,5 @@
 import sys
+import logging
 import os
 import matplotlib.pyplot as plt
 import numpy as np
@@ -7,16 +8,13 @@ from   torch.utils.data import DataLoader
 
 from configs.setup import setup_base_directory, setup_logging
 from configs.constants import *
-from configs.paths import CONFIG_DIR, TRAININGS_DIR, TRAINED_MODELS_DIR
+from configs.paths import CONFIG_DIR, TRAININGS_DIR, \
+                          TRAINED_MODELS_DIR, TRAININGS_PREDICTOR_DIR
 from configs.paths import DATASET_DIR
 
-from src.common.device_manager        import DeviceManager
-from src.gol_pred_sys.dataset_manager import FixedDataset, PairedDataset
-from src.gol_pred_sys.training_pred   import TrainingPredictor
+from src.gol_pred_sys.training_pred import TrainingPredictor
+from src.gol_pred_sys.eval_pred     import get_accuracy
 
-from src.gol_pred_sys.utils.helpers import get_config_from_batch
-from src.common.utils.scores        import config_prediction_accuracy_bins, \
-                                           config_prediction_accuracy_tolerance
 from src.common.utils.helpers       import retrieve_log_data
 from src.common.predictor           import Predictor_Baseline, Predictor_ResNet,\
                                            Predictor_UNet, Predictor_Proposed
@@ -147,53 +145,24 @@ def plot_data_base_toro_vs_zero():
 
 def plot_accuracies(model_folder_path):
 
-    device_manager = DeviceManager()
-    device         = device_manager.default_device
-
-    test_path      = DATASET_DIR / f"{DATASET_NAME}_test.pt"
-    test_meta_path = DATASET_DIR / f"{DATASET_NAME}_metadata_test.pt"
-
-    dataset_test          = FixedDataset(test_path)
-    dataset_test_metadata = FixedDataset(test_meta_path)
-    test_ds               = PairedDataset(dataset_test, dataset_test_metadata)
-
-    dataloader_test = DataLoader(test_ds, batch_size=P_BATCH_SIZE, shuffle=False)
-
-    model_iters = sorted(os.listdir(model_folder_path / "models"))
+    model_checkpoints = sorted(os.listdir(model_folder_path / "checkpoints"))
 
     accuracies = []
+    for checkpoint in model_checkpoints:
 
-    for model_iter in model_iters:
+        checkpoint_path = model_folder_path / "checkpoints" / checkpoint
 
-        checkpoint = torch.load(model_folder_path / "models" / model_iter)
-        model      = checkpoint["model"]
-        model.load_state_dict(checkpoint["state_dict"])
+        accuracy = get_accuracy(checkpoint_path)
 
-        total_accuracy = 0
+        accuracies.append(accuracy*100)
 
-        with torch.no_grad():
-            for batch_count, (batch, _) in enumerate(dataloader_test, start=1):
-
-                predicted = model(get_config_from_batch(batch,
-                                                         checkpoint["config_type_pred_input"],
-                                                         device))
-
-                accuracy = config_prediction_accuracy_bins(predicted,
-                                                           get_config_from_batch(batch,
-                                                                                 checkpoint["config_type_pred_target"],
-                                                                                 device))
-                total_accuracy += accuracy
-
-                running_avg_accuracy = total_accuracy / batch_count
-
-        accuracies.append(running_avg_accuracy)
 
     fig, ax = plt.subplots(1, 1, figsize=(10, 10))
     plt.suptitle(f"Accuracies on test set", fontsize=18)
 
     ax.plot(accuracies, label='accuracies', color='blue')
     ax.set_title("Accuracies")
-    ax.set_xlabel("Model")
+    ax.set_xlabel("Epoch")
     ax.set_ylabel("Accuracy")
     ax.set_yscale('linear')
     ax.set_ylim([0, 100])
@@ -202,7 +171,6 @@ def plot_accuracies(model_folder_path):
 
     plt.tight_layout()
     plt.savefig("accuracies.png")
-
 
 def train_baseline(target_type, topology):
     train_pred = TrainingPredictor(Predictor_Baseline(topology), target_type)
@@ -230,11 +198,9 @@ def main():
 
     # plot_data_base_toro_vs_zero()
     # plot_baseline_on_all_targets()
+    # plot_accuracies(TRAININGS_PREDICTOR_DIR/ "2024-05-19_19-02-46")
 
-    # plot_accuracies(TRAININGS_DIR/ "2024-05-19_16-54-03")
-
-    train_baseline(CONFIG_TARGET_MEDIUM, TOPOLOGY_TOROIDAL)
-
+    train_baseline(CONFIG_TARGET_EASY, TOPOLOGY_TOROIDAL)
     # train_proposed(CONFIG_TARGET_EASY)
 
     return 0

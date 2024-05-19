@@ -19,15 +19,14 @@ from   torch.utils.data import DataLoader
 from configs.paths     import DATASET_DIR
 from configs.constants import *
 
-from src.common.folder_manager  import FolderManager
-from src.common.device_manager  import DeviceManager
-from src.common.model_manager   import ModelManager
-from src.common.training_base   import TrainingBase
-
-from src.gol_pred_sys.dataset_manager import FixedDataset, PairedDataset
+from src.common.folder_manager        import FolderManager
+from src.common.device_manager        import DeviceManager
+from src.common.model_manager         import ModelManager
+from src.common.training_base         import TrainingBase
+from src.gol_pred_sys.dataset_manager import DatasetManager
 
 from src.common.utils.losses import WeightedMSELoss, WeightedBCELoss, CustomGoLLoss
-from src.common.utils.scores import config_prediction_accuracy_bins
+from src.common.utils.scores import prediction_accuracy_bins
 
 from src.common.utils.helpers import get_elapsed_time_str
 
@@ -45,6 +44,7 @@ class TrainingPredictor(TrainingBase):
         __seed (int): The seed used for the random number generators.
         __folders (FolderManager): The folder manager object used to manage the folders for the training session.
         device_manager (DeviceManager): The device manager object used to manage the devices for the training session.
+        dataset_manager (DatasetManager): The dataset manager object used to manage the dataset for the training session.
         predictor (ModelManager): The model manager object used to manage the predictor model.
         lr_scheduler (torch.optim.lr_scheduler): The learning rate scheduler for the predictor model.
         warmup_phase (dict): The warm-up phase specifications.
@@ -55,7 +55,6 @@ class TrainingPredictor(TrainingBase):
         learning_rates (list): The learning rates used during the training session.
         losses (dict): The losses of the predictor model on the training, validation and test sets.
         accuracies (dict): The accuracies of the predictor model on the training, validation and test sets.
-        dataset (dict): The dataset used for training the predictor model.
         dataloader (dict): The dataloaders used for training, validation and testing the predictor model.
         path_log_file (str): The path to the log file for the training session.
 
@@ -65,9 +64,10 @@ class TrainingPredictor(TrainingBase):
 
         self.__date = datetime.datetime.now()
         self.__initialize_seed()
-        self.__folders = FolderManager(TRAINING_TYPE_PREDICTOR, self.__date)
 
-        self.device_manager = DeviceManager()
+        self.__folders       = FolderManager(TRAINING_TYPE_PREDICTOR, self.__date)
+        self.device_manager  = DeviceManager()
+        self.dataset_manager = DatasetManager()
 
         self.predictor = ModelManager(model=model,
                                       optimizer=optim.SGD(model.parameters(),
@@ -98,14 +98,9 @@ class TrainingPredictor(TrainingBase):
         self.losses     = {TRAIN: [], VALIDATION: [], TEST: []}
         self.accuracies = {TRAIN: [], VALIDATION: [], TEST: []}
 
-        self.dataset = {TRAIN: None,
-                        TRAIN_METADATA: None,
-                        VALIDATION: None,
-                        VALIDATION_METADATA: None,
-                        TEST: None,
-                        TEST_METADATA: None}
-
-        self.dataloader = {TRAIN: None, VALIDATION: None, TEST: None}
+        self.dataloader = {TRAIN: self.dataset_manager.get_dataloader(TRAIN, P_BATCH_SIZE, shuffle=True),
+                           VALIDATION: self.dataset_manager.get_dataloader(VALIDATION, P_BATCH_SIZE, shuffle=False),
+                           TEST: self.dataset_manager.get_dataloader(TEST, P_BATCH_SIZE, shuffle=False)}
 
         self.path_log_file = self.__init_log_file()
 
@@ -123,7 +118,6 @@ class TrainingPredictor(TrainingBase):
 
         logging.info(f"Training started at {datetime.datetime.now().strftime('%d/%m/%Y %H:%M:%S')}")
 
-        self.__init_data()
         results = self._fit()
 
         logging.info(f"Training ended at {datetime.datetime.now().strftime('%d/%m/%Y %H:%M:%S')}")
@@ -164,7 +158,9 @@ class TrainingPredictor(TrainingBase):
 
             self.process_predictor_model(TRAIN)
             self.process_predictor_model(VALIDATION)
-            self.process_predictor_model(TEST)
+
+            if self.current_epoch+1 == P_NUM_EPOCHS:
+                self.process_predictor_model(TEST)
 
             if self.current_epoch > 0:
                 self.lr_scheduler.step(self.losses[VALIDATION][-1])
@@ -245,7 +241,7 @@ class TrainingPredictor(TrainingBase):
                         logging.debug("Warm-up phase")
                         logging.debug(f"Learning rate: {self.predictor.get_learning_rate()}")
 
-                accuracy = config_prediction_accuracy_bins(predicted, self.__get_config_type(batch, self.config_type_pred_target))
+                accuracy = prediction_accuracy_bins(predicted, self.__get_config_type(batch, self.config_type_pred_target))
 
                 total_loss     += errP.item()
                 total_accuracy += accuracy
@@ -274,48 +270,6 @@ class TrainingPredictor(TrainingBase):
                                             self.config_type_pred_target,
                                             self.predictor.model,
                                             self.device_manager.default_device)
-
-
-    def __init_data(self) -> bool:
-        """
-        Initialize the dataset and dataloaders for the training session.
-
-        Returns:
-            success (bool): True if the data was initialized successfully, False otherwise.
-
-        """
-
-        try:
-            train_path = DATASET_DIR / f"{DATASET_NAME}_train.pt"
-            val_path   = DATASET_DIR / f"{DATASET_NAME}_val.pt"
-            test_path  = DATASET_DIR / f"{DATASET_NAME}_test.pt"
-
-            train_meta_path = DATASET_DIR / f"{DATASET_NAME}_metadata_train.pt"
-            val_meta_path   = DATASET_DIR / f"{DATASET_NAME}_metadata_val.pt"
-            test_meta_path  = DATASET_DIR / f"{DATASET_NAME}_metadata_test.pt"
-
-            self.dataset[TRAIN]      = FixedDataset(train_path)
-            self.dataset[VALIDATION] = FixedDataset(val_path)
-            self.dataset[TEST]       = FixedDataset(test_path)
-
-            self.dataset[TRAIN_METADATA]      = FixedDataset(train_meta_path)
-            self.dataset[VALIDATION_METADATA] = FixedDataset(val_meta_path)
-            self.dataset[TEST_METADATA]       = FixedDataset(test_meta_path)
-
-            train_ds = PairedDataset(self.dataset[TRAIN], self.dataset[TRAIN_METADATA])
-            val_ds   = PairedDataset(self.dataset[VALIDATION], self.dataset[VALIDATION_METADATA])
-            test_ds  = PairedDataset(self.dataset[TEST], self.dataset[TEST_METADATA])
-
-            self.dataloader[TRAIN] = DataLoader(train_ds, batch_size=P_BATCH_SIZE, shuffle=True)
-            self.dataloader[VALIDATION]   = DataLoader(val_ds, batch_size=P_BATCH_SIZE, shuffle=False)
-            self.dataloader[TEST]  = DataLoader(test_ds, batch_size=P_BATCH_SIZE, shuffle=False)
-
-        except Exception as e:
-            logging.error(f"Error initializing the data: {e}")
-            raise e
-
-        return True
-
 
     def __log_training_epoch(self, time) -> None:
         """
@@ -452,7 +406,7 @@ class TrainingPredictor(TrainingBase):
 
         """
 
-        path = self.__folders.models_folder / f"predictor_{self.current_epoch+1}.pth.tar"
+        path = self.__folders.checkpoints_folder / f"predictor_{self.current_epoch+1}.pth.tar"
 
         if isinstance(self.predictor.model, nn.DataParallel):
             model_state_dict = self.predictor.model.module.state_dict()

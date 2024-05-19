@@ -14,7 +14,7 @@ class FolderManager:
     Attributes:
         base_folder (str): The base directory for a training sessions.
         results_folder (str): Directory for storing results.
-        models_folder (str): Directory for storing model checkpoints.
+        checkpoints_folder (str): Directory for storing model checkpoints.
         logs_folder (str): Directory for storing logs.
 
     """
@@ -30,10 +30,10 @@ class FolderManager:
         else:
             raise ValueError(f"Invalid training type: {training_type}")
 
-        self.__base_folder = base
-        self.__results_dir = self.__base_folder / "results"
-        self.__models_dir  = self.__base_folder / "models"
-        self.__logs_dir    = self.__base_folder / "logs"
+        self.__base_folder     = base
+        self.__results_dir     = self.__base_folder / "results"
+        self.__checkpoints_dir = self.__base_folder / "checkpoints"
+        self.__logs_dir        = self.__base_folder / "logs"
 
     @property
     def base_folder(self) -> Path:
@@ -50,11 +50,11 @@ class FolderManager:
         return self.__results_dir
 
     @property
-    def models_folder(self) -> Path:
+    def checkpoints_folder(self) -> Path:
         """Returns the models folder path, creating it if necessary."""
-        if not self.__models_dir.exists():
-            self.__models_dir.mkdir(parents=True, exist_ok=True)
-        return self.__models_dir
+        if not self.__checkpoints_dir.exists():
+            self.__checkpoints_dir.mkdir(parents=True, exist_ok=True)
+        return self.__checkpoints_dir
 
     @property
     def logs_folder(self) -> Path:
