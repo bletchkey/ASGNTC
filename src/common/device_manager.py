@@ -1,5 +1,5 @@
 import torch
-
+import logging
 
 class DeviceManager:
     """
@@ -21,10 +21,12 @@ class DeviceManager:
         Initializes the DeviceManager by detecting available GPUs and selecting the optimal training device.
 
         """
-        self.__n_gpus = torch.cuda.device_count()
-        self.__default_device = self.__get_default_device()
+
+        self.__n_gpus               = torch.cuda.device_count()
+        self.__default_device       = self.__get_default_device()
         self.__balanced_gpu_indices = self.__get_balanced_gpu_indices()
-        self.__n_balanced_gpus = len(self.__balanced_gpu_indices)
+        self.__n_balanced_gpus      = len(self.__balanced_gpu_indices)
+
 
     @property
     def n_gpus(self) -> int:
@@ -58,14 +60,16 @@ class DeviceManager:
         if not torch.cuda.is_available():
             return torch.device("cpu")
 
-        device_specs = []
+        max_memory_free = 0
+        selected_device = 0
 
         for i in range(torch.cuda.device_count()):
-            gpu_properties = torch.cuda.get_device_properties(i)
-            memory_free = torch.cuda.memory_reserved(i) - torch.cuda.memory_allocated(i)
-            device_specs.append((i, gpu_properties.total_memory, memory_free))
-
-        selected_device = max(device_specs, key=lambda x: x[2])[0]
+            torch.cuda.set_device(i)
+            memory_stats = torch.cuda.memory_stats()
+            memory_free = memory_stats["allocated_bytes.all.peak"] - memory_stats["allocated_bytes.all.current"]
+            if memory_free > max_memory_free:
+                max_memory_free = memory_free
+                selected_device = i
 
         return torch.device(f"cuda:{selected_device}")
 
@@ -81,6 +85,7 @@ class DeviceManager:
             List[int]: A list of indices for GPUs that meet the balance criteria.
 
         """
+
         if not torch.cuda.is_available() or torch.cuda.device_count() <= 1:
             return []
 
@@ -89,23 +94,36 @@ class DeviceManager:
         balanced_gpus = []
 
         for i in range(torch.cuda.device_count()):
+            if i == id_default_device:
+                continue
             gpu_properties = torch.cuda.get_device_properties(i)
             memory_ratio = gpu_properties.total_memory / default_gpu_properties.total_memory
             cores_ratio = gpu_properties.multi_processor_count / default_gpu_properties.multi_processor_count
 
-            if memory_ratio >= threshold and cores_ratio >= threshold and i != id_default_device:
+            if memory_ratio >= threshold and cores_ratio >= threshold:
                 balanced_gpus.append(i)
 
         return balanced_gpus
 
 
-    def clear_resources(self):
+    def clear_resources(self, threshold=0.75):
         """
         Function for cleaning up the resources.
         If the device used for training is a GPU, the CUDA cache is cleared.
 
         """
 
-        if self.__default_device.type == "cuda":
-            torch.cuda.empty_cache()
+        if torch.cuda.is_available():
+            device           = self.__default_device
+            allocated_memory = torch.cuda.memory_allocated(device)
+            reserved_memory  = torch.cuda.memory_reserved(device)
+            logging.debug(f"Allocated memory on {device}: {allocated_memory / (1024**3):.2f} GB")
+            logging.debug(f"Reserved memory on {device}: {reserved_memory / (1024**3):.2f} GB")
+
+            if allocated_memory / reserved_memory > threshold:
+                logging.debug(f"Clearing CUDA cache on {device}")
+                torch.cuda.empty_cache()
+
+                logging.debug(f"Allocated memory on {device}: {allocated_memory / (1024**3):.2f} GB")
+                logging.debug(f"Reserved memory on {device}: {reserved_memory / (1024**3):.2f} GB")
 
