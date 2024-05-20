@@ -35,14 +35,15 @@ def plot_baseline_on_all_targets():
 
     # Retrieve log data for easy and medium targets
     log_paths = {
-        "easy": TRAINED_MODELS_DIR / "predictors/ResNet_Baseline_Easy_Toroidal/logs/training_progress.txt",
-        "medium": TRAINED_MODELS_DIR / "predictors/ResNet_Baseline_Medium_Toroidal/logs/training_progress.txt",
-        "hard": TRAINED_MODELS_DIR / "predictors/ResNet_Baseline_Hard_Toroidal/logs/training_progress.txt"
+        "easy"  : TRAINED_MODELS_DIR / "predictors/Baseline_Toroidal_Easy/logs/training_progress.txt",
+        "medium": TRAINED_MODELS_DIR / "predictors/Baseline_Toroidal_Medium/logs/training_progress.txt",
+        "hard"  : TRAINED_MODELS_DIR / "predictors/Baseline_Toroidal_Hard/logs/training_progress.txt",
+        "stable": TRAINED_MODELS_DIR / "predictors/Baseline_Toroidal_Stable/logs/training_progress.txt"
     }
 
-    data_easy = retrieve_log_data(log_paths["easy"])
+    data_easy   = retrieve_log_data(log_paths["easy"])
     data_medium = retrieve_log_data(log_paths["medium"])
-    data_hard = retrieve_log_data(log_paths["hard"])
+    data_hard   = retrieve_log_data(log_paths["hard"])
 
     # Extract training and validation losses and accuracies
     metrics = {
@@ -96,12 +97,12 @@ def plot_baseline_on_all_targets():
 
 
     plt.tight_layout(rect=[0, 0.03, 1, 0.95])  # Adjust layout to make room for the title
-    plt.savefig("targets_baseline_model.png")
+    plt.savefig("new_targets_baseline_model.png")
 
 def plot_data_base_toro_vs_zero():
 
-    data_toro = retrieve_log_data(log_path= TRAINED_MODELS_DIR / "predictors/ResNet_Baseline_Medium_Toroidal/logs/training_progress.txt")
-    data_zero = retrieve_log_data(log_path= TRAINED_MODELS_DIR / "predictors/ResNet_Baseline_Medium_Zero/logs/training_progress.txt")
+    data_toro = retrieve_log_data(log_path= TRAINED_MODELS_DIR / "predictors/Baseline_Toroidal_Medium/logs/training_progress.txt")
+    data_zero = retrieve_log_data(log_path= TRAINED_MODELS_DIR / "predictors/Baseline_Zero_Medium/logs/training_progress.txt")
 
     if data_toro["target_type"] != data_zero["target_type"]:
         print("The target types are different")
@@ -201,7 +202,10 @@ def main():
     # plot_accuracies(TRAININGS_PREDICTOR_DIR/ "2024-05-19_19-02-46")
 
     # train_baseline(CONFIG_TARGET_EASY, TOPOLOGY_TOROIDAL)
-    train_baseline(CONFIG_TARGET_MEDIUM, TOPOLOGY_TOROIDAL)
+    # train_baseline(CONFIG_TARGET_MEDIUM, TOPOLOGY_TOROIDAL)
+    train_baseline(CONFIG_TARGET_MEDIUM, TOPOLOGY_FLAT)
+    # train_baseline(CONFIG_TARGET_HARD, TOPOLOGY_TOROIDAL)
+    # train_baseline(CONFIG_TARGET_STABLE, TOPOLOGY_TOROIDAL)
 
     # train_proposed(CONFIG_TARGET_EASY)
 

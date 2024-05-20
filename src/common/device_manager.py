@@ -89,19 +89,20 @@ class DeviceManager:
         if not torch.cuda.is_available() or torch.cuda.device_count() <= 1:
             return []
 
-        id_default_device = torch.cuda.current_device()
+        id_default_device      = torch.cuda.current_device()
         default_gpu_properties = torch.cuda.get_device_properties(id_default_device)
-        balanced_gpus = []
+        balanced_gpus          = []
 
         for i in range(torch.cuda.device_count()):
             if i == id_default_device:
                 continue
             gpu_properties = torch.cuda.get_device_properties(i)
-            memory_ratio = gpu_properties.total_memory / default_gpu_properties.total_memory
-            cores_ratio = gpu_properties.multi_processor_count / default_gpu_properties.multi_processor_count
+            memory_ratio   = gpu_properties.total_memory / default_gpu_properties.total_memory
+            cores_ratio    = gpu_properties.multi_processor_count / default_gpu_properties.multi_processor_count
 
             if memory_ratio >= threshold and cores_ratio >= threshold:
                 balanced_gpus.append(i)
+                logging.debug(f"GPU {i} is balanced with respect to the default device [GPU {id_default_device}].")
 
         return balanced_gpus
 
@@ -123,6 +124,9 @@ class DeviceManager:
             if allocated_memory / reserved_memory > threshold:
                 logging.debug(f"Clearing CUDA cache on {device}")
                 torch.cuda.empty_cache()
+
+                allocated_memory = torch.cuda.memory_allocated(device)
+                reserved_memory  = torch.cuda.memory_reserved(device)
 
                 logging.debug(f"Allocated memory on {device}: {allocated_memory / (1024**3):.2f} GB")
                 logging.debug(f"Reserved memory on {device}: {reserved_memory / (1024**3):.2f} GB")
