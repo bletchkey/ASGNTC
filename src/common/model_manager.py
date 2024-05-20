@@ -29,8 +29,9 @@ class ModelManager:
         self.__device_manager = device_manager
         self.__model.to(self.__device_manager.default_device)
 
-        if self.__device_manager.n_balanced_gpus > 0:
-            self.__model = nn.DataParallel(self.model, device_ids=self.__device_manager.balanced_gpu_indices)
+        # TODO: Implement distributed training with DataParallel (not necessary for now)
+        # if self.__device_manager.n_balanced_gpus > 0:
+        #     self.__model = nn.DataParallel(self.model, device_ids=self.__device_manager.balanced_gpu_indices)
 
     @property
     def model(self) -> nn.Module:

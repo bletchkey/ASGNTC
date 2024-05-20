@@ -200,7 +200,9 @@ def main():
     # plot_baseline_on_all_targets()
     # plot_accuracies(TRAININGS_PREDICTOR_DIR/ "2024-05-19_19-02-46")
 
-    train_baseline(CONFIG_TARGET_EASY, TOPOLOGY_TOROIDAL)
+    # train_baseline(CONFIG_TARGET_EASY, TOPOLOGY_TOROIDAL)
+    train_baseline(CONFIG_TARGET_MEDIUM, TOPOLOGY_TOROIDAL)
+
     # train_proposed(CONFIG_TARGET_EASY)
 
     return 0
