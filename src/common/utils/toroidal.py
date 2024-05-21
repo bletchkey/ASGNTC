@@ -12,11 +12,27 @@ class ToroidalConv2d(nn.Module):
         x = self.conv2d(x)
         return x
 
+
     def __add_toroidal_padding(self, x):
-        if self.padding  <= 0:
+        if self.padding <= 0:
             return x
 
-        x = torch.cat([x[:, :, -self.padding :], x, x[:, :, :self.padding ]], dim=2)
-        x = torch.cat([x[:, :, :, -self.padding :], x, x[:, :, :, :self.padding ]], dim=3)
-        return x
+        B, C, H, W = x.shape
+        pad = self.padding
+
+        # Create an empty tensor with the new shape
+        padded_x = torch.empty((B, C, H + 2*pad, W + 2*pad), device=x.device, dtype=x.dtype)
+
+        # Center
+        padded_x[:, :, pad:pad+H, pad:pad+W] = x
+
+        # Left and right
+        padded_x[:, :, pad:pad+H, :pad] = x[:, :, :, -pad:]
+        padded_x[:, :, pad:pad+H, pad+W:] = x[:, :, :, :pad]
+
+        # Top and bottom
+        padded_x[:, :, :pad, :] = padded_x[:, :, H:H+pad, :]
+        padded_x[:, :, pad+H:, :] = padded_x[:, :, pad:2*pad, :]
+
+        return padded_x
 
