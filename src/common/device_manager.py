@@ -74,6 +74,7 @@ class DeviceManager:
                 logging.debug(f"Allocated memory on {device}: {allocated_memory / (1024**3):.2f} GB")
                 logging.debug(f"Reserved memory on {device}: {reserved_memory / (1024**3):.2f} GB")
 
+
     def __get_default_device(self):
         """
         Determines the optimal device

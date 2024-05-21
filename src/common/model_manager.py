@@ -16,11 +16,14 @@ class ModelManager:
         model (nn.Module): The model to be trained.
         optimizer (optim.Optimizer): The optimizer to be used for training.
         criterion (Union[nn.Module, Callable]): The loss function to be used for training.
+        type (str): The type of the model (Predictor or Generator).
         device_manager (DeviceManager): The device manager.
 
     """
     def __init__(self, model: nn.Module, optimizer: optim.Optimizer,
-                 criterion: Union[nn.Module, Callable], device_manager: DeviceManager):
+                 criterion: Union[nn.Module, Callable],
+                 type: str,
+                 device_manager: DeviceManager):
 
         self.__model = model
         self.__optimizer = optimizer
@@ -28,6 +31,8 @@ class ModelManager:
 
         self.__device_manager = device_manager
         self.__model.to(self.__device_manager.default_device)
+
+        self.__type = type
 
         # TODO: Implement distributed training with DataParallel (not necessary for now)
         # if self.__device_manager.n_balanced_gpus > 0:
@@ -48,6 +53,11 @@ class ModelManager:
     def criterion(self) -> Union[nn.Module, Callable]:
         """Returns the loss function."""
         return self.__criterion
+
+    @property
+    def type(self) -> str:
+        """Returns the type of the model."""
+        return self.__type
 
 
     def save(self, path: str) -> None:

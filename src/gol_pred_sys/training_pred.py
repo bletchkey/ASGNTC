@@ -75,6 +75,7 @@ class TrainingPredictor(TrainingBase):
                                                     momentum=P_SGD_MOMENTUM,
                                                     weight_decay=P_SGD_WEIGHT_DECAY),
                                       criterion=WeightedMSELoss(),
+                                      type=PREDICTOR,
                                       device_manager=self.device_manager)
 
         self.lr_scheduler = optim.lr_scheduler.ReduceLROnPlateau(
@@ -416,6 +417,7 @@ class TrainingPredictor(TrainingBase):
         save_dict = {
             'model': self.predictor.model,
             'model_state_dict': model_state_dict,
+            'type': self.predictor.type,
             'optimizer_state_dict': self.predictor.optimizer.state_dict(),
             'name': self.predictor.model.name(),
             'current_epoch': self.current_epoch,
@@ -424,7 +426,7 @@ class TrainingPredictor(TrainingBase):
             'seed': self.__seed,
             'seed_type': self.__seed_type,
             'date': str(datetime.datetime.now()),
-            'n_times_trained_p': self.n_times_trained_p,
+            'n_times_trained': self.n_times_trained_p,
             'config_type_pred_input': self.config_type_pred_input,
             'config_type_pred_target': self.config_type_pred_target
         }

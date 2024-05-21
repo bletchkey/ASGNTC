@@ -64,8 +64,6 @@ class TrainingAdversarial(TrainingBase):
         properties_g (dict): A dictionary containing properties of the generator model.
         data_tensor (torch.Tensor): Auxiliary tensor used for creating the dataloader.
         path_log_file (str): The path to the log file for the training session.
-        path_p (str): The path to the saved predictor model.
-        path_g (str): The path to the saved generator model.
 
     """
 
@@ -98,6 +96,7 @@ class TrainingAdversarial(TrainingBase):
                                                     eps=G_ADAMW_EPS,
                                                     weight_decay=G_ADAMW_WEIGHT_DECAY),
                                       criterion= CustomGoLLoss(model=GENERATOR),
+                                      type= GENERATOR,
                                       device_manager=self.device_manager)
 
         self.predictor = ModelManager(model=model_p,
@@ -106,6 +105,7 @@ class TrainingAdversarial(TrainingBase):
                                                     momentum=P_SGD_MOMENTUM,
                                                     weight_decay=P_SGD_WEIGHT_DECAY),
                                       criterion=CustomGoLLoss(model=PREDICTOR),
+                                      type=PREDICTOR,
                                       device_manager=self.device_manager)
 
 
@@ -120,8 +120,6 @@ class TrainingAdversarial(TrainingBase):
         self.data_tensor  = None
 
         self.path_log_file = self.__init_log_file()
-        self.path_p        = None
-        self.path_g        = None
 
 
     def run(self) -> None:
@@ -579,18 +577,45 @@ class TrainingAdversarial(TrainingBase):
         It saves the generator and predictor models to the models folder every n times they are trained.
 
         """
+        def save(model, path):
 
-        n = 10
-        epoch = self.current_epoch + 1
+            n_times_trained = self.n_times_trained_p if model.type == PREDICTOR else self.n_times_trained_g
 
-        if (epoch > 0) and (epoch % n == 0) and (self.n_times_trained_p > 0):
-            self.path_p = self.folders.checkpoints_folder / f"predictor_{epoch}.pth.tar"
-            self.predictor.save(self.path_p)
+            if isinstance(model, nn.DataParallel):
+                model_state_dict = model.model.module.state_dict()
+            else:
+                model_state_dict = model.model.state_dict()
+
+                save_dict = {
+                    'model': model.model,
+                    'model_state_dict': model_state_dict,
+                    'type': model.type,
+                    'optimizer_state_dict': model.optimizer.state_dict(),
+                    'name': model.model.name(),
+                    'current_epoch': self.current_epoch,
+                    'train_loss': self.losses[model.type],
+                    'seed': self.__seed,
+                    'seed_type': self.__seed_type,
+                    'date': str(datetime.datetime.now()),
+                    'n_times_trained': n_times_trained,
+                    'config_type_pred_input': self.config_type_pred_input,
+                    'config_type_pred_target': self.config_type_pred_target
+                }
+
+            try:
+                torch.save(save_dict, path)
+                logging.info(f"Model saved to {path} - epoch: {self.current_epoch+1}")
+            except Exception as e:
+                logging.error(f"Error saving the model: {e}")
 
 
-        if (epoch > 0) and (epoch % n == 0) and (self.n_times_trained_g > 0):
-            self.path_g = self.folders.checkpoints_folder / f"generator_{epoch}.pth.tar"
-            self.generator.save(self.path_g)
+        if self.n_times_trained_p > 0:
+            path_p = self.folders.checkpoints_folder / f"predictor_{self.current_epoch+1}.pth.tar"
+            save(self.predictor.model, path_p)
+
+        if self.n_times_trained_g > 0:
+            path_g = self.folders.checkpoints_folder / f"generator_{self.current_epoch+1}.pth.tar"
+            save(self.generator, path_g)
 
 
     def __can_g_train(self) -> bool:
