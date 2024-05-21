@@ -256,7 +256,7 @@ class TrainingAdversarial(TrainingBase):
                      "Fixed seed" if self.__seed_type["fixed"] else
                      "Unknown seed")
 
-        balanced_gpu_info = (f"Balanced GPU indices: {self.device_manager.balanced_gpu_indices}\n"
+        balanced_gpu_info = (f"Number of balanced GPU: {self.device_manager.n_balanced_gpus}\n"
                              if self.device_manager.balanced_gpu_indices else "")
 
         topology_info = ("Topology: toroidal" if self.simulation_topology == TOPOLOGY_TOROIDAL else
