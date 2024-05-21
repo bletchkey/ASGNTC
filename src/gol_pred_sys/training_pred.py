@@ -415,20 +415,19 @@ class TrainingPredictor(TrainingBase):
             model_state_dict = self.predictor.model.state_dict()
 
         save_dict = {
-            'model': self.predictor.model,
-            'model_state_dict': model_state_dict,
-            'type': self.predictor.type,
-            'optimizer_state_dict': self.predictor.optimizer.state_dict(),
-            'name': self.predictor.model.name(),
-            'current_epoch': self.current_epoch,
-            'train_loss': self.losses[TRAIN],
-            'val_loss': self.losses[VALIDATION],
-            'seed': self.__seed,
-            'seed_type': self.__seed_type,
-            'date': str(datetime.datetime.now()),
-            'n_times_trained': self.n_times_trained_p,
-            'config_type_pred_input': self.config_type_pred_input,
-            'config_type_pred_target': self.config_type_pred_target
+            CHECKPOINT_MODEL_STATE_DICT_KEY       : model_state_dict,
+            CHECKPOINT_MODEL_OPTIMIZER_STATE_DICT : self.predictor.optimizer.state_dict(),
+            CHECKPOINT_MODEL_ARCHITECTURE_KEY     : self.predictor.model,
+            CHECKPOINT_MODEL_TYPE_KEY             : self.predictor.type,
+            CHECKPOINT_MODEL_NAME_KEY             : self.predictor.model.name(),
+            CHECKPOINT_EPOCH_KEY                  : self.current_epoch,
+            CHECKPOINT_TRAIN_LOSS_KEY             : self.losses[TRAIN],
+            CHECKPOINT_VAL_LOSS_KEY               : self.losses[VALIDATION],
+            CHECKPOINT_SEED_KEY                   : self.__seed,
+            CHECKPOINT_DATE_KEY                   : str(datetime.datetime.now()),
+            CHECKPOINT_N_TIMES_TRAINED_KEY        : self.n_times_trained_p,
+            CHECKPOINT_P_INPUT_TYPE               : self.config_type_pred_input,
+            CHECKPOINT_P_TARGET_TYPE              : self.config_type_pred_target
         }
 
         try:

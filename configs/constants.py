@@ -37,6 +37,21 @@ THRESHOLD_AVG_LOSS_P = 0.05
 # File name for monitoring the training progress
 FILE_NAME_TRAINING_PROGRESS = "training_progress.txt"
 
+# Key names for the checkpoint dictionary
+CHECKPOINT_MODEL_STATE_DICT_KEY       = "state_dict"
+CHECKPOINT_MODEL_OPTIMIZER_STATE_DICT = "optimizer_state_dict"
+CHECKPOINT_MODEL_ARCHITECTURE_KEY     = "architecture"
+CHECKPOINT_MODEL_TYPE_KEY             = "type"
+CHECKPOINT_MODEL_NAME_KEY             = "name"
+CHECKPOINT_EPOCH_KEY                  = "epoch"
+CHECKPOINT_TRAIN_LOSS_KEY             = "train_loss"
+CHECKPOINT_VAL_LOSS_KEY               = "val_loss"
+CHECKPOINT_SEED_KEY                   = "seed"
+CHECKPOINT_DATE_KEY                   = "date"
+CHECKPOINT_N_TIMES_TRAINED_KEY        = "n_times_trained"
+CHECKPOINT_P_INPUT_TYPE               = "p_input_type"
+CHECKPOINT_P_TARGET_TYPE              = "p_target_type"
+
 ### DATASET PARAMETERS ############################################################
 
 # Number of configurations to generate for the dataset

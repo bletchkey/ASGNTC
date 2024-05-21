@@ -13,7 +13,9 @@ from configs.paths import CONFIG_DIR, TRAININGS_DIR, \
                           DATASET_DIR, OUTPUTS_DIR
 
 from src.gol_pred_sys.training_pred import TrainingPredictor
-from src.gol_pred_sys.eval_pred     import get_accuracy
+from src.gol_pred_sys.utils.eval    import get_accuracies
+
+from src.common.utils.plotting      import save_pdf
 
 from src.common.utils.helpers       import retrieve_log_data
 from src.common.predictor           import Predictor_Baseline, Predictor_ResNet,\
@@ -99,6 +101,7 @@ def plot_baseline_on_all_targets():
     plt.tight_layout(rect=[0, 0.03, 1, 0.95])  # Adjust layout to make room for the title
     plt.savefig(OUTPUTS_DIR / "new_targets_baseline_model.png")
 
+
 def plot_data_base_toro_vs_zero():
 
     data_toro = retrieve_log_data(log_path= TRAINED_MODELS_DIR / "predictors/Baseline_Toroidal_Medium/logs/training_progress.txt")
@@ -144,24 +147,12 @@ def plot_data_base_toro_vs_zero():
     plt.tight_layout()
     plt.savefig(OUTPUTS_DIR / "new_baseline_comparison_toro_vs_zero.png")
 
+
 def plot_accuracies(model_folder_path):
 
-    model_checkpoints = sorted(os.listdir(model_folder_path / "checkpoints"))
+    accuracies = get_accuracies(model_folder_path)
 
-    first_checkpoint = torch.load(model_folder_path / "checkpoints" / model_checkpoints[0])
-
-    model_name = first_checkpoint["name"]
-
-    accuracies = []
-
-    for checkpoint in model_checkpoints:
-
-        checkpoint_path = model_folder_path / "checkpoints" / checkpoint
-
-        accuracy = get_accuracy(checkpoint_path)
-
-        accuracies.append(accuracy*100)
-
+    accuracies = [100 * acc for acc in accuracies]
 
     fig, ax = plt.subplots(1, 1, figsize=(10, 10))
     plt.suptitle(f"Accuracies on test set", fontsize=18)
@@ -177,11 +168,10 @@ def plot_accuracies(model_folder_path):
 
     plt.tight_layout()
 
-    pdf_filename = OUTPUTS_DIR / f"{model_name}_accuracies.pdf"
-    with PdfPages(pdf_filename) as pdf:
-        pdf.savefig(fig)
+    pdf_path = OUTPUTS_DIR / f"accuracies.pdf"
+    save_pdf(pdf_path, [fig])
 
-    plt.close(fig)
+
 
 def train_baseline(target_type, topology):
     train_pred = TrainingPredictor(Predictor_Baseline(topology), target_type)
@@ -209,12 +199,14 @@ def main():
 
     # plot_data_base_toro_vs_zero()
     # plot_baseline_on_all_targets()
-    plot_accuracies(TRAINED_MODELS_DIR / "predictors/Baseline_Toroidal_Medium")
-    # train_baseline(CONFIG_TARGET_EASY, TOPOLOGY_TOROIDAL)
+    # plot_accuracies(TRAINED_MODELS_DIR / "predictors/Baseline_Toroidal_Medium")
+
+    train_baseline(CONFIG_TARGET_EASY, TOPOLOGY_TOROIDAL)
     # train_baseline(CONFIG_TARGET_MEDIUM, TOPOLOGY_TOROIDAL)
-    # train_baseline(CONFIG_TARGET_MEDIUM, TOPOLOGY_FLAT)
     # train_baseline(CONFIG_TARGET_HARD, TOPOLOGY_TOROIDAL) -
     # train_baseline(CONFIG_TARGET_STABLE, TOPOLOGY_TOROIDAL)
+
+    # train_baseline(CONFIG_TARGET_MEDIUM, TOPOLOGY_FLAT)
 
     # train_proposed(CONFIG_TARGET_EASY)
 

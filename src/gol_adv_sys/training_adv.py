@@ -587,19 +587,18 @@ class TrainingAdversarial(TrainingBase):
                 model_state_dict = model.model.state_dict()
 
                 save_dict = {
-                    'model': model.model,
-                    'model_state_dict': model_state_dict,
-                    'type': model.type,
-                    'optimizer_state_dict': model.optimizer.state_dict(),
-                    'name': model.model.name(),
-                    'current_epoch': self.current_epoch,
-                    'train_loss': self.losses[model.type],
-                    'seed': self.__seed,
-                    'seed_type': self.__seed_type,
-                    'date': str(datetime.datetime.now()),
-                    'n_times_trained': n_times_trained,
-                    'config_type_pred_input': self.config_type_pred_input,
-                    'config_type_pred_target': self.config_type_pred_target
+                    CHECKPOINT_MODEL_STATE_DICT_KEY       : model_state_dict,
+                    CHECKPOINT_MODEL_OPTIMIZER_STATE_DICT : model.optimizer.state_dict(),
+                    CHECKPOINT_MODEL_ARCHITECTURE_KEY     : model.model,
+                    CHECKPOINT_MODEL_TYPE_KEY             : model.type,
+                    CHECKPOINT_MODEL_NAME_KEY             : model.model.name(),
+                    CHECKPOINT_EPOCH_KEY                  : self.current_epoch,
+                    CHECKPOINT_TRAIN_LOSS_KEY             : self.losses[model.type],
+                    CHECKPOINT_SEED_KEY                   : self.__seed,
+                    CHECKPOINT_DATE_KEY                   : str(datetime.datetime.now()),
+                    CHECKPOINT_N_TIMES_TRAINED_KEY        : n_times_trained,
+                    CHECKPOINT_P_INPUT_TYPE               : self.config_type_pred_input,
+                    CHECKPOINT_P_TARGET_TYPE              : self.config_type_pred_target
                 }
 
             try:

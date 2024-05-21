@@ -4,7 +4,6 @@ from typing import Union
 
 from torchmetrics.functional import structural_similarity_index_measure as ssim
 
-
 from configs.constants import *
 
 

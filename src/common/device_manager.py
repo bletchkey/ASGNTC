@@ -1,6 +1,7 @@
 import torch
 import time
 import logging
+from typing import List
 
 class DeviceManager:
     """
@@ -75,7 +76,7 @@ class DeviceManager:
                 logging.debug(f"Reserved memory on {device}: {reserved_memory / (1024**3):.2f} GB")
 
 
-    def __get_default_device(self):
+    def __get_default_device(self, use_benchmark=False):
         """
         Determines the optimal device
 
@@ -86,29 +87,36 @@ class DeviceManager:
         if not torch.cuda.is_available():
             return torch.device("cpu")
 
-        # Get gpus free memory status
-        gpus_free_memory = self.__get_all_gpus_free_memory()
+        if use_benchmark == True:
+            gpus_free_memory    = self.__get_all_gpus_free_memory()
+            gpus_benchmark_time = {}
 
-        # Check benchmarking
-        gpus_benchmark_time = {}
+            for key in gpus_free_memory.keys():
+                benchmark_time = self.__benchmark_gpu(torch.device(f"cuda:{key}"))
+                if benchmark_time != float('inf'):  # Only consider devices that successfully complete the benchmark
+                    gpus_benchmark_time[key] = benchmark_time
 
-        for key in gpus_free_memory.keys():
-            gpus_benchmark_time[key] = self.__benchmark_gpu(torch.device(f"cuda:{key}"))
-
-        # Select the GPU with the most free memory or best performance
-        selected_device = min(gpus_benchmark_time, key=lambda k: (-gpus_free_memory[k], gpus_benchmark_time[k]))
+            # Select device based on benchmark or fallback to a device with maximum free memory
+            if gpus_benchmark_time:
+                selected_device = min(gpus_benchmark_time, key=lambda k: (-gpus_free_memory[k], gpus_benchmark_time[k]))
+            else:
+                selected_device = max(gpus_free_memory, key=gpus_free_memory.get)
+        else:
+            selected_device = self.__get_device_with_max_free_memory()
 
         logging.debug(f"Selected device: {selected_device}")
 
-        return torch.device(f"cuda:{selected_device}")
+        return torch.device(selected_device)
 
 
     def __benchmark_gpu(self, device):
         try:
             torch.cuda.set_device(device)
+            torch.cuda.empty_cache()
+
             start_time = time.time()
 
-            tensor_size = (1024, 1024, 1024)  # 1 GB tensor
+            tensor_size = (100, 1024, 1024)
             x = torch.randn(tensor_size, device=device)
             y = torch.randn(tensor_size, device=device)
             z = x * y
@@ -124,6 +132,10 @@ class DeviceManager:
 
 
     def __get_device_free_memory(self, device):
+        """
+        Function that returns the free memory for a given device.
+
+        """
         try:
             torch.cuda.set_device(device)
 
@@ -145,6 +157,10 @@ class DeviceManager:
 
 
     def __get_device_with_max_free_memory(self):
+        """
+        Function that returns the device with the maximum free memory.
+
+        """
         if not torch.cuda.is_available():
             return torch.device("cpu")
 
@@ -158,10 +174,14 @@ class DeviceManager:
                 max_memory_free = free_memory
                 selected_device = i
 
-        return torch.device(f"cuda:{selected_device}")
+        return torch.device(selected_device)
 
 
     def __get_all_gpus_free_memory(self):
+        """
+        Function that returns the free memory for all GPUs.
+
+        """
         free_memory = {}
 
         for i in range(self.__n_gpus):
@@ -170,37 +190,45 @@ class DeviceManager:
         return free_memory
 
 
-    def __get_balanced_gpu_indices(self, threshold=0.75):
+    def __get_balanced_gpu_indices(self, tolerance=0.25) -> List[int]:
         """
         Identifies GPUs that are sufficiently balanced in terms of memory and core count compared to the default device.
 
         Args:
-            threshold (float, optional): The minimum ratio of memory and cores compared to the default device to be considered balanced. Defaults to 0.75.
+            tolerance (float, optional): The maximum allowed deviation in memory and core counts from the default device to be considered balanced. Defaults to 0.25.
 
         Returns:
             List[int]: A list of indices for GPUs that meet the balance criteria.
 
         """
-
         if not torch.cuda.is_available() or self.__n_gpus <= 1:
             return []
 
-        torch.cuda.set_device(self.__default_device)
+        default_device_index   = torch.cuda.current_device()
+        default_gpu_properties = torch.cuda.get_device_properties(default_device_index)
 
-        id_default_device      = torch.cuda.current_device()
-        default_gpu_properties = torch.cuda.get_device_properties(id_default_device)
-        balanced_gpus          = []
+        balanced_gpus = []
 
         for i in range(self.__n_gpus):
-            if i == id_default_device:
+            if i == default_device_index:
                 continue
+
             gpu_properties = torch.cuda.get_device_properties(i)
             memory_ratio   = gpu_properties.total_memory / default_gpu_properties.total_memory
             cores_ratio    = gpu_properties.multi_processor_count / default_gpu_properties.multi_processor_count
 
-            if memory_ratio >= threshold and cores_ratio >= threshold:
+            # Calculate absolute differences in ratios from 1
+            memory_diff = abs(memory_ratio - 1)
+            cores_diff  = abs(cores_ratio - 1)
+
+            logging.debug(f"GPU {i} - Memory ratio: {memory_ratio:.2f}, Cores ratio: {cores_ratio:.2f} in comparison to the default device [GPU {self.__default_device}].")
+
+            logging.debug(f"GPU {i} - Memory diff: {memory_diff:.2f}, Cores diff: {cores_diff:.2f}.")
+
+            # Check if the differences are within the specified tolerance
+            if memory_diff <= tolerance and cores_diff <= tolerance:
                 balanced_gpus.append(i)
-                logging.debug(f"GPU {i} is balanced with respect to the default device [GPU {id_default_device}].")
+                logging.debug(f"GPU {i} is considered balanced with respect to the default device [GPU {self.__default_device}].")
 
         return balanced_gpus
 
