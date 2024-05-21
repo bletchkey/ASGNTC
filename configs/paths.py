@@ -8,6 +8,7 @@ MEDIA_DIR = Path("/media/yui/bletchkey")
 
 CONFIG_DIR         = ROOT_DIR / "configs"
 SRC_DIR            = ROOT_DIR / "src"
+OUTPUTS_DIR        = ROOT_DIR / "outputs"
 
 DATASET_DIR        = MEDIA_DIR / PROJECT_NAME / "data"
 TRAININGS_DIR      = MEDIA_DIR / PROJECT_NAME / "trainings"

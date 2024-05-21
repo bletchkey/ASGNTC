@@ -2,15 +2,15 @@ import sys
 import logging
 import os
 import matplotlib.pyplot as plt
+from matplotlib.backends.backend_pdf import PdfPages
 import numpy as np
 import torch
-from   torch.utils.data import DataLoader
 
 from configs.setup import setup_base_directory, setup_logging
 from configs.constants import *
 from configs.paths import CONFIG_DIR, TRAININGS_DIR, \
-                          TRAINED_MODELS_DIR, TRAININGS_PREDICTOR_DIR
-from configs.paths import DATASET_DIR
+                          TRAINED_MODELS_DIR, TRAININGS_PREDICTOR_DIR,\
+                          DATASET_DIR, OUTPUTS_DIR
 
 from src.gol_pred_sys.training_pred import TrainingPredictor
 from src.gol_pred_sys.eval_pred     import get_accuracy
@@ -97,7 +97,7 @@ def plot_baseline_on_all_targets():
 
 
     plt.tight_layout(rect=[0, 0.03, 1, 0.95])  # Adjust layout to make room for the title
-    plt.savefig("new_targets_baseline_model.png")
+    plt.savefig(OUTPUTS_DIR / "new_targets_baseline_model.png")
 
 def plot_data_base_toro_vs_zero():
 
@@ -142,13 +142,18 @@ def plot_data_base_toro_vs_zero():
     ax[1].legend(loc='lower right')
 
     plt.tight_layout()
-    plt.savefig("baseline_comparison_toro_vs_zero.png")
+    plt.savefig(OUTPUTS_DIR / "new_baseline_comparison_toro_vs_zero.png")
 
 def plot_accuracies(model_folder_path):
 
     model_checkpoints = sorted(os.listdir(model_folder_path / "checkpoints"))
 
+    first_checkpoint = torch.load(model_folder_path / "checkpoints" / model_checkpoints[0])
+
+    model_name = first_checkpoint["name"]
+
     accuracies = []
+
     for checkpoint in model_checkpoints:
 
         checkpoint_path = model_folder_path / "checkpoints" / checkpoint
@@ -171,7 +176,12 @@ def plot_accuracies(model_folder_path):
     ax.grid(True)
 
     plt.tight_layout()
-    plt.savefig("accuracies.png")
+
+    pdf_filename = OUTPUTS_DIR / f"{model_name}_accuracies.pdf"
+    with PdfPages(pdf_filename) as pdf:
+        pdf.savefig(fig)
+
+    plt.close(fig)
 
 def train_baseline(target_type, topology):
     train_pred = TrainingPredictor(Predictor_Baseline(topology), target_type)
@@ -199,17 +209,17 @@ def main():
 
     # plot_data_base_toro_vs_zero()
     # plot_baseline_on_all_targets()
-    # plot_accuracies(TRAININGS_PREDICTOR_DIR/ "2024-05-19_19-02-46")
-
+    plot_accuracies(TRAINED_MODELS_DIR / "predictors/Baseline_Toroidal_Medium")
     # train_baseline(CONFIG_TARGET_EASY, TOPOLOGY_TOROIDAL)
     # train_baseline(CONFIG_TARGET_MEDIUM, TOPOLOGY_TOROIDAL)
-    train_baseline(CONFIG_TARGET_MEDIUM, TOPOLOGY_FLAT)
-    # train_baseline(CONFIG_TARGET_HARD, TOPOLOGY_TOROIDAL)
+    # train_baseline(CONFIG_TARGET_MEDIUM, TOPOLOGY_FLAT)
+    # train_baseline(CONFIG_TARGET_HARD, TOPOLOGY_TOROIDAL) -
     # train_baseline(CONFIG_TARGET_STABLE, TOPOLOGY_TOROIDAL)
 
     # train_proposed(CONFIG_TARGET_EASY)
 
     return 0
+
 
 
 if __name__ == '__main__':

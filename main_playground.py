@@ -5,7 +5,7 @@ import torch
 
 from configs.setup import setup_base_directory, setup_logging
 from configs.constants import *
-from configs.paths import CONFIG_DIR
+from configs.paths import CONFIG_DIR, OUTPUTS_DIR
 
 from src.common.playground          import Playground
 
@@ -29,7 +29,7 @@ def plot_toroidal_focus(configs, title):
 
     plt.suptitle(f"Step {n}", fontsize=32, y=0.985)
     plt.tight_layout()
-    plt.savefig(f"{title}.png")
+    plt.savefig(OUTPUTS_DIR / f"{title}.png")
 
 
 def plot_configs(configs, title):
@@ -46,7 +46,7 @@ def plot_configs(configs, title):
 
 
     plt.tight_layout()
-    plt.savefig(f"{title}.png")
+    plt.savefig(OUTPUTS_DIR / f"{title}.png")
 
 
 def simulate_heart():

@@ -2,11 +2,13 @@ import torch
 import torch.nn as nn
 from typing import Union
 
+from torchmetrics.functional import structural_similarity_index_measure as ssim
+
+
 from configs.constants import *
 
 
-def prediction_accuracy_bins(prediction: torch.Tensor,
-                               target: torch.Tensor) -> float:
+def prediction_accuracy_bins(prediction: torch.Tensor, target: torch.Tensor) -> float:
     """
     Calculate the mean accuracy score for the prediction compared to the target.
     The values range from 0 to 1, and are binned into four categories. Scores are awarded based on
@@ -82,6 +84,29 @@ def prediction_accuracy_tolerance(prediction: torch.Tensor, target: torch.Tensor
     mean_accuracy = correct_predictions.mean().item()
 
     return mean_accuracy
+
+def prediction_accuracy_ssim(prediction: torch.Tensor, target: torch.Tensor) -> float:
+    """
+    Calculate the SSIM-based accuracy score for the prediction compared to the target.
+    The Structural Similarity Index (SSIM) measures the visual similarity between two images.
+
+    Parameters:
+        prediction (torch.Tensor): The prediction tensor with shape (N, C, H, W).
+        target (torch.Tensor): The target tensor with shape (N, C, H, W).
+
+    Returns:
+        float: The mean SSIM score for the prediction compared to the target.
+
+    Raises:
+        ValueError: If the input tensors do not have matching shapes or are not 4-dimensional.
+    """
+    if target.size() != prediction.size() or target.dim() != 4:
+        raise ValueError("Target and prediction tensors must have the same 4-dimensional shape.")
+
+    # Calculate the SSIM score
+    ssim_score = ssim(prediction, target)
+
+    return ssim_score.item()
 
 def calculate_stable_metric_complexity(metrics: torch.Tensor,
                                        mean: bool = False) -> Union[torch.Tensor, float]:

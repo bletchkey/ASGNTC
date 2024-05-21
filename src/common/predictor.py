@@ -28,6 +28,7 @@ def Predictor_UNet():
 
     return model
 
+
 def Predictor_Proposed(num_hidden):
     model = UNetResNetAttention(num_hidden)
     logging.debug(model)

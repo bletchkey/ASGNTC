@@ -7,7 +7,7 @@ from torch.utils.data import DataLoader
 
 from src.common.utils.simulation_functions import simulate_config, basic_simulation_config
 from configs.constants import *
-from configs.paths import DATASET_DIR, TRAINED_MODELS_DIR
+from configs.paths import DATASET_DIR, TRAINED_MODELS_DIR, OUTPUTS_DIR
 
 from src.gol_pred_sys.dataset_manager import FixedDataset
 from src.common.device_manager        import DeviceManager
@@ -165,7 +165,7 @@ class Playground():
         plt.subplots_adjust(left=0.05, right=0.95, top=0.5, bottom=0.1, wspace=0.1, hspace=0)
 
         # Save and close
-        plt.savefig(f"record_{record['id']}.png", dpi = 600, bbox_inches='tight')
+        plt.savefig(OUTPUTS_DIR / f"record_{record['id']}.png", dpi = 600, bbox_inches='tight')
         plt.close(fig)
 
 
@@ -231,7 +231,7 @@ class Playground():
         plt.subplots_adjust(left=0.05, right=0.95, top=0.5, bottom=0.1, wspace=0.1, hspace=0)
 
         # Save and close
-        plt.savefig(f"simulation_results.png", dpi = 600, bbox_inches='tight')
+        plt.savefig(OUTPUTS_DIR / f"record_{record['id']}_sim.png", dpi=600, bbox_inches='tight')
         plt.close(fig)
 
 

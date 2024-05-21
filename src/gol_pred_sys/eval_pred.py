@@ -1,7 +1,5 @@
 import logging
-import os
 import torch
-from   torch.utils.data import DataLoader
 
 from configs.constants import *
 from configs.paths     import CONFIG_DIR, TRAININGS_DIR, \
@@ -13,7 +11,8 @@ from src.gol_pred_sys.dataset_manager import DatasetManager
 
 from src.gol_pred_sys.utils.helpers import get_config_from_batch
 from src.common.utils.scores        import prediction_accuracy_bins, \
-                                           prediction_accuracy_tolerance
+                                           prediction_accuracy_tolerance,\
+                                           prediction_accuracy_ssim
 
 
 def get_accuracy(checkpoint_path):
@@ -43,7 +42,8 @@ def get_accuracy(checkpoint_path):
 
             predicted = model(input)
             # accuracy  = prediction_accuracy_bins(predicted, target)
-            accuracy = prediction_accuracy_tolerance(predicted, target, 0.2)
+            # accuracy = prediction_accuracy_tolerance(predicted, target, 0.2)
+            accuracy = prediction_accuracy_ssim(predicted, target)
 
             total_accuracy += accuracy
             running_avg_accuracy = total_accuracy / batch_count
