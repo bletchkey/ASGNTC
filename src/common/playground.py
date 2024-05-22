@@ -5,9 +5,11 @@ import torch
 from matplotlib.gridspec import GridSpec
 from torch.utils.data import DataLoader
 
+from src.common.utils.helpers              import export_figures_to_pdf
 from src.common.utils.simulation_functions import simulate_config, basic_simulation_config
+
 from configs.constants import *
-from configs.paths import DATASET_DIR, TRAINED_MODELS_DIR, OUTPUTS_DIR
+from configs.paths     import DATASET_DIR, TRAINED_MODELS_DIR, OUTPUTS_DIR
 
 from src.gol_pred_sys.dataset_manager import FixedDataset
 from src.common.device_manager        import DeviceManager
@@ -165,8 +167,8 @@ class Playground():
         plt.subplots_adjust(left=0.05, right=0.95, top=0.5, bottom=0.1, wspace=0.1, hspace=0)
 
         # Save and close
-        plt.savefig(OUTPUTS_DIR / f"record_{record['id']}.png", dpi = 600, bbox_inches='tight')
-        plt.close(fig)
+        pdf_path  = OUTPUTS_DIR / f"record_{record['id']}.pdf"
+        export_figures_to_pdf(pdf_path, fig)
 
 
     def plot_record_sim(self, record: dict) -> None:
@@ -231,9 +233,8 @@ class Playground():
         plt.subplots_adjust(left=0.05, right=0.95, top=0.5, bottom=0.1, wspace=0.1, hspace=0)
 
         # Save and close
-        plt.savefig(OUTPUTS_DIR / f"record_{record['id']}_sim.png", dpi=600, bbox_inches='tight')
-        plt.close(fig)
-
+        pdf_path = OUTPUTS_DIR / f"record_{record['id']}_sim.pdf"
+        export_figures_to_pdf(pdf_path, fig)
 
     def __load_train_dataset(self):
 

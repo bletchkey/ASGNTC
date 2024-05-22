@@ -3,6 +3,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import torch
 
+from src.common.utils.helpers import export_figures_to_pdf
+
 from configs.setup import setup_base_directory, setup_logging
 from configs.constants import *
 from configs.paths import CONFIG_DIR, OUTPUTS_DIR
@@ -29,7 +31,9 @@ def plot_toroidal_focus(configs, title):
 
     plt.suptitle(f"Step {n}", fontsize=32, y=0.985)
     plt.tight_layout()
-    plt.savefig(OUTPUTS_DIR / f"{title}.png")
+
+    pdf_path = OUTPUTS_DIR / f"{title}.pdf"
+    export_figures_to_pdf(pdf_path, fig)
 
 
 def plot_configs(configs, title):
@@ -46,7 +50,9 @@ def plot_configs(configs, title):
 
 
     plt.tight_layout()
-    plt.savefig(OUTPUTS_DIR / f"{title}.png")
+
+    pdf_path = OUTPUTS_DIR / f"{title}.pdf"
+    export_figures_to_pdf(pdf_path, fig)
 
 
 def simulate_heart():

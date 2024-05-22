@@ -6,7 +6,8 @@ from pathlib import Path
 
 from configs.constants import *
 
-from src.common.utils.scores import prediction_accuracy_bins, prediction_accuracy_tolerance
+from src.common.utils.helpers import export_figures_to_pdf
+from src.common.utils.scores  import prediction_accuracy_bins, prediction_accuracy_tolerance
 
 
 def get_config_from_batch(batch: torch.Tensor, type: str, device: torch.device) -> torch.Tensor:
@@ -192,8 +193,9 @@ def save_progress_plot_dataset(plot_data: dict, epoch: int, results_path: str) -
 
     plt.tight_layout()
     plt.subplots_adjust(left=0.05, right=0.95, top=0.95, bottom=0.05)
-    plt.savefig(Path(results_path, f"epoch_{current_epoch}.png"), dpi=300, bbox_inches='tight')
-    plt.close(fig)
+
+    pdf_path = Path(results_path, f"epoch_{current_epoch}.pdf")
+    plt.savefig(pdf_path)
 
 
 def save_loss_acc_plot(losses_p_train: list, losses_p_val: list,
@@ -253,8 +255,9 @@ def save_loss_acc_plot(losses_p_train: list, losses_p_val: list,
                      textcoords="offset points", xytext=(-10,0), ha='left', fontsize=2, color='green')
 
     plt.tight_layout()
-    plt.savefig(Path(path, "loss_acc_graph.png"), dpi=400)
-    plt.close()
+    pdf_path = Path(path, "loss_acc_graph.pdf")
+    export_figures_to_pdf(pdf_path, fig)
+
 
 
 def __create_data_dict(batches: torch.Tensor, prediction: torch.Tensor, metadata: dict) -> dict:

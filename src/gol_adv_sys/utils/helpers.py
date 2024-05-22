@@ -5,9 +5,11 @@ import torch
 from typing import Tuple
 from pathlib import Path
 
-from configs.constants import *
+from configs.constants        import *
+from src.common.utils.helpers import export_figures_to_pdf
+
 from src.common.utils.simulation_functions import simulate_config
-from src.common.utils.scores import calculate_stable_metric_complexity
+from src.common.utils.scores               import calculate_stable_metric_complexity
 
 
 def test_models_DCGAN(model_g: torch.nn.Module, model_p: torch.nn.Module,
@@ -203,8 +205,9 @@ def save_progress_plot(plot_data: dict, epoch: int, results_path: str) -> None:
             axs[i, j].axis('off')
 
     plt.tight_layout(rect=[0, 0.03, 1, 0.95])
-    plt.savefig(Path(results_path, f"epoch_{current_epoch}.png"), dpi=300)
-    plt.close(fig)
+
+    pdf_path = Path(results_path, f"epoch_{current_epoch}.pdf")
+    export_figures_to_pdf(pdf_path, fig)
 
 
 def get_config_from_batch(batch: torch.Tensor, type: str, device: torch.device) -> torch.Tensor:

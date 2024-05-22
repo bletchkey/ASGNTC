@@ -8,8 +8,9 @@ from matplotlib.gridspec import GridSpec
 from matplotlib.ticker import MaxNLocator
 import torch
 
-from configs.setup import setup_base_directory, setup_logging
-from configs.paths import CONFIG_DIR
+from src.common.utils.helpers import export_figures_to_pdf
+from configs.setup            import setup_base_directory, setup_logging
+from configs.paths            import CONFIG_DIR
 
 from src.gol_pred_sys.dataset_manager import DatasetCreator
 from src.common.device_manager        import DeviceManager
@@ -90,8 +91,9 @@ def check_dataset_configs(saving_path, dataset, metadata, total_indices=50, n_pe
                 text_ax.axis('off')
 
         plt.subplots_adjust(left=0.05, right=0.95, top=0.95, bottom=0.05)
-        plt.savefig(Path(saving_path) / f"configs_{png_idx+1}.png", dpi=300, bbox_inches='tight')
-        plt.close(fig)
+        pdf_path = Path(saving_path) / f"configs_{png_idx+1}.pdf"
+        export_figures_to_pdf(pdf_path, fig)
+
 
 def check_transient_phases(saving_path, metadata):
     pairs = [(meta[META_ID], meta[META_TRANSIENT_PHASE]) for meta in metadata]
@@ -129,14 +131,12 @@ def check_transient_phases(saving_path, metadata):
     axs[1,1].set_xlabel("Transient Phase Length", fontsize=12)
 
     plt.tight_layout()
-    plt.savefig(Path(saving_path) / "transient_phases.png", dpi=300, bbox_inches='tight')
-    plt.close(fig)
+    pdf_path = Path(saving_path) / "transient_phases.pdf"
+    export_figures_to_pdf(pdf_path, fig)
 
 def check_dataset_distribution(saving_path, dataset):
     n = GRID_SIZE ** 2
     bins = torch.zeros(n + 1, dtype=torch.int64)
-
-    plot_path = Path(saving_path) / "distribution.png"
 
     for config in dataset:
         living_cells = torch.sum(config[0].view(-1)).item()
@@ -157,11 +157,10 @@ def check_dataset_distribution(saving_path, dataset):
     plt.ylim(0, max_value + max_value * 0.1)
     plt.grid(True, linestyle='--', linewidth=1)
 
-    plt.savefig(plot_path, dpi=300)
-    plt.close()
+    pdf_path = Path(saving_path) / "distribution.pdf"
+    export_figures_to_pdf(pdf_path, plt.gcf())
 
 def plot_dataset_infos():
-
 
     base_saving_path = DATASET_DIR / "plots"
     base_saving_path.mkdir(exist_ok=True)

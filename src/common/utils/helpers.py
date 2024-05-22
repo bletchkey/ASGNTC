@@ -1,5 +1,12 @@
 import re
 from pathlib import Path
+import logging
+import os
+import torch
+
+import matplotlib.pyplot as plt
+from matplotlib.backends.backend_pdf import PdfPages
+
 
 from configs.constants import *
 
@@ -77,4 +84,73 @@ def retrieve_log_data(log_path: str):
     }
 
     return training_data
+
+
+def export_figures_to_pdf(pdf_path, figs):
+    """
+    Saves one or multiple matplotlib figures to a single PDF file.
+
+    Parameters:
+        pdf_path (str): The path to the PDF file where figures will be saved.
+        figs (matplotlib.figure.Figure or list of matplotlib.figure.Figure):
+            A single matplotlib figure or a list of figures to be saved.
+
+    """
+    if not isinstance(figs, list):
+        figs = [figs]
+
+    try:
+        with PdfPages(pdf_path) as pdf:
+            for fig in figs:
+                pdf.savefig(fig)
+                plt.close(fig)
+        logging.debug(f"Saved {len(figs)} figure(s) to {pdf_path}")
+    except Exception as e:
+        logging.error(f"Failed to save figure(s) to {pdf_path}: {str(e)}")
+
+
+def get_latest_checkpoint_path(model_folder_path: str) -> str:
+    """
+    Function to get the latest checkpoint file in a directory
+
+    Args:
+        model_folder_path (str): The path to the model folder
+
+    Returns:
+        latest_checkpoint (str): The path to the latest checkpoint file
+
+    """
+
+    model_checkpoints = sorted(os.listdir(model_folder_path / "checkpoints"))
+
+    latest_checkpoint = model_folder_path / "checkpoints" / model_checkpoints[-1]
+
+    return latest_checkpoint
+
+
+def get_model_data_from_checkpoint(checkpoint_path: Path) -> dict:
+
+    if not checkpoint_path.exists():
+        logging.error("get_model_infos_from_checkpoint: Checkpoint not found")
+        return
+
+    checkpoint = torch.load(checkpoint_path)
+
+    data = {
+        CHECKPOINT_MODEL_STATE_DICT_KEY       : checkpoint[CHECKPOINT_MODEL_STATE_DICT_KEY],
+        CHECKPOINT_MODEL_OPTIMIZER_STATE_DICT : checkpoint[CHECKPOINT_MODEL_OPTIMIZER_STATE_DICT],
+        CHECKPOINT_MODEL_ARCHITECTURE_KEY     : checkpoint[CHECKPOINT_MODEL_ARCHITECTURE_KEY],
+        CHECKPOINT_MODEL_TYPE_KEY             : checkpoint[CHECKPOINT_MODEL_TYPE_KEY],
+        CHECKPOINT_MODEL_NAME_KEY             : checkpoint[CHECKPOINT_MODEL_NAME_KEY],
+        CHECKPOINT_EPOCH_KEY                  : checkpoint[CHECKPOINT_EPOCH_KEY],
+        CHECKPOINT_TRAIN_LOSS_KEY             : checkpoint[CHECKPOINT_TRAIN_LOSS_KEY],
+        CHECKPOINT_VAL_LOSS_KEY               : checkpoint[CHECKPOINT_VAL_LOSS_KEY],
+        CHECKPOINT_SEED_KEY                   : checkpoint[CHECKPOINT_SEED_KEY],
+        CHECKPOINT_DATE_KEY                   : checkpoint[CHECKPOINT_DATE_KEY],
+        CHECKPOINT_N_TIMES_TRAINED_KEY        : checkpoint[CHECKPOINT_N_TIMES_TRAINED_KEY],
+        CHECKPOINT_P_INPUT_TYPE               : checkpoint[CHECKPOINT_P_INPUT_TYPE],
+        CHECKPOINT_P_TARGET_TYPE              : checkpoint[CHECKPOINT_P_TARGET_TYPE]
+    }
+
+    return data
 

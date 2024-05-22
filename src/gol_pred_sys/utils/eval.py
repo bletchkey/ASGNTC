@@ -68,14 +68,3 @@ def get_accuracies(model_folder_path):
 
     return accuracies
 
-
-def get_model_info(model_folder_path):
-
-    model_checkpoints = sorted(os.listdir(model_folder_path / "checkpoints"))
-
-    latest_checkpoint = model_folder_path / "checkpoints" / model_checkpoints[-1]
-
-    if not latest_checkpoint.exists():
-        logging.error(f"Checkpoint not found: {latest_checkpoint}")
-        return
-

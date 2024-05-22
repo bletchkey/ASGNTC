@@ -15,9 +15,9 @@ from configs.paths import CONFIG_DIR, TRAININGS_DIR, \
 from src.gol_pred_sys.training_pred import TrainingPredictor
 from src.gol_pred_sys.utils.eval    import get_accuracies
 
-from src.common.utils.plotting      import save_pdf
+from src.common.utils.helpers       import export_figures_to_pdf, retrieve_log_data,\
+                                           get_model_data_from_checkpoint, get_latest_checkpoint_path
 
-from src.common.utils.helpers       import retrieve_log_data
 from src.common.predictor           import Predictor_Baseline, Predictor_ResNet,\
                                            Predictor_UNet, Predictor_Proposed
 
@@ -99,7 +99,9 @@ def plot_baseline_on_all_targets():
 
 
     plt.tight_layout(rect=[0, 0.03, 1, 0.95])  # Adjust layout to make room for the title
-    plt.savefig(OUTPUTS_DIR / "new_targets_baseline_model.png")
+
+    pdf_path = OUTPUTS_DIR / "new_targets_baseline_model.pdf"
+    export_figures_to_pdf(pdf_path, fig)
 
 
 def plot_data_base_toro_vs_zero():
@@ -145,32 +147,36 @@ def plot_data_base_toro_vs_zero():
     ax[1].legend(loc='lower right')
 
     plt.tight_layout()
-    plt.savefig(OUTPUTS_DIR / "new_baseline_comparison_toro_vs_zero.png")
 
+    pdf_path = OUTPUTS_DIR / "new_baseline_comparison_toro_vs_zero.pdf"
+    export_figures_to_pdf(pdf_path, fig)
 
 def plot_accuracies(model_folder_path):
 
     accuracies = get_accuracies(model_folder_path)
-
     accuracies = [100 * acc for acc in accuracies]
 
-    fig, ax = plt.subplots(1, 1, figsize=(10, 10))
-    plt.suptitle(f"Accuracies on test set", fontsize=18)
+    latest_checkpoint = get_latest_checkpoint_path(model_folder_path)
+    checkpoint_data   = get_model_data_from_checkpoint(latest_checkpoint)
 
-    ax.plot(accuracies, label='accuracies', color='blue')
-    ax.set_title("Accuracies")
+    name   = checkpoint_data[CHECKPOINT_MODEL_NAME_KEY]
+    target = checkpoint_data[CHECKPOINT_P_TARGET_TYPE]
+
+    fig, ax = plt.subplots(1, 1, figsize=(10, 10))
+    plt.suptitle(f"Accuracy - Model: {name} - Target: {target} - TEST SET", fontsize=18)
+
+    ax.plot(accuracies, label='accuracy', color='blue')
+    ax.set_title("Accuracy")
     ax.set_xlabel("Epoch")
-    ax.set_ylabel("Accuracy")
-    ax.set_yscale('linear')
+    ax.set_ylabel("Accuracy (%)")
     ax.set_ylim([0, 100])
     ax.legend(loc='lower right')
     ax.grid(True)
 
     plt.tight_layout()
 
-    pdf_path = OUTPUTS_DIR / f"accuracies.pdf"
-    save_pdf(pdf_path, [fig])
-
+    pdf_path = OUTPUTS_DIR / f"{name}_accuracy_{target}.pdf"
+    export_figures_to_pdf(pdf_path, fig)
 
 
 def train_baseline(target_type, topology):
