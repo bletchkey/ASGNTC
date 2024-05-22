@@ -15,7 +15,7 @@ from src.common.generator import Generator_DCGAN, Generator_Gambler, \
 
 
 def train_adversarial():
-    train_adv = TrainingAdversarial(model_p=Predictor_Baseline(),
+    train_adv = TrainingAdversarial(model_p=Predictor_Baseline(TOPOLOGY_TOROIDAL),
                                     model_g=Generator_Gambler_Bernoullian())
     train_adv.run()
 

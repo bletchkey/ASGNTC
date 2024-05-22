@@ -1,9 +1,9 @@
 import sys
 import unittest
 
-from configs.setup import setup_base_directory, setup_logging
+from configs.setup     import setup_base_directory, setup_logging
 from configs.constants import *
-from configs.paths import CONFIG_DIR
+from configs.paths     import CONFIG_DIR
 
 from unit_tests.common.utils.test_scores import TestConfigPredictionAccuracy, \
                                                 TestCalculateStableMetricComplexity
