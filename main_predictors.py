@@ -207,12 +207,12 @@ def main():
     # plot_baseline_on_all_targets()
     # plot_accuracies(TRAINED_MODELS_DIR / "predictors/Baseline_Toroidal_Medium")
 
-    train_baseline(CONFIG_TARGET_EASY, TOPOLOGY_TOROIDAL)
+    # train_baseline(CONFIG_TARGET_EASY, TOPOLOGY_TOROIDAL)
     # train_baseline(CONFIG_TARGET_MEDIUM, TOPOLOGY_TOROIDAL)
     # train_baseline(CONFIG_TARGET_HARD, TOPOLOGY_TOROIDAL) -
     # train_baseline(CONFIG_TARGET_STABLE, TOPOLOGY_TOROIDAL)
 
-    # train_baseline(CONFIG_TARGET_MEDIUM, TOPOLOGY_FLAT)
+    train_baseline(CONFIG_TARGET_MEDIUM, TOPOLOGY_FLAT)
 
     # train_proposed(CONFIG_TARGET_EASY)
 

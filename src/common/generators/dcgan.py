@@ -21,14 +21,14 @@ class DCGAN(nn.Module):
         self.model = nn.Sequential(*layers)
         self.alpha = 1000
 
-    def _make_layer(self, in_channels, out_channels, kernel_size=4, stride=2, padding=1):
+    def _make_layer(self, iGRID_NUM_CHANNELS, out_channels, kernel_size=4, stride=2, padding=1):
         return nn.Sequential(
-            nn.ConvTranspose2d(in_channels, out_channels, kernel_size, stride, padding, bias=True),
+            nn.ConvTranspose2d(iGRID_NUM_CHANNELS, out_channels, kernel_size, stride, padding, bias=True),
             nn.BatchNorm2d(out_channels),
             nn.ReLU(inplace=True)
         )
 
-    def _make_final_layer(self, in_channels, out_channels):
+    def _make_final_layer(self, iGRID_NUM_CHANNELS, out_channels):
         return nn.Sequential(
             nn.ConvTranspose2d(in_channels, out_channels, 4, 2, 1, bias=True),
         )

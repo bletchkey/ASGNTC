@@ -10,9 +10,9 @@ class GamblerGumble(nn.Module):
     def __init__(self):
         super(GamblerGumble, self).__init__()
         self.convs = nn.ModuleList([
-            nn.Conv2d(N_CHANNELS, 32, kernel_size=3, stride=1, padding=1),
+            nn.Conv2d(GRID_NUM_CHANNELS, 32, kernel_size=3, stride=1, padding=1),
             nn.Conv2d(32, 32, kernel_size=3, stride=1, padding=1),
-            nn.Conv2d(32, N_CHANNELS, kernel_size=3, stride=1, padding=1)
+            nn.Conv2d(32, GRID_NUM_CHANNELS, kernel_size=3, stride=1, padding=1)
         ])
 
         self.softmax = nn.Softmax(dim=1)
@@ -40,7 +40,7 @@ class GamblerGumble(nn.Module):
         log_probability = torch.log(values).sum(dim=1)
 
         # Reshape the output to have the correct dimensions
-        y = y.view(batch_size, N_CHANNELS, GRID_SIZE, GRID_SIZE)
+        y = y.view(batch_size, GRID_NUM_CHANNELS, GRID_SIZE, GRID_SIZE)
 
         return y, -log_probability
 
