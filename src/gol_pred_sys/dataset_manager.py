@@ -294,8 +294,9 @@ class PairedDataset(Dataset):
         self.meta_set = meta_set
 
         if len(self.data_set) != len(self.meta_set):
-            raise ValueError("Data and metadata sets must be of the same size")
-
+            raise ValueError(f"Data and metadata sets must be of the same size. "
+                             f"Data set size: {len(self.data_set)}, "
+                             f"Metadata set size: {len(self.meta_set)}")
 
     def __len__(self):
         """
@@ -326,78 +327,44 @@ class PairedDataset(Dataset):
 class DatasetManager():
     def __init__(self) -> None:
 
-        try:
-            train_path = DATASET_DIR / f"{DATASET_NAME}_{TRAIN}.pt"
-            val_path   = DATASET_DIR / f"{DATASET_NAME}_{VALIDATION}.pt"
-            test_path  = DATASET_DIR / f"{DATASET_NAME}_{TEST}.pt"
-
-            train_meta_path = DATASET_DIR / f"{DATASET_NAME}_metadata_{TRAIN}.pt"
-            val_meta_path   = DATASET_DIR / f"{DATASET_NAME}_metadata_{VALIDATION}.pt"
-            test_meta_path  = DATASET_DIR / f"{DATASET_NAME}_metadata_{TEST}.pt"
-
-            self.dataset = {
-                TRAIN: None,
-                VALIDATION: None,
-                TEST: None,
-                TRAIN_METADATA: None,
-                VALIDATION_METADATA: None,
-                TEST_METADATA: None
-            }
-
-            self.dataset[TRAIN]      = FixedDataset(train_path)
-            self.dataset[VALIDATION] = FixedDataset(val_path)
-            self.dataset[TEST]       = FixedDataset(test_path)
-
-            self.dataset[TRAIN_METADATA]      = FixedDataset(train_meta_path)
-            self.dataset[VALIDATION_METADATA] = FixedDataset(val_meta_path)
-            self.dataset[TEST_METADATA]       = FixedDataset(test_meta_path)
-
-            self.paired_dataset = {
-                TRAIN: None,
-                VALIDATION: None,
-                TEST: None
-            }
-
-            self.paired_dataset[TRAIN]      = PairedDataset(self.dataset[TRAIN],
-                                                            self.dataset[TRAIN_METADATA])
-
-            self.paired_dataset[VALIDATION] = PairedDataset(self.dataset[VALIDATION],
-                                                            self.dataset[VALIDATION_METADATA])
-
-            self.paired_dataset[TEST]       = PairedDataset(self.dataset[TEST],
-                                                            self.dataset[TEST_METADATA])
-
-        except Exception as e:
-            logging.error(f"Error initializing the data: {e}")
-            raise e
+        self.dataset_types = [TRAIN, VALIDATION, TEST]
 
 
     def get_dataloader(self,
-                       dataset_name: str,
+                       dataset_type: str,
                        batch_size: int,
                        shuffle: bool = True) -> DataLoader:
         """
         Returns the DataLoader for the specified dataset.
 
         Parameters:
-            dataset_name (str): The name of the dataset to retrieve the DataLoader for.
+            dataset_type (str): The type of the dataset to retrieve the DataLoader for.
 
         Returns:
             DataLoader: The DataLoader for the specified dataset.
         """
 
-        return DataLoader(self.paired_dataset[dataset_name], batch_size=batch_size, shuffle=shuffle)
+        if dataset_type not in self.dataset_types:
+            raise ValueError(f"Invalid dataset type: {dataset_type}")
+
+        paired_dataset = self.get_dataset(dataset_type)
+
+        return DataLoader(paired_dataset, batch_size=batch_size, shuffle=shuffle)
 
 
-    def get_dataset(self, dataset_name: str) -> FixedDataset:
+    def get_dataset(self, dataset_type: str) -> PairedDataset:
         """
-        Returns the DataLoader for the specified dataset.
+        Returns a specified dataset containing data and metadata.
 
         Parameters:
-            dataset_name (str): The name of the dataset to retrieve the DataLoader for.
+            dataset_type (str): The type of the dataset.
 
-        Returns:
-            DataLoader: The DataLoader for the specified dataset.
         """
-        return self.dataset[dataset_name]
+        if dataset_type not in self.dataset_types:
+            raise ValueError(f"Invalid dataset type: {dataset_type}")
+
+        fixed_data = FixedDataset(f"{DATASET_DIR}/{DATASET_NAME}_{dataset_type}.pt")
+        fixed_meta = FixedDataset(f"{DATASET_DIR}/{DATASET_NAME}_metadata_{dataset_type}.pt")
+
+        return PairedDataset(fixed_data, fixed_meta)
 

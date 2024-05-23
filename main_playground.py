@@ -127,12 +127,20 @@ def playground():
     pg.plot_record_sim(results)
 
 
+def plot_record_structure():
+
+        pg = Playground()
+        number_of_records_ds = DATASET_N_TOTAL_CONFIGS
+
+        data = pg.get_record_from_id(45000)
+        pg.plot_record_db(data)
+
 def main():
 
     setup_base_directory()
     setup_logging(path= CONFIG_DIR / "logging_playground.json")
 
-    simulate_heart()
+    plot_record_structure()
 
     return 0
 

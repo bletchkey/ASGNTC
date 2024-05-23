@@ -28,17 +28,19 @@ def __calculate_bins_number(tolerance: float) -> int:
     return max(1, min(num_bins, 1024))
 
 
-def prediction_accuracy(prediction: torch.Tensor, target: torch.Tensor, tolerance: float = 0.05) -> float:
+def prediction_accuracy(prediction: torch.Tensor, target: torch.Tensor, tolerance: float = 0.1) -> float:
 
     num_bins = __calculate_bins_number(tolerance)
+    min_val, max_val = 0, 1
 
-    target_distribution     = torch.histc(target, bins=num_bins, min=0, max=1)
-    prediction_distribution = torch.histc(prediction, bins=num_bins, min=0, max=1)
+    # Create bins for histogram
+    bins = torch.linspace(min_val, max_val, steps=num_bins + 1)
 
-    # Now if a predicted target has the same bin index as the target, it is considered correct
-    correct_predictions = (target_distribution == prediction_distribution).float()
+    target_bins     = torch.bucketize(target, bins)
+    prediction_bins = torch.bucketize(prediction, bins)
 
-    # Calculate mean accuracy
+    correct_predictions = (target_bins == prediction_bins).float()
+
     mean_accuracy = correct_predictions.mean().item()
 
     return mean_accuracy

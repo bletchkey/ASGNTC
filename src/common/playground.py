@@ -11,7 +11,7 @@ from src.common.utils.simulation_functions import simulate_config, basic_simulat
 from configs.constants import *
 from configs.paths     import DATASET_DIR, TRAINED_MODELS_DIR, OUTPUTS_DIR
 
-from src.gol_pred_sys.dataset_manager import FixedDataset
+from src.gol_pred_sys.dataset_manager import DatasetManager
 from src.common.device_manager        import DeviceManager
 
 from src.common.generator import Generator_Gambler
@@ -20,24 +20,10 @@ from src.common.generator import Generator_Gambler
 class Playground():
 
     def __init__(self):
-        self.__device_manager = DeviceManager()
-        self.__dataset = {TRAIN: None, TRAIN_METADATA: None}
-        self.__predictor = {"model": None, "name": None}
+        self.__device_manager  = DeviceManager()
+        self.__dataset_manager = DatasetManager()
 
-    @property
-    def topology(self) -> int:
-        return self.__topology
-
-    @property
-    def train_data(self) -> FixedDataset:
-        return self.__dataset[TRAIN]
-
-    @property
-    def train_meta(self) -> dict:
-        return self.__dataset[TRAIN_METADATA]
-
-
-    def simulate(self, config: torch.Tensor, steps: int, topology: topology) -> torch.Tensor:
+    def simulate(self, config: torch.Tensor, steps: int, topology: str=TOPOLOGY_TOROIDAL) -> torch.Tensor:
 
         initial = config
         config = config.to(self.__device_manager.default_device)
@@ -71,41 +57,23 @@ class Playground():
 
         return results
 
+    def gol_basic_simulation(self, config: torch.Tensor, steps: int, topology:str = TOPOLOGY_TOROIDAL) -> torch.Tensor:
+
+        config = config.to(self.__device_manager.default_device)
+        configs = basic_simulation_config(config, steps=steps, topology=topology,
+                                          device=self.__device_manager.default_device)
+
+        return configs
 
     def get_record_from_id(self, id: int) -> typing.Tuple[torch.Tensor, dict]:
 
-        if self.__dataset[TRAIN] is None:
-            self.__load_train_dataset()
-        if self.__dataset[TRAIN_METADATA] is None:
-            self.__load_train_metadata()
+        dataset = self.__dataset_manager.get_dataset(TRAIN)
 
-        for data, meta in zip(self.__dataset[TRAIN], self.__dataset[TRAIN_METADATA]):
-            if meta[META_ID] == id:
-                return self.__create_record_dict(data, meta)
-
+        for data, metadata in dataset:
+            if metadata[META_ID] == id:
+                return self.__create_record_dict(data, metadata)
 
         raise ValueError(f"Could not find the data for id {id}")
-
-
-    def load_predictor(self, name: str) -> None:
-
-        model_path = TRAINED_MODELS_DIR / name
-        if not model_path.exists():
-            raise ValueError(f"Model {name} does not exist")
-
-        self.__predictor["model"] = torch.load(model_path)
-        self.__predictor["name"] = name
-
-
-    def predict(self, config: torch.Tensor) -> torch.Tensor:
-
-        if self.__predictor is None:
-            raise ValueError("Predictor model has not been loaded")
-
-        self.__predictor["model"].eval()
-
-        with torch.no_grad():
-            return self.__predictor["model"](config)
 
 
     def plot_record_db(self, record: dict) -> None:
@@ -163,7 +131,6 @@ class Playground():
 
 
         # Adjust layout for padding and spacing
-
         plt.subplots_adjust(left=0.05, right=0.95, top=0.5, bottom=0.1, wspace=0.1, hspace=0)
 
         # Save and close
@@ -235,17 +202,6 @@ class Playground():
         # Save and close
         pdf_path = OUTPUTS_DIR / f"record_{record['id']}_sim.pdf"
         export_figures_to_pdf(pdf_path, fig)
-
-    def __load_train_dataset(self):
-
-        train_data_path = DATASET_DIR / f"{DATASET_NAME}_train.pt"
-        self.__dataset["train_data"] = FixedDataset(train_data_path)
-
-
-    def __load_train_metadata(self):
-
-        train_meta_path = DATASET_DIR / f"{DATASET_NAME}_metadata_train.pt"
-        self.__dataset[TRAIN_METADATA] = torch.load(train_meta_path)
 
 
     def __create_record_dict(self, data: torch.Tensor, metadata: dict) -> typing.Tuple[torch.Tensor, dict]:
@@ -338,23 +294,12 @@ class Playground():
     def generate_gambler(self, batch_size:int) -> torch.Tensor:
 
         generator = Generator_Gambler().to(self.__device_manager.default_device)
-
         generator.eval()
 
         config = torch.zeros(batch_size, GRID_NUM_CHANNELS, GRID_SIZE, GRID_SIZE,
                              device=self.__device_manager.default_device)
         config[:, :, GRID_SIZE // 2, GRID_SIZE // 2] = 1
-
         generated_config, probabilities = generator(config)
 
         return generated_config, probabilities
-
-
-    def gol_basic_simulation(self, config: torch.Tensor, steps: int, topology: topology) -> torch.Tensor:
-
-        config = config.to(self.__device_manager.default_device)
-        configs = basic_simulation_config(config, steps=steps, topology=topology,
-                                          device=self.__device_manager.default_device)
-
-        return configs
 
