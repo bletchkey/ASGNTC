@@ -16,6 +16,7 @@
 # docs
 docs/
 *.txt
+*.pdf
 
 # OS-specific files
 .DS_Store

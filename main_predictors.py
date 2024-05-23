@@ -205,19 +205,18 @@ def main():
 
     # plot_data_base_toro_vs_zero()
     # plot_baseline_on_all_targets()
-    # plot_accuracies(TRAINED_MODELS_DIR / "predictors/Baseline_Toroidal_Medium")
+    # plot_accuracies(TRAINED_MODELS_DIR / "predictors" / "Baseline_Toroidal_Easy")
 
     # train_baseline(CONFIG_TARGET_EASY, TOPOLOGY_TOROIDAL)
     # train_baseline(CONFIG_TARGET_MEDIUM, TOPOLOGY_TOROIDAL)
-    # train_baseline(CONFIG_TARGET_HARD, TOPOLOGY_TOROIDAL) -
-    # train_baseline(CONFIG_TARGET_STABLE, TOPOLOGY_TOROIDAL)
+    # train_baseline(CONFIG_TARGET_HARD, TOPOLOGY_TOROIDAL)
+    train_baseline(CONFIG_TARGET_STABLE, TOPOLOGY_TOROIDAL)
 
-    train_baseline(CONFIG_TARGET_MEDIUM, TOPOLOGY_FLAT)
+    #train_baseline(CONFIG_TARGET_MEDIUM, TOPOLOGY_FLAT)
 
     # train_proposed(CONFIG_TARGET_EASY)
 
     return 0
-
 
 
 if __name__ == '__main__':

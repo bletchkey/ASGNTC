@@ -1,10 +1,47 @@
 import torch
 import torch.nn as nn
+import math
 from typing import Union
 
 from torchmetrics.functional import structural_similarity_index_measure as ssim
 
 from configs.constants import *
+
+
+def __calculate_bins_number(tolerance: float) -> int:
+    """
+    Calculate the number of bins based on the tolerance level.
+    The number of bins is calculated as 2^(10*tolerance), with a minimum of 1 and a maximum of 1024.
+
+    Parameters:
+        tolerance (float): The tolerance level for considering a prediction as accurate.
+
+    Returns:
+        int: The number of bins based on the tolerance level.
+
+    """
+
+    n = math.log2(GRID_SIZE**2)
+    num_bins = 2 ** (n * (1-tolerance))
+    num_bins = int(num_bins)
+
+    return max(1, min(num_bins, 1024))
+
+
+def prediction_accuracy(prediction: torch.Tensor, target: torch.Tensor, tolerance: float = 0.05) -> float:
+
+    num_bins = __calculate_bins_number(tolerance)
+
+    target_distribution     = torch.histc(target, bins=num_bins, min=0, max=1)
+    prediction_distribution = torch.histc(prediction, bins=num_bins, min=0, max=1)
+
+    # Now if a predicted target has the same bin index as the target, it is considered correct
+    correct_predictions = (target_distribution == prediction_distribution).float()
+
+    # Calculate mean accuracy
+    mean_accuracy = correct_predictions.mean().item()
+
+    return mean_accuracy
 
 
 def prediction_accuracy_bins(prediction: torch.Tensor, target: torch.Tensor) -> float:
