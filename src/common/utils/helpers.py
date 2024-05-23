@@ -102,7 +102,7 @@ def export_figures_to_pdf(pdf_path, figs):
     try:
         with PdfPages(pdf_path) as pdf:
             for fig in figs:
-                pdf.savefig(fig)
+                pdf.savefig(fig, bbox_inches="tight", pad_inches=0.05)
                 plt.close(fig)
         logging.debug(f"Saved {len(figs)} figure(s) to {pdf_path}")
     except Exception as e:

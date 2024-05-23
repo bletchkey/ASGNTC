@@ -77,7 +77,7 @@ class Playground():
 
 
     def plot_record_db(self, record: dict) -> None:
-        fig = plt.figure(figsize=(24, 12))
+        fig = plt.figure(figsize=(24, 12), constrained_layout=True)
 
         gs = GridSpec(2, 6, figure=fig, height_ratios=[6, 1], hspace=0.1, wspace=0.1)
 
@@ -113,25 +113,25 @@ class Playground():
             ax = fig.add_subplot(gs[1, i])
             if config == CONFIG_INITIAL:
                 text_str = f"ID: {record[META_ID]}"
-                ax.text(0.1, 0, text_str, ha="left", va="center", fontsize=14, wrap=True)
+                ax.text(0, 0, text_str, ha="left", va="center", fontsize=14, wrap=True)
                 ax.axis('off')
                 continue
 
             if config == CONFIG_FINAL:
                 text_str = f"Transient phase: {record[META_TRANSIENT_PHASE]}\nPeriod: {record[META_PERIOD]}"
-                ax.text(0.1, 0, text_str, ha="left", va="center", fontsize=14, wrap=True)
+                ax.text(0, 0, text_str, ha="left", va="center", fontsize=14, wrap=True)
                 ax.axis('off')
                 continue
 
             text_str = record[f"{config}"]
-            ax.text(0.1, 0, f"Min: {text_str['minimum']}\nMax: {text_str['maximum']}\n"
+            ax.text(0, 0, f"Min: {text_str['minimum']}\nMax: {text_str['maximum']}\n"
                                 f"Q1: {text_str['q1']}\nQ2: {text_str['q2']}\nQ3: {text_str['q3']}",
                     ha="left", va="center", fontsize=14, wrap=True)
             ax.axis('off')
 
 
         # Adjust layout for padding and spacing
-        plt.subplots_adjust(left=0.05, right=0.95, top=0.5, bottom=0.1, wspace=0.1, hspace=0)
+        plt.subplots_adjust(left=0.01, right=0.99, top=0.99, bottom=0.01, wspace=0.05, hspace=0.05)
 
         # Save and close
         pdf_path  = OUTPUTS_DIR / f"record_{record['id']}.pdf"

@@ -34,10 +34,14 @@ def prediction_accuracy(prediction: torch.Tensor, target: torch.Tensor, toleranc
     min_val, max_val = 0, 1
 
     # Create bins for histogram
-    bins = torch.linspace(min_val, max_val, steps=num_bins + 1)
+    bins = torch.linspace(min_val, max_val, steps=num_bins + 1, device=target.device)
 
-    target_bins     = torch.bucketize(target, bins)
-    prediction_bins = torch.bucketize(prediction, bins)
+    # Flatten the last three dimensions to apply bucketize
+    target_flat     = target.contiguous().flatten(start_dim=1)
+    prediction_flat = prediction.contiguous().flatten(start_dim=1)
+
+    target_bins     = torch.bucketize(target_flat, bins)
+    prediction_bins = torch.bucketize(prediction_flat, bins)
 
     correct_predictions = (target_bins == prediction_bins).float()
 
