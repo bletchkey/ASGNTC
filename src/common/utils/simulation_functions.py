@@ -112,8 +112,10 @@ def simulate_config(config: torch.Tensor, topology: str, steps: int,
     return results
 
 
-def calculate_final_configuration(config_batch: torch.Tensor, simulation_function, kernel: torch.Tensor,
-                                    device: torch.device) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+def calculate_final_configuration(config_batch: torch.Tensor, simulation_function,
+                                  kernel: torch.Tensor, device: torch.device) -> Tuple[torch.Tensor,
+                                                                                       torch.Tensor,
+                                                                                       torch.Tensor]:
     """
     Function for calculating the final configuration
     The final configuration is the last configuration before a cycle is detected
@@ -164,7 +166,6 @@ def calculate_final_configuration(config_batch: torch.Tensor, simulation_functio
                     accumulated_state += config
 
                 stable_config[i] = accumulated_state / period[i]
-
             else:
                 config_hashes[i][current_hash] = step
 

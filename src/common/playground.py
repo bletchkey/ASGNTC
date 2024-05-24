@@ -1,4 +1,5 @@
 import typing
+import datetime
 import numpy as np
 import matplotlib.pyplot as plt
 import torch
@@ -66,18 +67,28 @@ class Playground():
         return configs
 
     def get_record_from_id(self, id: int) -> typing.Tuple[torch.Tensor, dict]:
+        """
+        Search for a record with the given id in the datasets and return it as a dictionary.
+        TRAIN, VALIDATION and TEST datasets are searched in this order, since the train dataset
+        is the largest the likelihood of finding the record is higher.
 
-        dataset = self.__dataset_manager.get_dataset(TRAIN)
+        """
 
-        for data, metadata in dataset:
-            if metadata[META_ID] == id:
-                return self.__create_record_dict(data, metadata)
+        datasets = [TRAIN, VALIDATION, TEST]
+
+        for type in datasets:
+            dataset = self.__dataset_manager.get_dataset(type)
+
+            for data, metadata in dataset:
+                if metadata[META_ID] == id:
+                    return self.__create_record_dict(data, metadata)
 
         raise ValueError(f"Could not find the data for id {id}")
 
 
     def plot_record_db(self, record: dict) -> None:
-        fig = plt.figure(figsize=(24, 12), constrained_layout=True)
+
+        fig = plt.figure(figsize=(24, 6), constrained_layout=True)
 
         gs = GridSpec(2, 6, figure=fig, height_ratios=[6, 1], hspace=0.1, wspace=0.1)
 
@@ -91,18 +102,18 @@ class Playground():
             if i == 0:
                 ax = fig.add_subplot(gs[0, i])
                 ax.imshow(record[f"{config}"].detach().cpu().numpy().squeeze(), **imshow_kwargs)
-                ax.set_title(f"Initial - {record[META_N_CELLS_INITIAL ]} cells", fontsize=16)
+                ax.set_title(f"Initial - {record[META_N_CELLS_INITIAL ]} cells", fontsize=18, fontweight='bold')
                 ax.axis('off')
                 continue
             if i == 1:
                 ax = fig.add_subplot(gs[0, i])
                 ax.imshow(record[f"{config}"].detach().cpu().numpy().squeeze(), **imshow_kwargs)
-                ax.set_title(f"Final - {record[META_N_CELLS_FINAL]} cells", fontsize=16)
+                ax.set_title(f"Final - {record[META_N_CELLS_FINAL]} cells", fontsize=18, fontweight='bold')
                 ax.axis('off')
                 continue
             ax = fig.add_subplot(gs[0, i])
             ax.imshow(record[f"{config}"]["config"].detach().cpu().numpy().squeeze(), **imshow_kwargs)
-            ax.set_title(f"{titles[i]}", fontsize=16)
+            ax.set_title(f"{titles[i]}", fontsize=18, fontweight='bold')
             ax.axis('off')
 
         # Text plot for metrics in the first row
@@ -113,25 +124,21 @@ class Playground():
             ax = fig.add_subplot(gs[1, i])
             if config == CONFIG_INITIAL:
                 text_str = f"ID: {record[META_ID]}"
-                ax.text(0, 0, text_str, ha="left", va="center", fontsize=14, wrap=True)
+                ax.text(0, 0, text_str, ha="left", va="center", fontsize=16, wrap=True)
                 ax.axis('off')
                 continue
 
             if config == CONFIG_FINAL:
                 text_str = f"Transient phase: {record[META_TRANSIENT_PHASE]}\nPeriod: {record[META_PERIOD]}"
-                ax.text(0, 0, text_str, ha="left", va="center", fontsize=14, wrap=True)
+                ax.text(0, 0, text_str, ha="left", va="center", fontsize=16, wrap=True)
                 ax.axis('off')
                 continue
 
             text_str = record[f"{config}"]
-            ax.text(0, 0, f"Min: {text_str['minimum']}\nMax: {text_str['maximum']}\n"
-                                f"Q1: {text_str['q1']}\nQ2: {text_str['q2']}\nQ3: {text_str['q3']}",
-                    ha="left", va="center", fontsize=14, wrap=True)
+            ax.text(0, 0, f"Min: {text_str['minimum']:.4f}\nMax: {text_str['maximum']:.4f}\n"
+                                f"Q1: {text_str['q1']:.4f}\nQ2: {text_str['q2']:.4f}\nQ3: {text_str['q3']:.4f}",
+                    ha="left", va="center", fontsize=16, wrap=True)
             ax.axis('off')
-
-
-        # Adjust layout for padding and spacing
-        plt.subplots_adjust(left=0.01, right=0.99, top=0.99, bottom=0.01, wspace=0.05, hspace=0.05)
 
         # Save and close
         pdf_path  = OUTPUTS_DIR / f"record_{record['id']}.pdf"
@@ -139,8 +146,12 @@ class Playground():
 
 
     def plot_record_sim(self, record: dict) -> None:
-        fig = plt.figure(figsize=(24, 12))
 
+        # Check that only one configuration is present
+        if len(record['period']) > 1:
+            raise ValueError("Multiple configurations found. Choose only one.")
+
+        fig = plt.figure(figsize=(24, 12))
         gs = GridSpec(2, 7, figure=fig, height_ratios=[7, 1], hspace=0.1, wspace=0.1)
 
         imshow_kwargs = {'cmap': 'gray', 'vmin': 0, 'vmax': 1}
@@ -153,25 +164,25 @@ class Playground():
             if i == 0:
                 ax = fig.add_subplot(gs[0, i])
                 ax.imshow(record[f"{config}"].detach().cpu().numpy().squeeze(), **imshow_kwargs)
-                ax.set_title(f"Initial - {record['n_cells_initial']} cells", fontsize=16)
+                ax.set_title(f"Initial - {record['n_cells_initial'].item()} cells", fontsize=18, fontweight='bold')
                 ax.axis('off')
                 continue
             if i == 1:
                 ax = fig.add_subplot(gs[0, i])
                 ax.imshow(record[f"{config}"].detach().cpu().numpy().squeeze(), **imshow_kwargs)
-                ax.set_title(f"Simulated - {record['n_cells_simulated']} cells", fontsize=16)
+                ax.set_title(f"Simulated - {record['n_cells_simulated'].item()} cells", fontsize=18, fontweight='bold')
                 ax.axis('off')
                 continue
             if i == 2:
                 ax = fig.add_subplot(gs[0, i])
                 ax.imshow(record[f"{config}"].detach().cpu().numpy().squeeze(), **imshow_kwargs)
-                ax.set_title(f"Final - {record['n_cells_final']} cells", fontsize=16)
+                ax.set_title(f"Final - {record['n_cells_final'].item()} cells", fontsize=18, fontweight='bold')
                 ax.axis('off')
                 continue
 
             ax = fig.add_subplot(gs[0, i])
             ax.imshow(record[f"{config}"].detach().cpu().numpy().squeeze(), **imshow_kwargs)
-            ax.set_title(f"{titles[i]}", fontsize=16)
+            ax.set_title(f"{titles[i]}", fontsize=18, fontweight='bold')
 
             ax.axis('off')
 
@@ -184,13 +195,13 @@ class Playground():
 
             if config == "simulated":
                 text_str = f"Steps: {record['steps']}"
-                ax.text(0.1, 0, text_str, ha="left", va="center", fontsize=14, wrap=True)
+                ax.text(0.1, 0, text_str, ha="left", va="center", fontsize=16, wrap=True)
                 ax.axis('off')
                 continue
 
             if config == "final":
-                text_str = f"Transient phase: {record['transient_phase']}\nPeriod: {record['period']}"
-                ax.text(0.1, 0, text_str, ha="left", va="center", fontsize=14, wrap=True)
+                text_str = f"Transient phase: {record['transient_phase'].item()}\nPeriod: {record['period'].item()}"
+                ax.text(0.1, 0, text_str, ha="left", va="center", fontsize=16, wrap=True)
                 ax.axis('off')
                 continue
 
@@ -200,7 +211,8 @@ class Playground():
         plt.subplots_adjust(left=0.05, right=0.95, top=0.5, bottom=0.1, wspace=0.1, hspace=0)
 
         # Save and close
-        pdf_path = OUTPUTS_DIR / f"record_{record['id']}_sim.pdf"
+        date_time = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        pdf_path = OUTPUTS_DIR / f"simulation_{date_time}.pdf"
         export_figures_to_pdf(pdf_path, fig)
 
 
