@@ -6,7 +6,7 @@ from configs.constants import *
 from configs.paths     import CONFIG_DIR
 
 from unit_tests.common.utils.test_scores import TestConfigPredictionAccuracy, \
-                                                TestCalculateStableMetricComplexity
+                                                TestCalculateStableTargetComplexity
 
 
 def main():
@@ -22,11 +22,11 @@ def main():
     suite.addTest(TestConfigPredictionAccuracy('test_input_shape_mismatch'))
     suite.addTest(TestConfigPredictionAccuracy('test_input_dimension_mismatch'))
 
-    suite.addTest(TestCalculateStableMetricComplexity('test_complexity_bs_one_mean_true'))
-    suite.addTest(TestCalculateStableMetricComplexity('test_complexity_bs_two_mean_false'))
-    suite.addTest(TestCalculateStableMetricComplexity('test_complexity_bs_two_mean_true'))
-    suite.addTest(TestCalculateStableMetricComplexity('test_complexity_bs_two_same_values_mean_true'))
-    suite.addTest(TestCalculateStableMetricComplexity('test_input_dimension_mismatch'))
+    suite.addTest(TestCalculateStableTargetComplexity('test_complexity_bs_one_mean_true'))
+    suite.addTest(TestCalculateStableTargetComplexity('test_complexity_bs_two_mean_false'))
+    suite.addTest(TestCalculateStableTargetComplexity('test_complexity_bs_two_mean_true'))
+    suite.addTest(TestCalculateStableTargetComplexity('test_complexity_bs_two_same_values_mean_true'))
+    suite.addTest(TestCalculateStableTargetComplexity('test_input_dimension_mismatch'))
 
     # Run the suite
     runner = unittest.TextTestRunner()

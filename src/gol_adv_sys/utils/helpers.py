@@ -9,7 +9,7 @@ from configs.constants        import *
 from src.common.utils.helpers import export_figures_to_pdf
 
 from src.common.utils.simulation_functions import simulate_config
-from src.common.utils.scores               import calculate_stable_metric_complexity
+from src.common.utils.scores               import calculate_stable_target_complexity
 
 
 def test_models_DCGAN(model_g: torch.nn.Module, model_p: torch.nn.Module,
@@ -24,7 +24,7 @@ def test_models_DCGAN(model_g: torch.nn.Module, model_p: torch.nn.Module,
         topology (str): The topology to use for simulating the configurations
         init_config_initial_type (str): The type of initial configuration to use
         fixed_noise (torch.Tensor): The fixed noise to use for testing the generator model
-        target_config (str): The type of configuration to predict (tipically the metric configuration)
+        target_config (str): The type of configuration to predict (tipically the target configuration)
         device (torch.device): The device used for computation
 
     Returns:
@@ -54,7 +54,7 @@ def test_models_DCGAN(model_g: torch.nn.Module, model_p: torch.nn.Module,
 
         data["final"]     = sim_results["final"]
         data["simulated"] = sim_results["simulated"]
-        data["target"]    = sim_results["all_metrics"][target_config]["config"]
+        data["target"]    = sim_results["all_targets"][target_config]["config"]
         data["predicted"] = model_p(data["initial"])
         data["metadata"]  = {
             "n_cells_initial":   sim_results["n_cells_initial"],
@@ -62,11 +62,11 @@ def test_models_DCGAN(model_g: torch.nn.Module, model_p: torch.nn.Module,
             "n_cells_final":     sim_results["n_cells_final"],
             "transient_phase":   sim_results["transient_phase"],
             "period":            sim_results["period"],
-            "target_minmum":     sim_results["all_metrics"][target_config]["minimum"],
-            "target_maximum":    sim_results["all_metrics"][target_config]["maximum"],
-            "target_q1":         sim_results["all_metrics"][target_config]["q1"],
-            "target_q2":         sim_results["all_metrics"][target_config]["q2"],
-            "target_q3":         sim_results["all_metrics"][target_config]["q3"],
+            "target_minmum":     sim_results["all_targets"][target_config]["minimum"],
+            "target_maximum":    sim_results["all_targets"][target_config]["maximum"],
+            "target_q1":         sim_results["all_targets"][target_config]["q1"],
+            "target_q2":         sim_results["all_targets"][target_config]["q2"],
+            "target_q3":         sim_results["all_targets"][target_config]["q3"],
             "target_name":       target_config
         }
 
@@ -85,7 +85,7 @@ def test_models(model_g: torch.nn.Module, model_p: torch.nn.Module,
         topology (str): The topology to use for simulating the configurations
         init_config_initial_type (str): The type of initial configuration to use
         fixed_input (torch.Tensor): The fixed input to use for testing the generator model
-        target_config (str): The type of configuration to predict (tipically the metric configuration)
+        target_config (str): The type of configuration to predict (tipically the target configuration)
         device (torch.device): The device used for computation
 
     Returns:
@@ -116,7 +116,7 @@ def test_models(model_g: torch.nn.Module, model_p: torch.nn.Module,
 
         data["final"]     = sim_results["final"]
         data["simulated"] = sim_results["simulated"]
-        data["target"]    = sim_results["all_metrics"][target_config]["config"]
+        data["target"]    = sim_results["all_targets"][target_config]["config"]
         data["predicted"] = model_p(data["initial"])
         data["metadata"]  = {
             "n_cells_initial":   sim_results["n_cells_initial"],
@@ -124,11 +124,11 @@ def test_models(model_g: torch.nn.Module, model_p: torch.nn.Module,
             "n_cells_final":     sim_results["n_cells_final"],
             "transient_phase":   sim_results["transient_phase"],
             "period":            sim_results["period"],
-            "target_minmum":     sim_results["all_metrics"][target_config]["minimum"],
-            "target_maximum":    sim_results["all_metrics"][target_config]["maximum"],
-            "target_q1":         sim_results["all_metrics"][target_config]["q1"],
-            "target_q2":         sim_results["all_metrics"][target_config]["q2"],
-            "target_q3":         sim_results["all_metrics"][target_config]["q3"],
+            "target_minmum":     sim_results["all_targets"][target_config]["minimum"],
+            "target_maximum":    sim_results["all_targets"][target_config]["maximum"],
+            "target_q1":         sim_results["all_targets"][target_config]["q1"],
+            "target_q2":         sim_results["all_targets"][target_config]["q2"],
+            "target_q3":         sim_results["all_targets"][target_config]["q3"],
             "target_name":       target_config
         }
 
@@ -271,9 +271,9 @@ def get_data_tensor(data_tensor: torch.Tensor, model_g: torch.nn.Module,
     """
     new_configs, _ = generate_new_batches(model_g, N_BATCHES, topology, init_config_initial_type, device)
 
-    # Calculate the average complexity of the stable metrics
-    stable_metrics = get_config_from_batch(new_configs, CONFIG_TARGET_STABLE, device)
-    avg_stable_metric_complexity = calculate_stable_metric_complexity(stable_metrics, mean=True)
+    # Calculate the average complexity of the stable targets
+    stable_targets = get_config_from_batch(new_configs, CONFIG_TARGET_STABLE, device)
+    avg_stable_target_complexity = calculate_stable_target_complexity(stable_targets, mean=True)
 
     # If data_tensor is None, initialize it with new_configs
     if data_tensor is None:
@@ -291,7 +291,7 @@ def get_data_tensor(data_tensor: torch.Tensor, model_g: torch.nn.Module,
         else:
             data_tensor = combined_tensor
 
-    return data_tensor, avg_stable_metric_complexity
+    return data_tensor, avg_stable_target_complexity
 
 
 def get_initialized_initial_config(config: torch.Tensor, init_config_initial_type: str) -> torch.Tensor:
@@ -345,17 +345,17 @@ def generate_new_batches(model_g: torch.nn.Module, n_batches: int, topology: str
                                           steps=N_SIM_STEPS, device=device)
 
         simulated_config = sim_results["simulated"]
-        metrics          = sim_results["all_metrics"]
+        targets          = sim_results["all_targets"]
         final_config     = sim_results["final"]
 
         configs.append({
             CONFIG_INITIAL: initial_config,
             CONFIG_SIMULATED:  simulated_config,
             CONFIG_FINAL: final_config,
-            CONFIG_TARGET_EASY: metrics[CONFIG_TARGET_EASY]["config"],
-            CONFIG_TARGET_MEDIUM: metrics[CONFIG_TARGET_MEDIUM]["config"],
-            CONFIG_TARGET_HARD: metrics[CONFIG_TARGET_HARD]["config"],
-            CONFIG_TARGET_STABLE: metrics[CONFIG_TARGET_STABLE]["config"]
+            CONFIG_TARGET_EASY: targets[CONFIG_TARGET_EASY]["config"],
+            CONFIG_TARGET_MEDIUM: targets[CONFIG_TARGET_MEDIUM]["config"],
+            CONFIG_TARGET_HARD: targets[CONFIG_TARGET_HARD]["config"],
+            CONFIG_TARGET_STABLE: targets[CONFIG_TARGET_STABLE]["config"]
         })
 
     # Create a tensor from the list of configurations

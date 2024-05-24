@@ -53,7 +53,7 @@ class TrainingAdversarial(TrainingBase):
         config_type_pred_target (str): The type of configuration to predict.
         current_epoch (int): The current epoch of the training session.
         step_times_secs (list): A list of lists containing the time in seconds for each step in each epoch.
-        complexity_stable_metrics (list): A list containing the avg complexity of stable metrics of the new generated configurations.
+        complexity_stable_targets (list): A list containing the avg complexity of stable targets of the new generated configurations.
         losses (dict): A dictionary containing the losses of the generator and predictor models.
         lr_each_epoch (dict): A dictionary containing the learning rate of the generator and predictor models for each epoch.
         n_times_trained_p (int): The number of times the predictor model has been trained.
@@ -84,7 +84,7 @@ class TrainingAdversarial(TrainingBase):
         self.current_epoch     = 0
         self.step_times_secs   = []
 
-        self.complexity_stable_metrics= []
+        self.complexity_stable_targets= []
 
         self.losses        = {GENERATOR: [], PREDICTOR: []}
         self.lr_each_epoch = {PREDICTOR: [], GENERATOR: []}
@@ -157,11 +157,11 @@ class TrainingAdversarial(TrainingBase):
                     f"Number of generated configurations in the dataset: {len(self.train_dataloader) * BATCH_SIZE}\n"
                 )
 
-                if len(self.complexity_stable_metrics) > 0:
+                if len(self.complexity_stable_targets) > 0:
                     log_content += (
-                        f"Average complexity of the stable metrics on the last "
+                        f"Average complexity of the stable targets on the last "
                         f"{N_BATCHES * BATCH_SIZE} generated configurations: "
-                        f"{100*self.complexity_stable_metrics[-1]:.1f}/100\n\n"
+                        f"{100*self.complexity_stable_targets[-1]:.1f}/100\n\n"
                     )
 
                 log.write(log_content)
@@ -325,12 +325,12 @@ class TrainingAdversarial(TrainingBase):
 
         """
 
-        data, avg_stable_metric_complexity = get_data_tensor(self.data_tensor, self.generator.model,
+        data, avg_stable_target_complexity = get_data_tensor(self.data_tensor, self.generator.model,
                                                              self.simulation_topology, self.init_config_initial_type,
                                                              self.device_manager.default_device)
 
         self.data_tensor = data
-        self.complexity_stable_metrics.append(avg_stable_metric_complexity)
+        self.complexity_stable_targets.append(avg_stable_target_complexity)
 
         # Create the dataloader from the tensor
         self.train_dataloader = DataLoader(self.data_tensor, batch_size=BATCH_SIZE, shuffle=True)
@@ -546,7 +546,7 @@ class TrainingAdversarial(TrainingBase):
 
         Returns:
             data (dict): Contains the generated configurations, initial configurations, simulated configurations,
-            simulated metrics and predicted metrics.
+            simulated targets and predicted targets.
 
         """
 
@@ -559,11 +559,11 @@ class TrainingAdversarial(TrainingBase):
         """
         Function for saving the progress plot.
         It save the plot that shows the generated configurations, initial configurations, simulated configurations,
-        simulated metrics and predicted metrics.
+        simulated targets and predicted targets.
 
         Args:
             data (dict): Contains the generated configurations, initial configurations, simulated configurations,
-            simulated metrics and predicted metrics.
+            simulated targets and predicted targets.
 
         """
 

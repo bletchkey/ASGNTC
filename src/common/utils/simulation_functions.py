@@ -50,7 +50,7 @@ def simulate_config(config: torch.Tensor, topology: str, steps: int,
 
     Returns:
         dict: A dictionary containing the simulated configuration,
-              final configuration, metrics, and the number of living cells.
+              final configuration, targets, and the number of living cells.
 
     """
     # count living cells in the initial configuration
@@ -91,8 +91,8 @@ def simulate_config(config: torch.Tensor, topology: str, steps: int,
 
     simulated = config.clone()
 
-    # Calculate metrics from the simulated configurations and add stable metric to the dictionary
-    all_metrics = __calculate_metrics(sim_configs, stable_config, device)
+    # Calculate targets from the simulated configurations and add stable target to the dictionary
+    all_targets = __calculate_targets(sim_configs, stable_config, device)
 
     # Count living cells in the final configuration
     n_cells_simulated = torch.sum(simulated, dim=[2, 3], dtype=torch.float32)
@@ -101,7 +101,7 @@ def simulate_config(config: torch.Tensor, topology: str, steps: int,
     results = {
         "simulated": simulated,
         "final": final["config"],
-        "all_metrics": all_metrics,
+        "all_targets": all_targets,
         "transient_phase": final["transient_phase"],
         "period": final["period"],
         "n_cells_initial": n_cells_initial.int(),
@@ -175,9 +175,9 @@ def calculate_final_configuration(config_batch: torch.Tensor, simulation_functio
     return final_config, stable_config, period, transient_phase
 
 
-def __calculate_metrics(configs: list, stable_config: torch.Tensor, device: torch.device) -> dict:
+def __calculate_targets(configs: list, stable_config: torch.Tensor, device: torch.device) -> dict:
     """
-    Function for calculating the metrics from the simulated configurations
+    Function for calculating the targets from the simulated configurations
 
     Args:
         configs (list): List of simulated configurations
@@ -185,15 +185,15 @@ def __calculate_metrics(configs: list, stable_config: torch.Tensor, device: torc
         device (torch.device): Device used for computation
 
     Returns:
-        Dictionary containing the metrics for the stable, easy, medium, and hard levels.
+        Dictionary containing the targets for the stable, easy, medium, and hard levels.
 
     Infos:
     For numerical stability: (not used in the current implementation)
 
         for step in range(1, steps + 1):
-            sim_metrics["easy"][-step:]   = [x * (1 - eps_easy) for x in sim_metrics["easy"][-step:]]
-            sim_metrics["medium"][-step:] = [x * (1 - eps_medium) for x in sim_metrics["medium"][-step:]]
-            sim_metrics["hard"][-step:]   = [x * (1 - eps_hard) for x in sim_metrics["hard"][-step:]]
+            sim_targets["easy"][-step:]   = [x * (1 - eps_easy) for x in sim_targets["easy"][-step:]]
+            sim_targets["medium"][-step:] = [x * (1 - eps_medium) for x in sim_targets["medium"][-step:]]
+            sim_targets["hard"][-step:]   = [x * (1 - eps_hard) for x in sim_targets["hard"][-step:]]
 
     """
 
@@ -202,7 +202,7 @@ def __calculate_metrics(configs: list, stable_config: torch.Tensor, device: torc
     stacked_configs = torch.stack(configs, dim=0)
     stacked_configs = stacked_configs.permute(1, 0, 2, 3, 4)
 
-    sim_metrics = {
+    sim_targets = {
         CONFIG_TARGET_EASY: {
             "config": stacked_configs.clone(),
             "maximum": None,
@@ -238,9 +238,9 @@ def __calculate_metrics(configs: list, stable_config: torch.Tensor, device: torc
     }
 
     eps = {
-        CONFIG_TARGET_EASY:   __calculate_eps(half_step=METRIC_EASY_HALF_STEP),
-        CONFIG_TARGET_MEDIUM: __calculate_eps(half_step=METRIC_MEDIUM_HALF_STEP),
-        CONFIG_TARGET_HARD:   __calculate_eps(half_step=METRIC_HARD_HALF_STEP)
+        CONFIG_TARGET_EASY:   __calculate_eps(half_step=TARGET_EASY_HALF_STEP),
+        CONFIG_TARGET_MEDIUM: __calculate_eps(half_step=TARGET_MEDIUM_HALF_STEP),
+        CONFIG_TARGET_HARD:   __calculate_eps(half_step=TARGET_HARD_HALF_STEP)
     }
 
     correction_factor_easy   = eps[CONFIG_TARGET_EASY] / (1 - ((1 - eps[CONFIG_TARGET_EASY]) ** steps))
@@ -263,28 +263,28 @@ def __calculate_metrics(configs: list, stable_config: torch.Tensor, device: torc
         decay_tensor = decay_rates.view(1, steps, 1, 1, 1)
 
         # Apply decay, sum, and correct
-        sim_metrics[difficulty]["config"] *= decay_tensor
-        sim_metrics[difficulty]["config"]  = sim_metrics[difficulty]["config"].sum(dim=1)
-        sim_metrics[difficulty]["config"] *= correction_factors[difficulty]
+        sim_targets[difficulty]["config"] *= decay_tensor
+        sim_targets[difficulty]["config"]  = sim_targets[difficulty]["config"].sum(dim=1)
+        sim_targets[difficulty]["config"] *= correction_factors[difficulty]
 
         # Calculate quartiles
-        results = __calculate_quartiles(sim_metrics[difficulty]["config"])
+        results = __calculate_quartiles(sim_targets[difficulty]["config"])
 
-        sim_metrics[difficulty]["maximum"] = results[0]
-        sim_metrics[difficulty]["minimum"] = results[1]
-        sim_metrics[difficulty]["q1"]      = results[2]
-        sim_metrics[difficulty]["q2"]      = results[3]
-        sim_metrics[difficulty]["q3"]      = results[4]
+        sim_targets[difficulty]["maximum"] = results[0]
+        sim_targets[difficulty]["minimum"] = results[1]
+        sim_targets[difficulty]["q1"]      = results[2]
+        sim_targets[difficulty]["q2"]      = results[3]
+        sim_targets[difficulty]["q3"]      = results[4]
 
     # Calculate quartiles for the stable configuration
-    results = __calculate_quartiles(sim_metrics[CONFIG_TARGET_STABLE]["config"])
-    sim_metrics[CONFIG_TARGET_STABLE]["maximum"] = results[0]
-    sim_metrics[CONFIG_TARGET_STABLE]["minimum"] = results[1]
-    sim_metrics[CONFIG_TARGET_STABLE]["q1"]      = results[2]
-    sim_metrics[CONFIG_TARGET_STABLE]["q2"]      = results[3]
-    sim_metrics[CONFIG_TARGET_STABLE]["q3"]      = results[4]
+    results = __calculate_quartiles(sim_targets[CONFIG_TARGET_STABLE]["config"])
+    sim_targets[CONFIG_TARGET_STABLE]["maximum"] = results[0]
+    sim_targets[CONFIG_TARGET_STABLE]["minimum"] = results[1]
+    sim_targets[CONFIG_TARGET_STABLE]["q1"]      = results[2]
+    sim_targets[CONFIG_TARGET_STABLE]["q2"]      = results[3]
+    sim_targets[CONFIG_TARGET_STABLE]["q3"]      = results[4]
 
-    return sim_metrics
+    return sim_targets
 
 
 def __calculate_eps(half_step: int) -> float:

@@ -57,7 +57,7 @@ def test_predictor_model_dataset(test_set: torch.utils.data.DataLoader,
 
     Args:
         test_set (torch.utils.data.DataLoader): The test set containing data and metadata
-        target_config (str): The type of configuration to predict (tipically the metric configuration)
+        target_config (str): The type of configuration to predict (tipically the target configuration)
         model_p (torch.nn.Module): The predictor model
         device (torch.device): The device used for computation
 

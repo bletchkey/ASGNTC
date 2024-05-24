@@ -15,7 +15,7 @@ class DatasetCreator():
     """
     Responsible for creating and managing a dataset. This class
     handles the generation of initial configurations, simulation to obtain final configurations,
-    calculation of metrics for these configurations, and the organization of the data into
+    calculation of targets for these configurations, and the organization of the data into
     training, validation, and test sets.
 
     Attributes:
@@ -57,7 +57,7 @@ class DatasetCreator():
         """
         Generates a dataset if it does not already exist. The dataset consists of initial
         configurations and their corresponding final configurations after simulation, along with
-        easy, medium, and hard metrics for each configuration. The dataset is divided into
+        easy, medium, hard and stable targets for each configuration. The dataset is divided into
         training, validation, and test sets.
 
         This method checks if the dataset already exists to avoid unnecessary computation. If the
@@ -65,7 +65,7 @@ class DatasetCreator():
 
         Returns:
             torch.Tensor: The complete dataset including initial and final configurations,
-            along with the metrics.
+            along with the targets.
 
         """
 
@@ -104,7 +104,7 @@ class DatasetCreator():
                                               steps=DATASET_N_SIM_STEPS, device=self.device_manager.default_device)
 
                     final           = sim_results["final"]
-                    metrics         = sim_results["all_metrics"]
+                    targets         = sim_results["all_targets"]
                     n_cells_initial = sim_results["n_cells_initial"]
                     n_cells_final   = sim_results["n_cells_final"]
                     period          = sim_results["period"]
@@ -113,10 +113,10 @@ class DatasetCreator():
                 configs.append({
                     CONFIG_INITIAL: initial_config,
                     CONFIG_FINAL: final,
-                    CONFIG_TARGET_EASY: metrics[CONFIG_TARGET_EASY]["config"],
-                    CONFIG_TARGET_MEDIUM: metrics[CONFIG_TARGET_MEDIUM]["config"],
-                    CONFIG_TARGET_HARD: metrics[CONFIG_TARGET_HARD]["config"],
-                    CONFIG_TARGET_STABLE: metrics[CONFIG_TARGET_STABLE]["config"]
+                    CONFIG_TARGET_EASY: targets[CONFIG_TARGET_EASY]["config"],
+                    CONFIG_TARGET_MEDIUM: targets[CONFIG_TARGET_MEDIUM]["config"],
+                    CONFIG_TARGET_HARD: targets[CONFIG_TARGET_HARD]["config"],
+                    CONFIG_TARGET_STABLE: targets[CONFIG_TARGET_STABLE]["config"]
                 })
                 metadata.append({
                     META_ID: ids[batch_number*DATASET_BATCH_SIZE: (batch_number+1)*DATASET_BATCH_SIZE],
@@ -124,26 +124,26 @@ class DatasetCreator():
                     META_N_CELLS_FINAL: n_cells_final,
                     META_TRANSIENT_PHASE: transient_phase,
                     META_PERIOD: period,
-                    META_EASY_MIN: metrics[CONFIG_TARGET_EASY]["minimum"],
-                    META_EASY_MAX: metrics[CONFIG_TARGET_EASY]["maximum"],
-                    META_EASY_Q1: metrics[CONFIG_TARGET_EASY]["q1"],
-                    META_EASY_Q2: metrics[CONFIG_TARGET_EASY]["q2"],
-                    META_EASY_Q3: metrics[CONFIG_TARGET_EASY]["q3"],
-                    META_MEDIUM_MIN: metrics[CONFIG_TARGET_MEDIUM]["minimum"],
-                    META_MEDIUM_MAX: metrics[CONFIG_TARGET_MEDIUM]["maximum"],
-                    META_MEDIUM_Q1: metrics[CONFIG_TARGET_MEDIUM]["q1"],
-                    META_MEDIUM_Q2: metrics[CONFIG_TARGET_MEDIUM]["q2"],
-                    META_MEDIUM_Q3: metrics[CONFIG_TARGET_MEDIUM]["q3"],
-                    META_HARD_MIN: metrics[CONFIG_TARGET_HARD]["minimum"],
-                    META_HARD_MAX: metrics[CONFIG_TARGET_HARD]["maximum"],
-                    META_HARD_Q1: metrics[CONFIG_TARGET_HARD]["q1"],
-                    META_HARD_Q2: metrics[CONFIG_TARGET_HARD]["q2"],
-                    META_HARD_Q3: metrics[CONFIG_TARGET_HARD]["q3"],
-                    META_STABLE_MIN: metrics[CONFIG_TARGET_STABLE]["minimum"],
-                    META_STABLE_MAX: metrics[CONFIG_TARGET_STABLE]["maximum"],
-                    META_STABLE_Q1: metrics[CONFIG_TARGET_STABLE]["q1"],
-                    META_STABLE_Q2: metrics[CONFIG_TARGET_STABLE]["q2"],
-                    META_STABLE_Q3: metrics[CONFIG_TARGET_STABLE]["q3"]
+                    META_EASY_MIN: targets[CONFIG_TARGET_EASY]["minimum"],
+                    META_EASY_MAX: targets[CONFIG_TARGET_EASY]["maximum"],
+                    META_EASY_Q1: targets[CONFIG_TARGET_EASY]["q1"],
+                    META_EASY_Q2: targets[CONFIG_TARGET_EASY]["q2"],
+                    META_EASY_Q3: targets[CONFIG_TARGET_EASY]["q3"],
+                    META_MEDIUM_MIN: targets[CONFIG_TARGET_MEDIUM]["minimum"],
+                    META_MEDIUM_MAX: targets[CONFIG_TARGET_MEDIUM]["maximum"],
+                    META_MEDIUM_Q1: targets[CONFIG_TARGET_MEDIUM]["q1"],
+                    META_MEDIUM_Q2: targets[CONFIG_TARGET_MEDIUM]["q2"],
+                    META_MEDIUM_Q3: targets[CONFIG_TARGET_MEDIUM]["q3"],
+                    META_HARD_MIN: targets[CONFIG_TARGET_HARD]["minimum"],
+                    META_HARD_MAX: targets[CONFIG_TARGET_HARD]["maximum"],
+                    META_HARD_Q1: targets[CONFIG_TARGET_HARD]["q1"],
+                    META_HARD_Q2: targets[CONFIG_TARGET_HARD]["q2"],
+                    META_HARD_Q3: targets[CONFIG_TARGET_HARD]["q3"],
+                    META_STABLE_MIN: targets[CONFIG_TARGET_STABLE]["minimum"],
+                    META_STABLE_MAX: targets[CONFIG_TARGET_STABLE]["maximum"],
+                    META_STABLE_Q1: targets[CONFIG_TARGET_STABLE]["q1"],
+                    META_STABLE_Q2: targets[CONFIG_TARGET_STABLE]["q2"],
+                    META_STABLE_Q3: targets[CONFIG_TARGET_STABLE]["q3"]
                 })
 
         # Configs

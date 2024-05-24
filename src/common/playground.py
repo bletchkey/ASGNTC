@@ -38,7 +38,7 @@ class Playground():
         n_cells_initial   = sim_results["n_cells_initial"].detach().cpu().numpy()
         n_cells_simulated = sim_results["n_cells_simulated"].detach().cpu().numpy()
         n_cells_final     = sim_results["n_cells_final"].detach().cpu().numpy()
-        metrics           = sim_results["all_metrics"]
+        targets           = sim_results["all_targets"]
 
         results = {
             "period": period,
@@ -50,10 +50,10 @@ class Playground():
             "simulated": simulated,
             "final": final,
             "steps": steps,
-            "easy": metrics[CONFIG_TARGET_EASY]["config"],
-            "medium": metrics[CONFIG_TARGET_MEDIUM]["config"],
-            "hard": metrics[CONFIG_TARGET_HARD]["config"],
-            "stable": metrics[CONFIG_TARGET_STABLE]["config"]
+            "easy": targets[CONFIG_TARGET_EASY]["config"],
+            "medium": targets[CONFIG_TARGET_MEDIUM]["config"],
+            "hard": targets[CONFIG_TARGET_HARD]["config"],
+            "stable": targets[CONFIG_TARGET_STABLE]["config"]
         }
 
         return results
@@ -94,8 +94,8 @@ class Playground():
 
         imshow_kwargs = {'cmap': 'gray', 'vmin': 0, 'vmax': 1}
 
-        titles = ["Initial Configuration", "Final Configuration", "Easy Metric",
-                  "Medium Metric", "Hard Metric", "Stable Metric"]
+        titles = ["Initial Configuration", "Final Configuration", "Target: Easy",
+                  "Target: Medium", "Target: Hard", "Target: Stable"]
 
         # Image plots in the first row
         for i, config in enumerate(["initial_config", "final_config", "easy", "medium", "hard", "stable"]):
@@ -116,7 +116,7 @@ class Playground():
             ax.set_title(f"{titles[i]}", fontsize=18, fontweight='bold')
             ax.axis('off')
 
-        # Text plot for metrics in the first row
+        # Text plot for targets in the first row
         configs_types_list = [CONFIG_INITIAL, CONFIG_FINAL,
                               CONFIG_TARGET_EASY, CONFIG_TARGET_MEDIUM,
                               CONFIG_TARGET_HARD, CONFIG_TARGET_STABLE]
@@ -156,8 +156,8 @@ class Playground():
 
         imshow_kwargs = {'cmap': 'gray', 'vmin': 0, 'vmax': 1}
 
-        titles = ["Initial Configuration", "Simulated Configuration","Final Configuration", "Easy Metric",
-                  "Medium Metric", "Hard Metric", "Stable Metric"]
+        titles = ["Initial Configuration", "Simulated Configuration","Final Configuration", "Target: Easy",
+                  "Target: Medium", "Target: Hard", "Target: Stable"]
 
         # Image plots in the first row
         for i, config in enumerate(["initial", "simulated", "final", "easy", "medium", "hard", "stable"]):
@@ -186,7 +186,7 @@ class Playground():
 
             ax.axis('off')
 
-        # Text plot for metrics in the first row
+        # Text plot for targets in the first row
         configs_types_list = ["initial", "simulated", "final",
                               "easy", "medium", "hard", "stable"]
 

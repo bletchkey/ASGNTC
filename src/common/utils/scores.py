@@ -150,34 +150,34 @@ def prediction_accuracy_ssim(prediction: torch.Tensor, target: torch.Tensor) -> 
 
     return ssim_score.item()
 
-def calculate_stable_metric_complexity(metrics: torch.Tensor,
+def calculate_stable_target_complexity(targets: torch.Tensor,
                                        mean: bool = False) -> Union[torch.Tensor, float]:
     """
-    Calculate the complexity of the stable metric. The complexity is calculated
+    Calculate the complexity of the stable target. The complexity is calculated
     by counting the numbers of pixels that are > eps and dividing by the total
     number of pixels.
 
     Parameters:
-        metrics (torch.Tensor): The metrics tensor with shape (N, C, H, W).
+        targets (torch.Tensor): The targets tensor with shape (N, C, H, W).
 
     Returns:
-        torch.Tensor: The complexity of the stable metrics.
+        torch.Tensor: The complexity of the stable targets.
 
     Raises:
         ValueError: If the input tensor is not 4-dimensional.
 
     """
-    if metrics.dim() != 4:
-        raise ValueError("Metrics tensor must have a 4-dimensional shape.")
+    if targets.dim() != 4:
+        raise ValueError("Targets tensor must have a 4-dimensional shape.")
 
     eps = 0.05
 
-    complexity = torch.where(metrics > eps,
-                             torch.tensor(1, device=metrics.device, dtype=torch.float),
-                             torch.tensor(0, device=metrics.device, dtype=torch.float))
+    complexity = torch.where(targets > eps,
+                             torch.tensor(1, device=targets.device, dtype=torch.float),
+                             torch.tensor(0, device=targets.device, dtype=torch.float))
 
     if mean:
         return complexity.mean().item()
     else:
-        return complexity.sum(dim=(1, 2, 3)).float() / (metrics.size(2) * metrics.size(3))
+        return complexity.sum(dim=(1, 2, 3)).float() / (targets.size(2) * targets.size(3))
 

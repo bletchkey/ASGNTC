@@ -69,7 +69,7 @@ DATASET_TEST_RATIO = 0.1
 # Batch size used in the generation of the dataset
 DATASET_BATCH_SIZE = 128
 
-# Metric steps for the dataset
+# Target steps for the dataset
 DATASET_N_SIM_STEPS = 1000
 
 # The name of the dataset
@@ -165,10 +165,10 @@ N_LIVING_CELLS_INITIAL = 32
 # Threshold for the value of the cells in the generated configurations
 THRESHOLD_CELL_VALUE = 0.5
 
-# Half step for the metrics
-METRIC_EASY_HALF_STEP   = 2
-METRIC_MEDIUM_HALF_STEP = 8
-METRIC_HARD_HALF_STEP   = 100
+# Half step for the targets
+TARGET_EASY_HALF_STEP   = 2
+TARGET_MEDIUM_HALF_STEP = 8
+TARGET_HARD_HALF_STEP   = 100
 
 
 ### MODELS PARAMETERS ###################################################################

@@ -49,7 +49,7 @@ class TrainingPredictor(TrainingBase):
         lr_scheduler (torch.optim.lr_scheduler): The learning rate scheduler for the predictor model.
         warmup_phase (dict): The warm-up phase specifications.
         config_type_pred_input (str): The configuration type used as input for the predictor model (tipically the initial).
-        config_type_pred_target (str): The configuration type used as target for the predictor model (tipically the metric).
+        config_type_pred_target (str): The configuration type used as target for the predictor model (tipically a target).
         current_epoch (int): The current epoch of the training session.
         n_times_trained_p (int): The number of times the predictor model was trained.
         learning_rates (list): The learning rates used during the training session.
