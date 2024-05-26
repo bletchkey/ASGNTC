@@ -1,5 +1,6 @@
 from typing import Tuple
 import torch
+import math
 
 from configs.constants import *
 
@@ -166,6 +167,10 @@ def calculate_final_configuration(config_batch: torch.Tensor, simulation_functio
                     accumulated_state += config
 
                 stable_config[i] = accumulated_state / period[i]
+
+                # Test for showing longer periods on stable targets
+                # den = math.log2(period[i]) if period[i] > 2 else period[i]
+                # stable_config[i] = accumulated_state / den
             else:
                 config_hashes[i][current_hash] = step
 

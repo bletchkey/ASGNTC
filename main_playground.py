@@ -11,6 +11,7 @@ from configs.paths import CONFIG_DIR, OUTPUTS_DIR
 
 from src.common.playground          import Playground
 
+
 def get_glider():
     config = torch.zeros(1, 1, 32, 32, dtype=torch.float32)
     config[0, 0, 15, 15] = 1
@@ -137,7 +138,7 @@ def playground():
     pg.plot_record_sim(results)
 
 
-def simulate_config():
+def simulate_configs():
 
     pg = Playground()
 
@@ -149,16 +150,20 @@ def simulate_config():
     results = pg.simulate(config, steps=100, topology=TOPOLOGY_TOROIDAL)
     pg.plot_record_sim(results)
 
+    config  = get_glider()
+    results = pg.simulate(config, steps=200, topology=TOPOLOGY_TOROIDAL)
+    pg.plot_record_sim(results)
+
 
 def plot_record_structure():
 
         pg = Playground()
 
-        initial_cells = 200
-        id = 2 * DATASET_BATCH_SIZE * initial_cells
+        initial_cells = [100, 200, 300, 400, 500]
 
-        data = pg.get_record_from_id(id)
-        pg.plot_record_db(data)
+        for cells in initial_cells:
+            data = pg.get_record_from_id(2 * DATASET_BATCH_SIZE * cells)
+            pg.plot_record_db(data)
 
 def main():
 
@@ -166,7 +171,7 @@ def main():
     setup_logging(path= CONFIG_DIR / "logging_playground.json")
 
     # plot_record_structure()
-    simulate_config()
+    simulate_configs()
 
     return 0
 
