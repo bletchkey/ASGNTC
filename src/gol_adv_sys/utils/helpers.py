@@ -230,13 +230,14 @@ def get_config_from_batch(batch: torch.Tensor, type: str, device: torch.device) 
 
     # Mapping from type to index in the batch
     config_indices = {
-        CONFIG_INITIAL: 0,
-        CONFIG_SIMULATED: 1,
-        CONFIG_FINAL: 2,
-        CONFIG_TARGET_EASY: 3,
-        CONFIG_TARGET_MEDIUM: 4,
-        CONFIG_TARGET_HARD: 5,
-        CONFIG_TARGET_STABLE: 6,
+        CONFIG_INITIAL       : 0,
+        CONFIG_GENERATED     : 1,
+        CONFIG_SIMULATED     : 2,
+        CONFIG_FINAL         : 3,
+        CONFIG_TARGET_EASY   : 4,
+        CONFIG_TARGET_MEDIUM : 5,
+        CONFIG_TARGET_HARD   : 6,
+        CONFIG_TARGET_STABLE : 7
     }
 
     # Validate and retrieve the configuration index
@@ -320,11 +321,11 @@ def generate_new_batches(model_g: torch.nn.Module,
 
     for _ in range(n_batches):
 
-        initial_config = __generate_initial_config_from_noise(model_g, device)
+        generated_config = __generate_initial_config_from_noise(model_g, device)
 
         with torch.no_grad():
             # Make sure the initial configuration is only 0 or 1
-            initial_config = 0.5 + 0.5 * torch.sign(initial_config)
+            initial_config = 0.5 + 0.5 * torch.sign(generated_config)
 
             sim_results = simulate_config(config=initial_config, topology=topology,
                                           steps=N_SIM_STEPS, device=device)
@@ -335,6 +336,7 @@ def generate_new_batches(model_g: torch.nn.Module,
 
         configs.append({
             CONFIG_INITIAL       : initial_config,
+            CONFIG_GENERATED     : generated_config,
             CONFIG_SIMULATED     : simulated_config,
             CONFIG_FINAL         : final_config,
             CONFIG_TARGET_EASY   : targets[CONFIG_TARGET_EASY]["config"],

@@ -101,8 +101,9 @@ PREDICTOR = "predictor"
 
 # Configuration keys
 CONFIG_INITIAL       = "initial"
-CONFIG_FINAL         = "final"
+CONFIG_GENERATED     = "generated"
 CONFIG_SIMULATED     = "simulated"
+CONFIG_FINAL         = "final"
 CONFIG_TARGET_EASY   = "easy"
 CONFIG_TARGET_MEDIUM = "medium"
 CONFIG_TARGET_HARD   = "hard"

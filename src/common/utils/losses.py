@@ -61,9 +61,9 @@ class WeightedBCELoss(nn.Module):
         return 1 + (self.alpha * target)
 
 
-class CustomGoLLoss(nn.Module):
+class AdversarialGoLLoss(nn.Module):
     """
-    Custom loss function for the Game of Life task.
+    Custom loss function for the adversarial training of the Generator and Predictor.
 
     Args:
         model (str):   Model type
@@ -73,26 +73,24 @@ class CustomGoLLoss(nn.Module):
         torch.Tensor: Custom loss for the Generator/Predictor
 
     """
-    def __init__(self, model:str, alpha: float = 9.0):
-        super(CustomGoLLoss, self).__init__()
-        self.alpha = alpha
-        self.model = model
+
+    def __init__(self, model_type:str, alpha: float = 9.0):
+        super(AdversarialGoLLoss, self).__init__()
+        self.alpha      = alpha
+        self.model_type = model_type
 
     def forward(self,
                 prediction: torch.Tensor,
-                target: torch.Tensor,
-                probability: torch.Tensor = None) -> torch.Tensor:
+                target: torch.Tensor) -> torch.Tensor:
 
         loss = 0
         weigthed_mse = (target - prediction) ** 2 * self.__weight(target)
 
-        if self.model == PREDICTOR:
+        if self.model_type == PREDICTOR:
             loss = torch.mean(weigthed_mse)
 
-        elif self.model == GENERATOR:
-            probability = probability.view(-1, 1, 1, 1).expand_as(target)
-            # loss      = -1 * torch.mean(probability * weigthed_mse)
-            loss        = -1 * torch.mean(weigthed_mse)
+        elif self.model_type == GENERATOR:
+            loss = -1 * torch.mean(weigthed_mse)
         else:
             raise ValueError(f"Invalid model type: {self.model}")
 

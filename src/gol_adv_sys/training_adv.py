@@ -31,7 +31,7 @@ from src.common.device_manager import DeviceManager
 from src.common.training_base  import TrainingBase
 from src.common.model_manager  import ModelManager
 
-from src.common.utils.losses   import WeightedMSELoss, CustomGoLLoss
+from src.common.utils.losses   import WeightedMSELoss, AdversarialGoLLoss
 
 from src.common.utils.helpers  import get_elapsed_time_str
 
@@ -94,7 +94,7 @@ class TrainingAdversarial(TrainingBase):
                                                     betas=(G_ADAMW_B1, G_ADAMW_B2),
                                                     eps=G_ADAMW_EPS,
                                                     weight_decay=G_ADAMW_WEIGHT_DECAY),
-                                      criterion = WeightedMSELoss(),
+                                      criterion = AdversarialGoLLoss(model=GENERATOR),
                                       type= GENERATOR,
                                       device_manager=self.device_manager)
 
@@ -103,7 +103,7 @@ class TrainingAdversarial(TrainingBase):
                                                     lr=P_SGD_LR,
                                                     momentum=P_SGD_MOMENTUM,
                                                     weight_decay=P_SGD_WEIGHT_DECAY),
-                                      criterion = WeightedMSELoss(),
+                                      criterion = AdversarialGoLLoss(model=PREDICTOR),
                                       type=PREDICTOR,
                                       device_manager=self.device_manager)
 
@@ -375,10 +375,10 @@ class TrainingAdversarial(TrainingBase):
             self.predictor.set_learning_rate(warmup_values[batch_count-1])
             self.predictor.optimizer.zero_grad()
 
-            config_initial = self.__get_config_type(batch, CONFIG_INITIAL).detach()
-            target_config  = self.__get_config_type(batch, self.config_type_pred_target).detach()
+            config_input  = self.__get_config_type(batch, CONFIG_GENERATED).detach()
+            target_config = self.__get_config_type(batch, self.config_type_pred_target).detach()
 
-            predicted = self.predictor.model(config_initial)
+            predicted = self.predictor.model(config_input)
             errP      = self.predictor.criterion(predicted, target_config)
 
             errP.backward()
@@ -403,10 +403,10 @@ class TrainingAdversarial(TrainingBase):
 
             self.predictor.optimizer.zero_grad()
 
-            config_initial = self.__get_config_type(batch, CONFIG_INITIAL).detach()
-            target_config  = self.__get_config_type(batch, self.config_type_pred_target).detach()
+            config_input  = self.__get_config_type(batch, CONFIG_GENERATED).detach()
+            target_config = self.__get_config_type(batch, self.config_type_pred_target).detach()
 
-            predicted = self.predictor.model(config_initial)
+            predicted = self.predictor.model(config_input)
             errP      = self.predictor.criterion(predicted, target_config)
 
             errP.backward()
@@ -442,12 +442,12 @@ class TrainingAdversarial(TrainingBase):
 
             batch = self.__get_new_batches(1)
 
-            config_initial = self.__get_config_type(batch, CONFIG_INITIAL)
-            target_config  = self.__get_config_type(batch, self.config_type_pred_target)
+            config_input  = self.__get_config_type(batch, CONFIG_GENERATED)
+            target_config = self.__get_config_type(batch, self.config_type_pred_target)
 
 
-            predicted = self.predictor.model(config_initial)
-            errG      = -1 * self.generator.criterion(predicted, target_config)
+            predicted = self.predictor.model(config_input)
+            errG      = self.generator.criterion(predicted, target_config)
 
             errG.backward()
 
