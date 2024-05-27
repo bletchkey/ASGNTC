@@ -94,7 +94,7 @@ class TrainingAdversarial(TrainingBase):
                                                     betas=(G_ADAMW_B1, G_ADAMW_B2),
                                                     eps=G_ADAMW_EPS,
                                                     weight_decay=G_ADAMW_WEIGHT_DECAY),
-                                      criterion = AdversarialGoLLoss(model=GENERATOR),
+                                      criterion = AdversarialGoLLoss(model_type=GENERATOR),
                                       type= GENERATOR,
                                       device_manager=self.device_manager)
 
@@ -103,7 +103,7 @@ class TrainingAdversarial(TrainingBase):
                                                     lr=P_SGD_LR,
                                                     momentum=P_SGD_MOMENTUM,
                                                     weight_decay=P_SGD_WEIGHT_DECAY),
-                                      criterion = AdversarialGoLLoss(model=PREDICTOR),
+                                      criterion = AdversarialGoLLoss(model_type=PREDICTOR),
                                       type=PREDICTOR,
                                       device_manager=self.device_manager)
 
