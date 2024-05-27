@@ -447,7 +447,7 @@ class TrainingAdversarial(TrainingBase):
 
 
             predicted = self.predictor.model(config_initial)
-            errG      = self.generator.criterion(predicted, target_config)
+            errG      = -1 * self.generator.criterion(predicted, target_config)
 
             errG.backward()
 
