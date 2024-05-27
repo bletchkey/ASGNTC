@@ -50,7 +50,6 @@ class TrainingAdversarial(TrainingBase):
         folders (FolderManager): An instance of FolderManager to manage the creation of folders for the training session.
         device_manager (DeviceManager): An instance of DeviceManager to manage device selection.
         simulation_topology (str): The topology of the simulation grid.
-        init_config_initial_type (str): The type of initial configuration to use.
         config_type_pred_target (str): The type of configuration to predict.
         current_epoch (int): The current epoch of the training session.
         step_times_secs (list): A list of lists containing the time in seconds for each step in each epoch.
@@ -77,7 +76,6 @@ class TrainingAdversarial(TrainingBase):
         self.device_manager = DeviceManager()
 
         self.simulation_topology      = TOPOLOGY_TOROIDAL
-        self.init_config_initial_type = INIT_CONFIG_INTIAL_THRESHOLD
         self.config_type_pred_target  = CONFIG_TARGET_MEDIUM
 
         self.n_times_trained_p = 0
@@ -186,7 +184,7 @@ class TrainingAdversarial(TrainingBase):
             self.__can_g_train()
 
             # Test and save models
-            data = self.__test_models_DCGAN()
+            data = self.__test_models()
             self.__save_progress_plot(data)
             self.__save_models()
 
@@ -258,17 +256,6 @@ class TrainingAdversarial(TrainingBase):
                          "Topology: flat" if self.simulation_topology == TOPOLOGY_FLAT else
                          "Topology: unknown")
 
-        init_config_initial_type = self.init_config_initial_type
-        init_config_info = ""
-        if init_config_initial_type == INIT_CONFIG_INTIAL_THRESHOLD:
-            init_config_info = (f"Initial configuration type: threshold\n"
-                                f"Threshold for the value of the cells: {THRESHOLD_CELL_VALUE}\n")
-        elif init_config_initial_type == INIT_CONFIG_INITAL_N_CELLS:
-            init_config_info = (f"Initial configuration type: n_living_cells\n"
-                                f"Number of living cells in initial grid: {N_LIVING_CELLS_INITIAL}\n")
-        else:
-            init_config_info = "Initial configuration type: unknown\n"
-
         generator_info = ""
         if self.properties_g["enabled"]:
             generator_info += (f"Latent space size: {N_Z}\n"
@@ -290,7 +277,6 @@ class TrainingAdversarial(TrainingBase):
             f"Grid size: {GRID_SIZE}\n"
             f"Simulation steps: {N_SIM_STEPS}\n"
             f"{topology_info}\n"
-            f"{init_config_info}"
             f"\nPredicting config type: {self.config_type_pred_target}\n"
             f"\nModel specs:\n"
             f"Optimizer P: {self.predictor.optimizer.__class__.__name__}\n"
@@ -559,26 +545,6 @@ class TrainingAdversarial(TrainingBase):
 
 
     def __test_models(self) -> dict:
-        """
-        Function for testing the models.
-        The models are tested on the fixed noise.
-
-        Returns:
-            data (dict): Contains the generated configurations, initial configurations, simulated configurations,
-            simulated targets and predicted targets.
-
-        """
-        fixed_input  = torch.zeros(BATCH_SIZE, GRID_NUM_CHANNELS, GRID_SIZE, GRID_SIZE,
-                                        device=self.device_manager.default_device)
-        fixed_input[:, :, GRID_SIZE // 2, GRID_SIZE // 2] = 1
-
-
-        return test_models(self.generator.model, self.predictor.model, self.simulation_topology,
-                           self.init_config_initial_type, fixed_input, self.config_type_pred_target,
-                           self.device_manager.default_device)
-
-
-    def __test_models_DCGAN(self) -> dict:
         """
         Function for testing the models.
         The models are tested on the fixed noise.
