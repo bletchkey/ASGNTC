@@ -359,6 +359,9 @@ class TrainingAdversarial(TrainingBase):
 
 
     def __warmup_predictor(self) -> None:
+
+        logging.debug(f"Warmup of the predictor model started")
+
         self.predictor.model.train()
 
         data, _ = get_data_tensor(None,
@@ -377,6 +380,9 @@ class TrainingAdversarial(TrainingBase):
         for batch_count, batch in enumerate(dataloader_warmup, start=1):
 
             self.predictor.set_learning_rate(warmup_values[batch_count-1])
+
+            logging.debug(f"Warmup phase => Predictor learning rate: {self.predictor.get_learning_rate()}")
+
             self.predictor.optimizer.zero_grad()
 
             config_input  = self.__get_config_type(batch, CONFIG_GENERATED).detach()
@@ -398,12 +404,12 @@ class TrainingAdversarial(TrainingBase):
 
         """
 
-        logging.debug(f"Training predictor model")
-
         loss = 0
         self.predictor.model.train()
 
         for batch_count, batch in enumerate(self.train_dataloader, start=1):
+
+            logging.debug(f"Training predictor: batch {batch_count}/{len(self.train_dataloader)}")
 
             self.predictor.optimizer.zero_grad()
 
@@ -435,13 +441,14 @@ class TrainingAdversarial(TrainingBase):
 
         """
 
-        logging.debug(f"Training generator model")
-
         loss = 0
 
         self.generator.model.train()
 
-        for i in range(N_BATCHES):
+        for batch_count in range(N_BATCHES, start=1):
+
+            logging.debug(f"Training generator: batch {batch_count}/{len(self.train_dataloader)}")
+
             self.generator.optimizer.zero_grad()
 
             batch = self.__get_new_batches(1)
@@ -458,7 +465,7 @@ class TrainingAdversarial(TrainingBase):
             self.generator.optimizer.step()
 
             loss += errG.item()
-            running_avg_loss = loss / (i + 1)
+            running_avg_loss = loss / batch_count
 
         self.n_times_trained_g += 1
 
