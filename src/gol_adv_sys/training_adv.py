@@ -343,6 +343,7 @@ class TrainingAdversarial(TrainingBase):
         return  generate_new_batches(self.generator.model,
                                      n_batches,
                                      self.simulation_topology,
+                                     self.init_config_initial_type,
                                      self.device_manager.default_device)
 
 
