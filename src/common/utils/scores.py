@@ -28,7 +28,7 @@ def __calculate_bins_number(tolerance: float) -> int:
     return max(1, min(num_bins, 1024))
 
 
-def prediction_accuracy(prediction: torch.Tensor, target: torch.Tensor, tolerance: float = 0.1) -> float:
+def prediction_accuracy(prediction: torch.Tensor, target: torch.Tensor, tolerance: float = 0.5) -> float:
 
     num_bins = __calculate_bins_number(tolerance)
     min_val, max_val = 0, 1

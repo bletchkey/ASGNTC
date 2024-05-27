@@ -36,7 +36,8 @@ from src.common.utils.losses   import WeightedMSELoss, CustomGoLLoss
 from src.common.utils.helpers  import get_elapsed_time_str
 
 from src.gol_adv_sys.utils.helpers import get_data_tensor, generate_new_batches, \
-                                          test_models, save_progress_plot, get_config_from_batch
+                                          test_models, test_models_DCGAN, \
+                                          save_progress_plot, get_config_from_batch
 
 
 class TrainingAdversarial(TrainingBase):
@@ -95,7 +96,7 @@ class TrainingAdversarial(TrainingBase):
                                                     betas=(G_ADAMW_B1, G_ADAMW_B2),
                                                     eps=G_ADAMW_EPS,
                                                     weight_decay=G_ADAMW_WEIGHT_DECAY),
-                                      criterion= CustomGoLLoss(model=GENERATOR),
+                                      criterion = WeightedMSELoss(),
                                       type= GENERATOR,
                                       device_manager=self.device_manager)
 
@@ -104,16 +105,12 @@ class TrainingAdversarial(TrainingBase):
                                                     lr=P_SGD_LR,
                                                     momentum=P_SGD_MOMENTUM,
                                                     weight_decay=P_SGD_WEIGHT_DECAY),
-                                      criterion=CustomGoLLoss(model=PREDICTOR),
+                                      criterion = WeightedMSELoss(),
                                       type=PREDICTOR,
                                       device_manager=self.device_manager)
 
 
         self.fixed_noise  = torch.randn(BATCH_SIZE, N_Z, 1, 1, device=self.device_manager.default_device)
-
-        self.fixed_input  = torch.zeros(BATCH_SIZE, GRID_NUM_CHANNELS, GRID_SIZE, GRID_SIZE,
-                                        device=self.device_manager.default_device)
-        self.fixed_input[:, :, GRID_SIZE // 2, GRID_SIZE // 2] = 1
 
         self.properties_g = {"enabled": True, "can_train": True}
 
@@ -141,6 +138,8 @@ class TrainingAdversarial(TrainingBase):
         Adversarial training loop.
 
         """
+
+        self.__warmup_predictor()
 
         for epoch in range(NUM_EPOCHS):
 
@@ -172,11 +171,9 @@ class TrainingAdversarial(TrainingBase):
                 step_start_time = time.time()
 
                 self.__train_predictor()
-                self.device_manager.clear_resources()
 
                 if self.properties_g["enabled"] and self.properties_g["can_train"]:
                     self.__train_generator()
-                    self.device_manager.clear_resources()
 
                 step_end_time = time.time()
                 self.step_times_secs[self.current_epoch].append(step_end_time - step_start_time)
@@ -189,7 +186,7 @@ class TrainingAdversarial(TrainingBase):
             self.__can_g_train()
 
             # Test and save models
-            data = self.__test_models()
+            data = self.__test_models_DCGAN()
             self.__save_progress_plot(data)
             self.__save_models()
 
@@ -325,8 +322,9 @@ class TrainingAdversarial(TrainingBase):
 
         """
 
-        data, avg_stable_target_complexity = get_data_tensor(self.data_tensor, self.generator.model,
-                                                             self.simulation_topology, self.init_config_initial_type,
+        data, avg_stable_target_complexity = get_data_tensor(self.data_tensor,
+                                                             self.generator.model,
+                                                             self.simulation_topology,
                                                              self.device_manager.default_device)
 
         self.data_tensor = data
@@ -353,21 +351,10 @@ class TrainingAdversarial(TrainingBase):
 
         """
 
-        return  generate_new_batches(self.generator.model, n_batches, self.simulation_topology,
-                                     self.init_config_initial_type, self.device_manager.default_device)
-
-
-    def __get_one_new_batch(self) -> Tuple[torch.Tensor, list]:
-        """
-        Generate one new batch of configurations using the generator model.
-
-        Returns:
-            new_config (dict): A dictionary containing information about the generated configurations.
-            probabilities (list): A list of the probabilities associated with the generated configurations.
-
-        """
-
-        return self.__get_new_batches(1)
+        return  generate_new_batches(self.generator.model,
+                                     n_batches,
+                                     self.simulation_topology,
+                                     self.device_manager.default_device)
 
 
     def __get_config_type(self, batch, type) -> torch.Tensor:
@@ -380,6 +367,36 @@ class TrainingAdversarial(TrainingBase):
         """
 
         return get_config_from_batch(batch, type, self.device_manager.default_device)
+
+
+    def __warmup_predictor(self) -> None:
+        self.predictor.model.train()
+
+        data, _ = get_data_tensor(None,
+                                  self.generator.model,
+                                  self.simulation_topology,
+                                  self.device_manager.default_device)
+
+
+        # Create the dataloader from the tensor
+        dataloader_warmup = DataLoader(data, batch_size=BATCH_SIZE, shuffle=True)
+
+        warmup_values = np.linspace(WARMUP_INITIAL_LR, WARMUP_TARGET_LR, len(dataloader_warmup))
+
+
+        for batch_count, batch in enumerate(dataloader_warmup, start=1):
+
+            self.predictor.set_learning_rate(warmup_values[batch_count-1])
+            self.predictor.optimizer.zero_grad()
+
+            config_initial = self.__get_config_type(batch, CONFIG_INITIAL).detach()
+            target_config  = self.__get_config_type(batch, self.config_type_pred_target).detach()
+
+            predicted = self.predictor.model(config_initial)
+            errP      = self.predictor.criterion(predicted, target_config)
+
+            errP.backward()
+            self.predictor.optimizer.step()
 
 
     def __train_predictor(self) -> float:
@@ -437,13 +454,14 @@ class TrainingAdversarial(TrainingBase):
         for i in range(N_BATCHES):
             self.generator.optimizer.zero_grad()
 
-            batch, probabilities = self.__get_one_new_batch()
-            predicted = self.predictor.model(self.__get_config_type(batch, CONFIG_INITIAL))
-            errG      = self.generator.criterion(predicted,
-                                                 self.__get_config_type(batch, self.config_type_pred_target),
-                                                 probabilities[0])
+            batch = self.__get_new_batches(1)
 
-            logging.debug(f"Average probability: {probabilities[0].sum().item()/BATCH_SIZE}")
+            config_initial = self.__get_config_type(batch, CONFIG_INITIAL)
+            target_config  = self.__get_config_type(batch, self.config_type_pred_target)
+
+
+            predicted = self.predictor.model(config_initial)
+            errG      = self.generator.criterion(predicted, target_config)
 
             errG.backward()
 
@@ -476,6 +494,7 @@ class TrainingAdversarial(TrainingBase):
         """
 
         len_losses_p_train = len(self.losses[PREDICTOR])
+
         if len_losses_p_train <= 0:
             return None
 
@@ -549,10 +568,30 @@ class TrainingAdversarial(TrainingBase):
             simulated targets and predicted targets.
 
         """
+        fixed_input  = torch.zeros(BATCH_SIZE, GRID_NUM_CHANNELS, GRID_SIZE, GRID_SIZE,
+                                        device=self.device_manager.default_device)
+        fixed_input[:, :, GRID_SIZE // 2, GRID_SIZE // 2] = 1
+
 
         return test_models(self.generator.model, self.predictor.model, self.simulation_topology,
-                           self.init_config_initial_type, self.fixed_input, self.config_type_pred_target,
+                           self.init_config_initial_type, fixed_input, self.config_type_pred_target,
                            self.device_manager.default_device)
+
+
+    def __test_models_DCGAN(self) -> dict:
+        """
+        Function for testing the models.
+        The models are tested on the fixed noise.
+
+        Returns:
+            data (dict): Contains the generated configurations, initial configurations, simulated configurations,
+            simulated targets and predicted targets.
+
+        """
+
+        return test_models_DCGAN(self.generator.model, self.predictor.model, self.simulation_topology,
+                                 self.fixed_noise, self.config_type_pred_target,
+                                 self.device_manager.default_device)
 
 
     def __save_progress_plot(self, data) -> None:
@@ -610,7 +649,7 @@ class TrainingAdversarial(TrainingBase):
 
         if self.n_times_trained_p > 0:
             path_p = self.folders.checkpoints_folder / f"predictor_{self.current_epoch+1}.pth.tar"
-            save(self.predictor.model, path_p)
+            save(self.predictor, path_p)
 
         if self.n_times_trained_g > 0:
             path_g = self.folders.checkpoints_folder / f"generator_{self.current_epoch+1}.pth.tar"

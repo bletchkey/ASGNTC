@@ -12,7 +12,7 @@ P_BATCH_SIZE = 64
 NUM_EPOCHS = 200
 
 # Batch size during training
-BATCH_SIZE = 16
+BATCH_SIZE = 32
 
 # Number of batches to generate at each epoch
 N_BATCHES = 128
@@ -27,7 +27,7 @@ N_CONFIGS = N_BATCHES * BATCH_SIZE
 N_MAX_CONFIGS = N_MAX_BATCHES * BATCH_SIZE
 
 # Number of steps for training with a certain dataset in an epoch
-NUM_TRAINING_STEPS = 2
+NUM_TRAINING_STEPS = 5
 
 # Average loss of P threshold before training G
 THRESHOLD_AVG_LOSS_P = 0.05
@@ -180,7 +180,7 @@ GRID_NUM_CHANNELS = 1
 N_GENERATOR_FEATURES = 32
 
 # Size of feature maps in the predictor
-N_PREDICTOR_FEATURES = 64
+N_PREDICTOR_FEATURES = 32
 
 # Size of z latent vector
 N_Z = 10
@@ -221,3 +221,4 @@ P_SGD_WEIGHT_DECAY = 1e-4
 WARMUP_TOTAL_STEPS = (int(DATASET_N_TOTAL_CONFIGS * DATASET_TRAIN_RATIO) // P_BATCH_SIZE)
 WARMUP_INITIAL_LR  = 1e-6
 WARMUP_TARGET_LR   = 0.01
+

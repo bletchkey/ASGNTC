@@ -8,15 +8,12 @@ from src.gol_adv_sys.training_adv   import TrainingAdversarial
 
 from src.common.predictor import Predictor_Baseline, Predictor_ResNet, Predictor_UNet
 
-from src.common.generator import Generator_DCGAN, Generator_Gambler, \
-                                 Generator_Gambler_Gumble, Generator_Gambler_v2, \
-                                 Generator_Gambler_v3, Generator_Gambler_v4, \
-                                 Generator_Gambler_Bernoullian
+from src.common.generator import Generator_DCGAN
 
 
 def train_adversarial():
     train_adv = TrainingAdversarial(model_p=Predictor_Baseline(TOPOLOGY_TOROIDAL),
-                                    model_g=Generator_Gambler_Bernoullian())
+                                    model_g=Generator_DCGAN())
     train_adv.run()
 
 
