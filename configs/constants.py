@@ -12,7 +12,7 @@ P_BATCH_SIZE = 64
 NUM_EPOCHS = 200
 
 # Batch size during training
-BATCH_SIZE = 32
+BATCH_SIZE = 64
 
 # Number of batches to generate at each epoch
 N_BATCHES = 128

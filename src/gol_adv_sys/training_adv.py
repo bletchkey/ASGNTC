@@ -636,7 +636,7 @@ class TrainingAdversarial(TrainingBase):
                     CHECKPOINT_SEED_KEY                   : self.__seed,
                     CHECKPOINT_DATE_KEY                   : str(datetime.datetime.now()),
                     CHECKPOINT_N_TIMES_TRAINED_KEY        : n_times_trained,
-                    CHECKPOINT_P_INPUT_TYPE               : self.config_type_pred_input,
+                    CHECKPOINT_P_INPUT_TYPE               : "generated",
                     CHECKPOINT_P_TARGET_TYPE              : self.config_type_pred_target
                 }
 
