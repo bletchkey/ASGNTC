@@ -445,7 +445,7 @@ class TrainingAdversarial(TrainingBase):
 
         self.generator.model.train()
 
-        for batch_count in range(N_BATCHES, start=1):
+        for batch_count in range(1, N_BATCHES+1):
 
             logging.debug(f"Training generator: batch {batch_count}/{len(self.train_dataloader)}")
 
