@@ -147,6 +147,7 @@ TOPOLOGY_FLAT     = "flat"
 # Types of intialization for the grid
 INIT_CONFIG_INTIAL_THRESHOLD = "threshold"
 INIT_CONFIG_INITAL_N_CELLS   = "n_living_cells"
+INIT_CONFIG_INITIAL_SIGN     = "sign"
 
 
 ### SIMULATION PARAMETERS ###############################################################

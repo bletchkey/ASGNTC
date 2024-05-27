@@ -51,6 +51,7 @@ class TrainingAdversarial(TrainingBase):
         device_manager (DeviceManager): An instance of DeviceManager to manage device selection.
         simulation_topology (str): The topology of the simulation grid.
         config_type_pred_target (str): The type of configuration to predict.
+        init_config_initial_type (str): The type of initilization for the initial configuration to use.
         current_epoch (int): The current epoch of the training session.
         step_times_secs (list): A list of lists containing the time in seconds for each step in each epoch.
         complexity_stable_targets (list): A list containing the avg complexity of stable targets of the new generated configurations.
@@ -77,6 +78,7 @@ class TrainingAdversarial(TrainingBase):
 
         self.simulation_topology      = TOPOLOGY_TOROIDAL
         self.config_type_pred_target  = CONFIG_TARGET_MEDIUM
+        self.init_config_initial_type = INIT_CONFIG_INITIAL_SIGN
 
         self.n_times_trained_p = 0
         self.n_times_trained_g = 0
@@ -311,6 +313,7 @@ class TrainingAdversarial(TrainingBase):
         data, avg_stable_target_complexity = get_data_tensor(self.data_tensor,
                                                              self.generator.model,
                                                              self.simulation_topology,
+                                                             self.init_config_initial_type,
                                                              self.device_manager.default_device)
 
         self.data_tensor = data
@@ -361,6 +364,7 @@ class TrainingAdversarial(TrainingBase):
         data, _ = get_data_tensor(None,
                                   self.generator.model,
                                   self.simulation_topology,
+                                  self.init_config_initial_type,
                                   self.device_manager.default_device)
 
 
@@ -556,7 +560,7 @@ class TrainingAdversarial(TrainingBase):
         """
 
         return test_models_DCGAN(self.generator.model, self.predictor.model, self.simulation_topology,
-                                 self.fixed_noise, self.config_type_pred_target,
+                                 self.fixed_noise, self.config_type_pred_target, self.init_config_initial_type,
                                  self.device_manager.default_device)
 
 

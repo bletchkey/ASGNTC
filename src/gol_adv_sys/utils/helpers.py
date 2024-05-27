@@ -17,6 +17,7 @@ def test_models_DCGAN(model_g: torch.nn.Module,
                       topology: str,
                       fixed_noise: torch.Tensor,
                       target_config: str,
+                      init_config_initial_type: str,
                       device: torch.device) -> dict:
     """
     Function to test the models
@@ -27,6 +28,7 @@ def test_models_DCGAN(model_g: torch.nn.Module,
         topology (str): The topology to use for simulating the configurations
         fixed_noise (torch.Tensor): The fixed noise to use for testing the generator model
         target_config (str): The type of configuration to predict (tipically the target configuration)
+        init_config_initial_type (str): The type of initilization for the initial configuration to use.
         device (torch.device): The device used for computation
 
     Returns:
@@ -50,14 +52,14 @@ def test_models_DCGAN(model_g: torch.nn.Module,
         model_p.eval()
         generated_config_fixed = model_g(fixed_noise)
         data["generated"] = generated_config_fixed
-        data["initial"]   = 0.5 + 0.5*torch.sign(generated_config_fixed)
+        data["initial"]   = get_initialized_initial_config(generated_config_fixed, init_config_initial_type)
         sim_results = simulate_config(config=data["initial"], topology=topology,
                                       steps=N_SIM_STEPS, device=device)
 
         data["final"]     = sim_results["final"]
         data["simulated"] = sim_results["simulated"]
         data["target"]    = sim_results["all_targets"][target_config]["config"]
-        data["predicted"] = model_p(data["initial"])
+        data["predicted"] = model_p(data["generated"])
         data["metadata"]  = {
             "n_cells_initial":   sim_results["n_cells_initial"],
             "n_cells_simulated": sim_results["n_cells_simulated"],
@@ -253,6 +255,7 @@ def get_config_from_batch(batch: torch.Tensor, type: str, device: torch.device) 
 def get_data_tensor(data_tensor: torch.Tensor,
                     model_g: torch.nn.Module,
                     topology: str,
+                    init_config_initial_type: str,
                     device: torch.device) -> torch.Tensor:
     """
     Function to get the dataloader for the training of the predictor model
@@ -273,7 +276,7 @@ def get_data_tensor(data_tensor: torch.Tensor,
 
     """
 
-    new_configs = generate_new_batches(model_g, N_BATCHES, topology, device)
+    new_configs = generate_new_batches(model_g, N_BATCHES, topology, init_config_initial_type, device)
 
     # Calculate the average complexity of the stable targets
     stable_targets               = get_config_from_batch(new_configs, CONFIG_TARGET_STABLE, device)
@@ -301,6 +304,7 @@ def get_data_tensor(data_tensor: torch.Tensor,
 def generate_new_batches(model_g: torch.nn.Module,
                          n_batches: int,
                          topology: str,
+                         init_config_initial_type: str,
                          device: torch.device) -> torch.Tensor:
 
     """
@@ -324,11 +328,9 @@ def generate_new_batches(model_g: torch.nn.Module,
         generated_config = __generate_initial_config_from_noise(model_g, device)
 
         with torch.no_grad():
-            # Make sure the initial configuration is only 0 or 1
-            initial_config = 0.5 + 0.5 * torch.sign(generated_config)
-
-            sim_results = simulate_config(config=initial_config, topology=topology,
-                                          steps=N_SIM_STEPS, device=device)
+            initial_config = get_initialized_initial_config(generated_config, init_config_initial_type)
+            sim_results    = simulate_config(config=initial_config, topology=topology,
+                                             steps=N_SIM_STEPS, device=device)
 
         simulated_config = sim_results["simulated"]
         targets          = sim_results["all_targets"]
@@ -367,55 +369,21 @@ def __generate_initial_config_from_noise(model_g: torch.nn.Module,
     Function to generate the initial configuration
 
     Args:
-        model_g (torch.nn.Module): The generator model
-        device (torch.device)    : The device used for computation
+        model_g (torch.nn.Module) : The generator model
+        device (torch.device)     : The device used for computation
 
     Returns:
         torch.Tensor: The initial configuration
 
     """
-    noise            = torch.randn(BATCH_SIZE, N_Z, 1, 1,
-                                   device=device)
+    noise            = torch.randn(BATCH_SIZE, N_Z, 1, 1, device=device)
     generated_config = model_g(noise)
-
 
     return generated_config
 
 
-def __generate_initial_config(model_g: torch.nn.Module,
-                              device: torch.device) -> Tuple[torch.Tensor, torch.Tensor]:
-
-    """
-    Function to generate the initial configuration
-
-    Args:
-        model_g (torch.nn.Module): The generator model
-        device (torch.device): The device used for computation
-
-    Returns:
-        torch.Tensor: The initial configuration
-
-    Infos:
-
-    Previuosly, the initial configuration was generated using a noise tensor.
-    This procedure was applied when generating the initial configuration with the generator model
-    that used transposed convolutions.
-
-        noise = torch.randn(BATCH_SIZE, N_Z, 1, 1, device=device)
-        generated_config = model_g(noise)
-        initial_config = get_initialized_initial_config(generated_config, init_config_initial_type)
-
-    """
-
-    input_config = torch.zeros(BATCH_SIZE, GRID_NUM_CHANNELS, GRID_SIZE, GRID_SIZE, device=device)
-    input_config[:, :, GRID_SIZE // 2, GRID_SIZE // 2] = 1
-
-    generated_config, probabilities = model_g(input_config)
-
-    return generated_config, probabilities
-
-
-def get_initialized_initial_config(config: torch.Tensor, init_config_initial_type: str) -> torch.Tensor:
+def get_initialized_initial_config(config: torch.Tensor,
+                                   init_config_initial_type: str) -> torch.Tensor:
     """
     Function to get the initial configuration from the generated configuration
 
@@ -431,6 +399,8 @@ def get_initialized_initial_config(config: torch.Tensor, init_config_initial_typ
         return __initialize_config_threshold(config)
     elif init_config_initial_type == INIT_CONFIG_INITAL_N_CELLS:
         return __initialize_config_n_living_cells(config)
+    elif init_config_initial_type == INIT_CONFIG_INITIAL_SIGN:
+        return __initialize_config_sign(config)
     else:
         raise ValueError(f"Invalid init configuration type: {init_config_initial_type}")
 
@@ -477,4 +447,52 @@ def __initialize_config_threshold(config: torch.Tensor) -> torch.Tensor:
 
     """
     return (config > THRESHOLD_CELL_VALUE).float()
+
+
+def __initialize_config_sign(config: torch.Tensor) -> torch.Tensor:
+    """
+    For every value in configuration, if value is < 0, set to 0, else set to 1
+
+    Args:
+        config (torch.Tensor): The configuration
+
+    Returns:
+        torch.Tensor: The updated configuration
+
+    """
+    return 0.5 + 0.5 * torch.sign(config)
+
+
+# DEPRECATED
+def __generate_initial_config(model_g: torch.nn.Module,
+                              device: torch.device) -> Tuple[torch.Tensor, torch.Tensor]:
+
+    """
+    Function to generate the initial configuration
+
+    Args:
+        model_g (torch.nn.Module): The generator model
+        device (torch.device): The device used for computation
+
+    Returns:
+        torch.Tensor: The initial configuration
+
+    Infos:
+
+    Previuosly, the initial configuration was generated using a noise tensor.
+    This procedure was applied when generating the initial configuration with the generator model
+    that used transposed convolutions.
+
+        noise = torch.randn(BATCH_SIZE, N_Z, 1, 1, device=device)
+        generated_config = model_g(noise)
+        initial_config = get_initialized_initial_config(generated_config, init_config_initial_type)
+
+    """
+
+    input_config = torch.zeros(BATCH_SIZE, GRID_NUM_CHANNELS, GRID_SIZE, GRID_SIZE, device=device)
+    input_config[:, :, GRID_SIZE // 2, GRID_SIZE // 2] = 1
+
+    generated_config, probabilities = model_g(input_config)
+
+    return generated_config, probabilities
 
