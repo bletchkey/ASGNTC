@@ -157,9 +157,9 @@ def plot_scores(model_folder_path):
     scores = get_prediction_score(model_folder_path)
 
     latest_checkpoint = get_latest_checkpoint_path(model_folder_path)
-    checkpoint_data = get_model_data_from_checkpoint(latest_checkpoint)
+    checkpoint_data   = get_model_data_from_checkpoint(latest_checkpoint)
 
-    name = checkpoint_data[CHECKPOINT_MODEL_NAME_KEY]
+    name   = checkpoint_data[CHECKPOINT_MODEL_NAME_KEY]
     target = checkpoint_data[CHECKPOINT_P_TARGET_TYPE]
 
     # Plotting
@@ -186,11 +186,13 @@ def train_baseline(target_type, topology):
 
     return res
 
+
 def train_unet(target_type):
     train_pred = TrainingPredictor(Predictor_UNet(), target_type)
     res = train_pred.run()
 
     return res
+
 
 def train_proposed(target_type):
     train_pred = TrainingPredictor(Predictor_Proposed(32), target_type)
@@ -206,12 +208,13 @@ def main():
 
     # plot_data_base_toro_vs_zero()
     # plot_baseline_on_all_targets()
-    # plot_scores(TRAINED_MODELS_DIR / "predictors" / "Baseline_Toroidal_Easy")
+
+    plot_scores(TRAINED_MODELS_DIR / "predictors" / "Baseline_Toroidal_Easy")
     # plot_scores(TRAINED_MODELS_DIR / "predictors" / "Baseline_Toroidal_Medium")
     # plot_scores(TRAINED_MODELS_DIR / "predictors" / "Baseline_Toroidal_Hard")
     # plot_scores(TRAINED_MODELS_DIR / "predictors" / "Baseline_Toroidal_Stable")
 
-    train_baseline(CONFIG_TARGET_EASY, TOPOLOGY_TOROIDAL)
+    # train_baseline(CONFIG_TARGET_EASY, TOPOLOGY_TOROIDAL)
     # train_baseline(CONFIG_TARGET_MEDIUM, TOPOLOGY_TOROIDAL)
     # train_baseline(CONFIG_TARGET_HARD, TOPOLOGY_TOROIDAL)
     # train_baseline(CONFIG_TARGET_STABLE, TOPOLOGY_TOROIDAL)

@@ -7,7 +7,6 @@ from pathlib import Path
 from configs.constants import *
 
 from src.common.utils.helpers import export_figures_to_pdf
-from src.common.utils.scores  import prediction_accuracy_bins, prediction_accuracy_tolerance
 
 
 def get_config_from_batch(batch: torch.Tensor, type: str, device: torch.device) -> torch.Tensor:
