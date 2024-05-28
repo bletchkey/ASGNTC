@@ -1,5 +1,6 @@
 import torch
 import time
+import subprocess
 import logging
 from typing import List
 
@@ -76,6 +77,25 @@ class DeviceManager:
                 logging.debug(f"Reserved memory on {device}: {reserved_memory / (1024**3):.2f} GB")
 
 
+    def __query_gpu_memory(self):
+        """
+        Uses nvidia-smi to get the free memory on each GPU in MB.
+
+        """
+
+        try:
+            smi_output = subprocess.check_output(['nvidia-smi', '--query-gpu=memory.free', '--format=csv,nounits,noheader'], encoding='utf-8')
+
+            # Parse the output to get a list of free memory values for each GPU
+            free_memory = [int(x) for x in smi_output.strip().split('\n')]
+
+            return free_memory
+
+        except Exception as e:
+            logging.error(f"Failed to query GPU free memory: {str(e)}")
+            return None
+
+
     def __get_default_device(self, use_benchmark=False):
         """
         Determines the optimal device
@@ -105,6 +125,8 @@ class DeviceManager:
             selected_device = self.__get_device_with_max_free_memory()
 
         logging.debug(f"Selected device: {selected_device}")
+
+        torch.cuda.set_device(selected_device)
 
         return torch.device(selected_device)
 
@@ -138,18 +160,14 @@ class DeviceManager:
         """
         try:
             torch.cuda.set_device(device)
+            id = torch.cuda.current_device()
 
-            total_memory     = torch.cuda.get_device_properties(device).total_memory
-            allocated_memory = torch.cuda.memory_allocated(device)
-            reserved_memory  = torch.cuda.memory_reserved(device)
-            free_memory      = total_memory - max(allocated_memory, reserved_memory)
+            free_memory = self.__query_gpu_memory()
 
-            logging.debug(f"GPU {device} - Total memory: {total_memory / (1024**3):.2f} GB")
-            logging.debug(f"GPU {device} - Allocated memory: {allocated_memory / (1024**3):.2f} GB")
-            logging.debug(f"GPU {device} - Reserved memory: {reserved_memory / (1024**3):.2f} GB")
-            logging.debug(f"GPU {device} - Free memory: {free_memory / (1024**3):.2f} GB")
+            if free_memory is None or not free_memory:
+                logging.warning("Unable to get GPU memory details, falling back to CPU.")
 
-            return free_memory
+            return free_memory[id]
 
         except Exception as e:
             logging.error(f"Error getting free memory for device {device}: {str(e)}")
