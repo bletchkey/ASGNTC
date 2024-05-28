@@ -13,16 +13,13 @@ from configs.paths import CONFIG_DIR, TRAININGS_DIR, \
                           DATASET_DIR, OUTPUTS_DIR
 
 from src.gol_pred_sys.training_pred import TrainingPredictor
-from src.gol_pred_sys.utils.eval    import get_score
+from src.gol_pred_sys.utils.eval    import get_prediction_score
 
 from src.common.utils.helpers       import export_figures_to_pdf, retrieve_log_data,\
                                            get_model_data_from_checkpoint, get_latest_checkpoint_path
 
 from src.common.predictor           import Predictor_Baseline, Predictor_ResNet,\
                                            Predictor_UNet, Predictor_Proposed
-
-from src.common.utils.scores        import f1_score
-
 
 
 def plot_baseline_on_all_targets():
@@ -157,8 +154,7 @@ def plot_data_base_toro_vs_zero():
 
 def plot_scores(model_folder_path):
 
-    f1_scores = get_score(model_folder_path, f1_score)
-    f1_scores = [100 * f1 for f1 in f1_scores]
+    scores = get_prediction_score(model_folder_path)
 
     latest_checkpoint = get_latest_checkpoint_path(model_folder_path)
     checkpoint_data = get_model_data_from_checkpoint(latest_checkpoint)
@@ -166,20 +162,21 @@ def plot_scores(model_folder_path):
     name = checkpoint_data[CHECKPOINT_MODEL_NAME_KEY]
     target = checkpoint_data[CHECKPOINT_P_TARGET_TYPE]
 
+    # Plotting
     fig, ax = plt.subplots(figsize=(10, 5))
     plt.suptitle(f"Model: {name} - Target: {target}", fontsize=18)
 
-    ax.plot(f1_scores, label='F1 Score', color='red')
+    ax.plot(scores, label='Prediction score', color='blue')
 
-
-    ax.set_title("Performance Metrics Over Epochs")
+    ax.set_title("Prediction Score")
     ax.set_xlabel("Epoch")
     ax.set_ylabel("Score (%)")
+    plt.ylim([0.0, 1.0])
     ax.legend()
 
     plt.tight_layout()
 
-    pdf_path = OUTPUTS_DIR / f"{name}_f1_score_{target}.pdf"
+    pdf_path = OUTPUTS_DIR / f"{name}_pred_score_{target}.pdf"
     export_figures_to_pdf(pdf_path, fig)
 
 

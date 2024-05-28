@@ -27,7 +27,7 @@ from src.gol_pred_sys.dataset_manager import DatasetManager
 
 from src.common.utils.losses import WeightedMSELoss, WeightedBCELoss
 
-from src.common.utils.scores import prediction_accuracy
+from src.common.utils.scores import prediction_score
 
 from src.common.utils.helpers import get_elapsed_time_str
 
@@ -243,7 +243,7 @@ class TrainingPredictor(TrainingBase):
                         logging.debug("Warm-up phase")
                         logging.debug(f"Learning rate: {self.predictor.get_learning_rate()}")
 
-                accuracy = prediction_accuracy(predicted, self.__get_config_type(batch, self.config_type_pred_target))
+                accuracy = prediction_score(predicted, self.__get_config_type(batch, self.config_type_pred_target))
 
                 total_loss     += errP.item()
                 total_accuracy += accuracy
