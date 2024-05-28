@@ -13,13 +13,16 @@ from configs.paths import CONFIG_DIR, TRAININGS_DIR, \
                           DATASET_DIR, OUTPUTS_DIR
 
 from src.gol_pred_sys.training_pred import TrainingPredictor
-from src.gol_pred_sys.utils.eval    import get_accuracies
+from src.gol_pred_sys.utils.eval    import get_score
 
 from src.common.utils.helpers       import export_figures_to_pdf, retrieve_log_data,\
                                            get_model_data_from_checkpoint, get_latest_checkpoint_path
 
 from src.common.predictor           import Predictor_Baseline, Predictor_ResNet,\
                                            Predictor_UNet, Predictor_Proposed
+
+from src.common.utils.scores        import f1_score
+
 
 
 def plot_baseline_on_all_targets():
@@ -151,31 +154,32 @@ def plot_data_base_toro_vs_zero():
     pdf_path = OUTPUTS_DIR / "new_baseline_comparison_toro_vs_zero.pdf"
     export_figures_to_pdf(pdf_path, fig)
 
-def plot_accuracies(model_folder_path):
 
-    accuracies = get_accuracies(model_folder_path)
-    accuracies = [100 * acc for acc in accuracies]
+def plot_scores(model_folder_path):
+
+    f1_scores = get_score(model_folder_path, f1_score)
+    f1_scores = [100 * f1 for f1 in f1_scores]
 
     latest_checkpoint = get_latest_checkpoint_path(model_folder_path)
-    checkpoint_data   = get_model_data_from_checkpoint(latest_checkpoint)
+    checkpoint_data = get_model_data_from_checkpoint(latest_checkpoint)
 
-    name   = checkpoint_data[CHECKPOINT_MODEL_NAME_KEY]
+    name = checkpoint_data[CHECKPOINT_MODEL_NAME_KEY]
     target = checkpoint_data[CHECKPOINT_P_TARGET_TYPE]
 
-    fig, ax = plt.subplots(1, 1, figsize=(10, 10))
-    plt.suptitle(f"Accuracy - Model: {name} - Target: {target} - TEST SET", fontsize=18)
+    fig, ax = plt.subplots(figsize=(10, 5))
+    plt.suptitle(f"Model: {name} - Target: {target}", fontsize=18)
 
-    ax.plot(accuracies, label='accuracy', color='blue')
-    ax.set_title("Accuracy")
+    ax.plot(f1_scores, label='F1 Score', color='red')
+
+
+    ax.set_title("Performance Metrics Over Epochs")
     ax.set_xlabel("Epoch")
-    ax.set_ylabel("Accuracy (%)")
-    ax.set_ylim([0, 100])
-    ax.legend(loc='lower right')
-    ax.grid(True)
+    ax.set_ylabel("Score (%)")
+    ax.legend()
 
     plt.tight_layout()
 
-    pdf_path = OUTPUTS_DIR / f"{name}_accuracy_{target}.pdf"
+    pdf_path = OUTPUTS_DIR / f"{name}_f1_score_{target}.pdf"
     export_figures_to_pdf(pdf_path, fig)
 
 
@@ -205,13 +209,12 @@ def main():
 
     # plot_data_base_toro_vs_zero()
     # plot_baseline_on_all_targets()
-    plot_accuracies(TRAINED_MODELS_DIR / "predictors" / "Baseline_Toroidal_Easy")
-    plot_accuracies(TRAINED_MODELS_DIR / "predictors" / "Baseline_Toroidal_Medium")
-    plot_accuracies(TRAINED_MODELS_DIR / "predictors" / "Baseline_Toroidal_Hard")
-    plot_accuracies(TRAINED_MODELS_DIR / "predictors" / "Baseline_Toroidal_Stable")
+    # plot_scores(TRAINED_MODELS_DIR / "predictors" / "Baseline_Toroidal_Easy")
+    # plot_scores(TRAINED_MODELS_DIR / "predictors" / "Baseline_Toroidal_Medium")
+    # plot_scores(TRAINED_MODELS_DIR / "predictors" / "Baseline_Toroidal_Hard")
+    # plot_scores(TRAINED_MODELS_DIR / "predictors" / "Baseline_Toroidal_Stable")
 
-
-    # train_baseline(CONFIG_TARGET_EASY, TOPOLOGY_TOROIDAL)
+    train_baseline(CONFIG_TARGET_EASY, TOPOLOGY_TOROIDAL)
     # train_baseline(CONFIG_TARGET_MEDIUM, TOPOLOGY_TOROIDAL)
     # train_baseline(CONFIG_TARGET_HARD, TOPOLOGY_TOROIDAL)
     # train_baseline(CONFIG_TARGET_STABLE, TOPOLOGY_TOROIDAL)

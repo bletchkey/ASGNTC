@@ -165,13 +165,14 @@ def plot_record_structure():
             data = pg.get_record_from_id(2 * DATASET_BATCH_SIZE * cells)
             pg.plot_record_db(data)
 
+
 def main():
 
     setup_base_directory()
     setup_logging(path= CONFIG_DIR / "logging_playground.json")
 
     # plot_record_structure()
-    simulate_configs()
+    # simulate_configs()
 
     return 0
 

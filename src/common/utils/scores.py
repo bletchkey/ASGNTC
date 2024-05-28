@@ -25,7 +25,7 @@ def __calculate_bins_number(tolerance: float) -> int:
     num_bins = 2 ** (n * (1-tolerance))
     num_bins = int(num_bins)
 
-    return max(1, min(num_bins, 1024))
+    return max(1, min(num_bins, GRID_SIZE**2))
 
 
 def prediction_accuracy(prediction: torch.Tensor, target: torch.Tensor, tolerance: float = 0.5) -> float:
@@ -48,6 +48,42 @@ def prediction_accuracy(prediction: torch.Tensor, target: torch.Tensor, toleranc
     mean_accuracy = correct_predictions.mean().item()
 
     return mean_accuracy
+
+
+def f1_score(prediction: torch.Tensor, target: torch.Tensor) -> float:
+
+    threshold = 0.05
+
+    # create two bins divided by the threshold
+    bins = torch.tensor([0, threshold, 1], device=target.device)
+
+    # Flatten the last three dimensions to apply bucketize
+    target_flat     = target.contiguous().flatten(start_dim=1)
+    prediction_flat = prediction.contiguous().flatten(start_dim=1)
+
+    # Find the indices of the bins to which each value belongs
+    target_bins     = torch.bucketize(target_flat, bins)
+    prediction_bins = torch.bucketize(prediction_flat, bins)
+
+    # Calculate the true positives
+    true_positives = (target_bins == 1) & (prediction_bins == 1)
+
+    # Calculate the false positives
+    false_positives = (target_bins == 0) & (prediction_bins == 1)
+
+    # Calculate the false negatives
+    false_negatives = (target_bins == 1) & (prediction_bins == 0)
+
+    # Calculate the precision
+    precision = true_positives.sum().float() / (true_positives.sum().float() + false_positives.sum().float())
+
+    # Calculate the recall
+    recall = true_positives.sum().float() / (true_positives.sum().float() + false_negatives.sum().float())
+
+    # Calculate the F1 score
+    f1_score = 2 * (precision * recall) / (precision + recall)
+
+    return f1_score.item()
 
 
 def prediction_accuracy_bins(prediction: torch.Tensor, target: torch.Tensor) -> float:
@@ -90,6 +126,7 @@ def prediction_accuracy_bins(prediction: torch.Tensor, target: torch.Tensor) -> 
 
     return mean_scores.item()
 
+
 def prediction_accuracy_tolerance(prediction: torch.Tensor, target: torch.Tensor, tolerance: float) -> float:
     """
     Calculate the accuracy score for the prediction compared to the target based on a tolerance.
@@ -127,6 +164,7 @@ def prediction_accuracy_tolerance(prediction: torch.Tensor, target: torch.Tensor
 
     return mean_accuracy
 
+
 def prediction_accuracy_ssim(prediction: torch.Tensor, target: torch.Tensor) -> float:
     """
     Calculate the SSIM-based accuracy score for the prediction compared to the target.
@@ -149,6 +187,7 @@ def prediction_accuracy_ssim(prediction: torch.Tensor, target: torch.Tensor) -> 
     ssim_score = ssim(prediction, target)
 
     return ssim_score.item()
+
 
 def calculate_stable_target_complexity(targets: torch.Tensor,
                                        mean: bool = False) -> Union[torch.Tensor, float]:

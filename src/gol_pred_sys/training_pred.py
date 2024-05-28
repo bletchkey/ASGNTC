@@ -25,7 +25,8 @@ from src.common.model_manager         import ModelManager
 from src.common.training_base         import TrainingBase
 from src.gol_pred_sys.dataset_manager import DatasetManager
 
-from src.common.utils.losses import WeightedMSELoss, WeightedBCELoss, CustomGoLLoss
+from src.common.utils.losses import WeightedMSELoss, WeightedBCELoss
+
 from src.common.utils.scores import prediction_accuracy
 
 from src.common.utils.helpers import get_elapsed_time_str

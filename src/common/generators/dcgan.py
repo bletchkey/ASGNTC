@@ -32,9 +32,11 @@ class DCGAN(nn.Module):
 
     def forward(self, input):
         x = self.model(input)
-        # Scale the output to the range [-2, 1]
-        x = 1.5 * nn.Tanh()(x) - 0.5
 
+        # # Scale the output to the range [-2, 1]
+        # x = 1.5 * nn.Tanh()(x) - 0.5
+
+        x = nn.Tanh()(x)
         return x
 
     def name(self):

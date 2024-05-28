@@ -15,8 +15,6 @@ from configs.paths     import DATASET_DIR, TRAINED_MODELS_DIR, OUTPUTS_DIR
 from src.gol_pred_sys.dataset_manager import DatasetManager
 from src.common.device_manager        import DeviceManager
 
-from src.common.generator import Generator_Gambler
-
 
 class Playground():
 
@@ -301,17 +299,4 @@ class Playground():
                     steps += 1  # Increase steps after completing a layer
 
         return spiral
-
-
-    def generate_gambler(self, batch_size:int) -> torch.Tensor:
-
-        generator = Generator_Gambler().to(self.__device_manager.default_device)
-        generator.eval()
-
-        config = torch.zeros(batch_size, GRID_NUM_CHANNELS, GRID_SIZE, GRID_SIZE,
-                             device=self.__device_manager.default_device)
-        config[:, :, GRID_SIZE // 2, GRID_SIZE // 2] = 1
-        generated_config, probabilities = generator(config)
-
-        return generated_config, probabilities
 

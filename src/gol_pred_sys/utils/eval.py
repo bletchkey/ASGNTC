@@ -14,7 +14,8 @@ from src.gol_pred_sys.utils.helpers import get_config_from_batch
 from src.common.utils.scores        import prediction_accuracy_bins, \
                                            prediction_accuracy_tolerance,\
                                            prediction_accuracy_ssim,\
-                                           prediction_accuracy
+                                           prediction_accuracy, \
+                                           f1_score
 
 
 def __extract_checkpoint_index(filename):
@@ -29,7 +30,7 @@ def __extract_checkpoint_index(filename):
         return None
 
 
-def  get_accuracies(model_folder_path):
+def get_score(model_folder_path, score_function):
 
     device_manager  = DeviceManager()
     device          = device_manager.default_device
@@ -64,7 +65,7 @@ def  get_accuracies(model_folder_path):
                                                    device)
 
                     predicted = model(input)
-                    accuracy  = prediction_accuracy(predicted, target, 0.2)
+                    accuracy  = score_function(predicted, target)
 
                     total_accuracy += accuracy
                     running_avg_accuracy = total_accuracy / batch_count
@@ -82,4 +83,3 @@ def  get_accuracies(model_folder_path):
             traceback.print_exc()
 
     return accuracies
-

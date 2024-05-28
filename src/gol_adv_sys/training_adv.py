@@ -52,11 +52,11 @@ class TrainingAdversarial(TrainingBase):
         simulation_topology (str): The topology of the simulation grid.
         config_type_pred_target (str): The type of configuration to predict.
         init_config_initial_type (str): The type of initilization for the initial configuration to use.
-        current_epoch (int): The current epoch of the training session.
-        step_times_secs (list): A list of lists containing the time in seconds for each step in each epoch.
+        current_iteration (int): The current iteration of the training session.
+        step_times_secs (list): A list of lists containing the time in seconds for each step in each iteration.
         complexity_stable_targets (list): A list containing the avg complexity of stable targets of the new generated configurations.
         losses (dict): A dictionary containing the losses of the generator and predictor models.
-        lr_each_epoch (dict): A dictionary containing the learning rate of the generator and predictor models for each epoch.
+        lr_each_iteration (dict): A dictionary containing the learning rate of the generator and predictor models for each iteration.
         n_times_trained_p (int): The number of times the predictor model has been trained.
         n_times_trained_g (int): The number of times the generator model has been trained.
         generator (ModelManager): An instance of ModelManager for the generator model.
@@ -82,13 +82,13 @@ class TrainingAdversarial(TrainingBase):
 
         self.n_times_trained_p = 0
         self.n_times_trained_g = 0
-        self.current_epoch     = 0
+        self.current_iteration = 0
         self.step_times_secs   = []
 
         self.complexity_stable_targets= []
 
-        self.losses        = {GENERATOR: [], PREDICTOR: []}
-        self.lr_each_epoch = {PREDICTOR: [], GENERATOR: []}
+        self.losses            = {GENERATOR: [], PREDICTOR: []}
+        self.lr_each_iteration = {PREDICTOR: [], GENERATOR: []}
 
         self.generator = ModelManager(model=model_g,
                                       optimizer=optim.AdamW(model_g.parameters(),
@@ -141,18 +141,18 @@ class TrainingAdversarial(TrainingBase):
 
         self.__warmup_predictor()
 
-        for epoch in range(NUM_EPOCHS):
+        for iteration in range(NUM_ITERATIONS):
 
-            logging.info(f"Adversarial training epoch {epoch+1}/{NUM_EPOCHS}")
+            logging.info(f"Adversarial training iteration {iteration+1}/{NUM_ITERATIONS}")
 
             self.step_times_secs.append([])
-            self.current_epoch = epoch
+            self.current_iteration = iteration
 
             self.__get_train_dataloader()
 
             with open(self.path_log_file, "a") as log:
                 log_content = (
-                    f"\nEpoch: {epoch+1}/{NUM_EPOCHS}\n"
+                    f"\Iteration: {iteration+1}/{NUM_ITERATIONS}\n"
                     f"Number of generated configurations in the dataset: {len(self.train_dataloader) * BATCH_SIZE}\n"
                 )
 
@@ -176,11 +176,11 @@ class TrainingAdversarial(TrainingBase):
                     self.__train_generator()
 
                 step_end_time = time.time()
-                self.step_times_secs[self.current_epoch].append(step_end_time - step_start_time)
+                self.step_times_secs[self.current_iteration].append(step_end_time - step_start_time)
 
                 self.__log_training_step(step)
 
-            self.__log_training_epoch()
+            self.__log_training_iteration()
 
             # Update properties for G
             self.__can_g_train()
@@ -195,13 +195,13 @@ class TrainingAdversarial(TrainingBase):
 
     def __log_training_step(self, step) -> None:
         """
-        Log the progress of the training session inside each epoch.
+        Log the progress of the training session inside each iteration.
 
         Args:
-            step (int): The current step in the epoch.
+            step (int): The current step in the iteration.
 
         """
-        str_step_time = f"{get_elapsed_time_str(self.step_times_secs[self.current_epoch][step])}"
+        str_step_time = f"{get_elapsed_time_str(self.step_times_secs[self.current_iteration][step])}"
         str_step      = f"{step+1}/{NUM_TRAINING_STEPS}"
         str_err_p     = f"{self.losses[PREDICTOR][-1]}" if len(self.losses[PREDICTOR]) > 0 else "N/A"
         str_err_g     = f"{self.losses[GENERATOR][-1]}" if len(self.losses[GENERATOR]) > 0 else "N/A"
@@ -213,22 +213,22 @@ class TrainingAdversarial(TrainingBase):
             log.flush()
 
 
-    def __log_training_epoch(self) -> None:
+    def __log_training_iteration(self) -> None:
         """
-        Log the progress of the training session at the end of each epoch.
+        Log the progress of the training session at the end of each iteration.
 
         """
 
         with open(self.path_log_file, "a") as log:
-            log.write(f"\nElapsed time: {get_elapsed_time_str(self.step_times_secs[self.current_epoch])}\n")
+            log.write(f"\nElapsed time: {get_elapsed_time_str(self.step_times_secs[self.current_iteration])}\n")
 
             if self.n_times_trained_p > 0:
-                log.write(f"Average loss P: {self.__get_loss_avg_p_last_epoch()}\n")
+                log.write(f"Average loss P: {self.__get_loss_avg_p_last_iteration()}\n")
 
             if self.n_times_trained_g > 0:
-                log.write(f"Average loss G: {self.__get_loss_avg_g_last_epoch()}\n")
+                log.write(f"Average loss G: {self.__get_loss_avg_g_last_iteration()}\n")
 
-            if self.current_epoch + 1 == NUM_EPOCHS:
+            if self.current_iteration + 1 == NUM_ITERATIONS:
                  log.write(f"\n\nTraining ended at {datetime.datetime.now().strftime('%d/%m/%Y %H:%M:%S')}\n")
                  log.write(f"Number of times P was trained: {self.n_times_trained_p}\n")
                  log.write(f"Number of times G was trained: {self.n_times_trained_g}\n")
@@ -271,9 +271,9 @@ class TrainingAdversarial(TrainingBase):
             f"{balanced_gpu_info}\n"
             f"Training specs:\n"
             f"Batch size: {BATCH_SIZE}\n"
-            f"Epochs: {NUM_EPOCHS}\n"
-            f"Number of training steps in each epoch: {NUM_TRAINING_STEPS}\n"
-            f"Number of batches generated in each epoch: {N_BATCHES} ({N_CONFIGS} configs)\n"
+            f"Iterations: {NUM_ITERATIONS}\n"
+            f"Number of training steps in each iteration: {NUM_TRAINING_STEPS}\n"
+            f"Number of batches generated in each iteration: {N_BATCHES} ({N_CONFIGS} configs)\n"
             f"Max number of generated batches in dataset: {N_MAX_BATCHES} ({N_MAX_CONFIGS} configs)\n"
             f"\nSimulation specs:\n"
             f"Grid size: {GRID_SIZE}\n"
@@ -296,9 +296,9 @@ class TrainingAdversarial(TrainingBase):
 
     def __get_train_dataloader(self) -> DataLoader:
         """
-        Get the dataloader for the current epoch.
+        Get the dataloader for the current iteration.
 
-        Each epoch, a new dataloader is created by adding n_batches new configurations to the dataloader, for a total of
+        Each iteration, a new dataloader is created by adding n_batches new configurations to the dataloader, for a total of
         n_configs new configurations.
         The maximum number of batches in the dataloader is n_max_batches, that contains n_max_configs configurations.
         The older batches of configurations are removed to make room for the new ones.
@@ -306,7 +306,7 @@ class TrainingAdversarial(TrainingBase):
         The configurations are generated by the generator model.
 
         Returns:
-            dataloader (torch.utils.data.DataLoader): The dataloader for the current epoch.
+            dataloader (torch.utils.data.DataLoader): The dataloader for the current iteration.
 
         """
 
@@ -481,7 +481,7 @@ class TrainingAdversarial(TrainingBase):
         The average loss is calculated on the last n losses.
 
         If the number of losses is less than n, the average is calculated on all the losses.
-        To get the average loss of the last epoch, n should be set to num_training_steps (steps per epoch).
+        To get the average loss of the last iteration, n should be set to num_training_steps (steps per iteration).
 
         Args:
             on_last_n_losses (int): The number of losses to calculate the average on starting from the last loss.
@@ -510,7 +510,7 @@ class TrainingAdversarial(TrainingBase):
         The average loss is calculated on the last n losses.
 
         If the number of losses is less than n, the average is calculated on all the losses.
-        To get the average loss of the last epoch, n should be set to num_training_steps (steps per epoch).
+        To get the average loss of the last iteration, n should be set to num_training_steps (steps per iteration).
 
         Args:
             on_last_n_losses (int): The number of losses to calculate the average on starting from the last loss.
@@ -532,24 +532,24 @@ class TrainingAdversarial(TrainingBase):
         return avg_loss_g
 
 
-    def __get_loss_avg_p_last_epoch(self) -> float:
+    def __get_loss_avg_p_last_iteration(self) -> float:
         """
-        Special case of __get_loss_avg_p() where the average is calculated for the last epoch.
+        Special case of __get_loss_avg_p() where the average is calculated for the last iteration.
 
         Returns:
-            avg_loss_p_last_epoch (float): The average loss of the predictor model on the last epoch.
+            avg_loss_p_last_iteration (float): The average loss of the predictor model on the last iteration.
 
         """
 
         return self.__get_loss_avg_p(NUM_TRAINING_STEPS)
 
 
-    def __get_loss_avg_g_last_epoch(self) -> float:
+    def __get_loss_avg_g_last_iteration(self) -> float:
         """
-        Special case of __get_loss_avg_g() where the average is calculated for the last epoch.
+        Special case of __get_loss_avg_g() where the average is calculated for the last iteration.
 
         Returns:
-            avg_loss_g_last_epoch (float): The average loss of the generator model on the last epoch.
+            avg_loss_g_last_iteration (float): The average loss of the generator model on the last iteration.
 
         """
 
@@ -584,7 +584,7 @@ class TrainingAdversarial(TrainingBase):
 
         """
 
-        save_progress_plot(data, self.current_epoch, self.folders.results_folder)
+        save_progress_plot(data, self.current_iteration, self.folders.results_folder)
 
 
     def __save_models(self) -> None:
@@ -609,28 +609,28 @@ class TrainingAdversarial(TrainingBase):
                     CHECKPOINT_MODEL_ARCHITECTURE_KEY     : model.model,
                     CHECKPOINT_MODEL_TYPE_KEY             : model.type,
                     CHECKPOINT_MODEL_NAME_KEY             : model.model.name(),
-                    CHECKPOINT_EPOCH_KEY                  : self.current_epoch,
+                    CHECKPOINT_ITERATION_KEY              : self.current_iteration,
                     CHECKPOINT_TRAIN_LOSS_KEY             : self.losses[model.type],
                     CHECKPOINT_SEED_KEY                   : self.__seed,
                     CHECKPOINT_DATE_KEY                   : str(datetime.datetime.now()),
                     CHECKPOINT_N_TIMES_TRAINED_KEY        : n_times_trained,
-                    CHECKPOINT_P_INPUT_TYPE               : "generated",
+                    CHECKPOINT_P_INPUT_TYPE               : CONFIG_GENERATED,
                     CHECKPOINT_P_TARGET_TYPE              : self.config_type_pred_target
                 }
 
             try:
                 torch.save(save_dict, path)
-                logging.info(f"Model saved to {path} - epoch: {self.current_epoch+1}")
+                logging.info(f"Model saved to {path} - iteration: {self.current_iteration+1}")
             except Exception as e:
                 logging.error(f"Error saving the model: {e}")
 
 
         if self.n_times_trained_p > 0:
-            path_p = self.folders.checkpoints_folder / f"predictor_{self.current_epoch+1}.pth.tar"
+            path_p = self.folders.checkpoints_folder / f"predictor_{self.current_iteration+1}.pth.tar"
             save(self.predictor, path_p)
 
         if self.n_times_trained_g > 0:
-            path_g = self.folders.checkpoints_folder / f"generator_{self.current_epoch+1}.pth.tar"
+            path_g = self.folders.checkpoints_folder / f"generator_{self.current_iteration+1}.pth.tar"
             save(self.generator, path_g)
 
 
@@ -651,11 +651,11 @@ class TrainingAdversarial(TrainingBase):
             return True
 
         if self.properties_g["enabled"] and not self.properties_g["can_train"]:
-            self.properties_g["can_train"] = self.__get_loss_avg_p_last_epoch() < THRESHOLD_AVG_LOSS_P
+            self.properties_g["can_train"] = self.__get_loss_avg_p_last_iteration() < THRESHOLD_AVG_LOSS_P
 
             if self.properties_g["can_train"]:
-                # +1 because the current epoch is 0-based, +2 because the generator can be trained from the next epoch
-                logging.debug(f"Generator can start training from next epoch. The next epoch is number {self.current_epoch + 2}")
+                # +1 because the current iteration is 0-based, +2 because the generator can be trained from the next iteration
+                logging.debug(f"Generator can start training from next iteration. The next iteration is number {self.current_iteration + 2}")
 
         return self.properties_g["can_train"]
 

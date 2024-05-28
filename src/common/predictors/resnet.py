@@ -36,6 +36,8 @@ class ResNet(nn.Module):
 
         x = self.out_conv(x)
 
+        x = torch.sigmoid(x)
+
         return x
 
     def name(self):

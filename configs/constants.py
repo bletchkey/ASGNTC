@@ -9,7 +9,7 @@ P_BATCH_SIZE = 64
 ### ADVERSARIAL TRAINING PARAMETERS #################################################
 
 # Number of training epochs
-NUM_EPOCHS = 200
+NUM_ITERATIONS = 200
 
 # Batch size during training
 BATCH_SIZE = 64
@@ -18,7 +18,7 @@ BATCH_SIZE = 64
 N_BATCHES = 128
 
 # Max number of batches in the dataloader
-N_MAX_BATCHES = 10*N_BATCHES
+N_MAX_BATCHES = 8*N_BATCHES
 
 # Number of new configurations to generate at each epoch
 N_CONFIGS = N_BATCHES * BATCH_SIZE
@@ -44,6 +44,7 @@ CHECKPOINT_MODEL_ARCHITECTURE_KEY     = "architecture"
 CHECKPOINT_MODEL_TYPE_KEY             = "type"
 CHECKPOINT_MODEL_NAME_KEY             = "name"
 CHECKPOINT_EPOCH_KEY                  = "epoch"
+CHECKPOINT_ITERATION_KEY              = "iter"
 CHECKPOINT_TRAIN_LOSS_KEY             = "train_loss"
 CHECKPOINT_VAL_LOSS_KEY               = "val_loss"
 CHECKPOINT_SEED_KEY                   = "seed"
