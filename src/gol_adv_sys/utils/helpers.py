@@ -139,13 +139,13 @@ def test_models(model_g: torch.nn.Module, model_p: torch.nn.Module,
     return data
 
 
-def save_progress_plot(plot_data: dict, epoch: int, results_path: str) -> None:
+def save_progress_plot(plot_data: dict, iteration: int, results_path: str) -> None:
     """
     Function to save the progress plot
 
     Args:
         plot_data (dict): The dictionary containing the data to plot
-        epoch (int): The current epoch
+        iteration (int): The current iteration
         results_path (str): The path to where the results will be saved
 
     """
@@ -161,7 +161,7 @@ def save_progress_plot(plot_data: dict, epoch: int, results_path: str) -> None:
             plot_data[key] = plot_data[key].detach().cpu().numpy().squeeze()
         titles.append(key)
 
-    current_epoch = epoch+1
+    current_iteration = iteration+1
 
     # Get 4 equally spaced indices
     indices = np.linspace(0, BATCH_SIZE-1, 4).astype(int)
@@ -169,7 +169,7 @@ def save_progress_plot(plot_data: dict, epoch: int, results_path: str) -> None:
     # Create figure and subplots
     fig, axs = plt.subplots(len(indices), len(plot_data), figsize=(len(indices)*len(plot_data), len(indices)*4))
 
-    plt.suptitle(f"Epoch {current_epoch}", fontsize=32)
+    plt.suptitle(f"Iteration {current_iteration}", fontsize=32)
 
     # Plot each data in a subplot
     for i in range(len(indices)):
@@ -209,7 +209,7 @@ def save_progress_plot(plot_data: dict, epoch: int, results_path: str) -> None:
 
     plt.tight_layout(rect=[0, 0.03, 1, 0.95])
 
-    pdf_path = Path(results_path, f"epoch_{current_epoch}.pdf")
+    pdf_path = Path(results_path, f"inter_{current_iteration}.pdf")
     export_figures_to_pdf(pdf_path, fig)
 
 
