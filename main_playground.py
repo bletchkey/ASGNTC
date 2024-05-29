@@ -171,6 +171,12 @@ def main():
     setup_base_directory()
     setup_logging(path= CONFIG_DIR / "logging_playground.json")
 
+    pg = Playground()
+
+    res = pg.check_targets_values()
+
+    print(res)
+
     # plot_record_structure()
     # simulate_configs()
 

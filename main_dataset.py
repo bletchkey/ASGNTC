@@ -191,7 +191,6 @@ def dataset_creator():
 
 def main():
     setup_base_directory()
-
     setup_logging(path= CONFIG_DIR / "logging_dataset.json")
 
     plot_dataset_infos()

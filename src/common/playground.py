@@ -1,13 +1,16 @@
 import typing
 import datetime
 import numpy as np
+import logging
 import matplotlib.pyplot as plt
 import torch
 from matplotlib.gridspec import GridSpec
-from torch.utils.data import DataLoader
+from torch.utils.data import ConcatDataset, DataLoader
+from collections import defaultdict
 
 from src.common.utils.helpers              import export_figures_to_pdf
 from src.common.utils.simulation_functions import simulate_config, basic_simulation_config
+from src.gol_pred_sys.utils.helpers        import get_config_from_batch
 
 from configs.constants import *
 from configs.paths     import DATASET_DIR, TRAINED_MODELS_DIR, OUTPUTS_DIR
@@ -82,6 +85,34 @@ class Playground():
                     return self.__create_record_dict(data, metadata)
 
         raise ValueError(f"Could not find the data for id {id}")
+
+
+    def check_targets_values(self):
+
+        dataset_train      = self.__dataset_manager.get_dataset(TRAIN)
+        dataset_validation = self.__dataset_manager.get_dataset(VALIDATION)
+        dataset_test       = self.__dataset_manager.get_dataset(TEST)
+
+        combined_dataset = ConcatDataset([dataset_train, dataset_validation, dataset_test])
+        dataloader       = DataLoader(combined_dataset, batch_size=128, shuffle=False)
+
+        targets_values_out_of_range = defaultdict(int)
+
+        for data, metadata in dataloader:
+            targets = {
+                CONFIG_TARGET_EASY   : get_config_from_batch(data, CONFIG_TARGET_EASY, self.__device_manager.default_device),
+                CONFIG_TARGET_MEDIUM : get_config_from_batch(data, CONFIG_TARGET_MEDIUM, self.__device_manager.default_device),
+                CONFIG_TARGET_HARD   : get_config_from_batch(data, CONFIG_TARGET_HARD, self.__device_manager.default_device),
+                CONFIG_TARGET_STABLE : get_config_from_batch(data, CONFIG_TARGET_STABLE, self.__device_manager.default_device)
+            }
+
+            # Iterate over targets dictionary to check values
+            for config_name, target in targets.items():
+                if (target < 0).any() or (target > 1).any():
+                    targets_values_out_of_range[config_name] += 1
+                    logging.error(f"Target values out of range for {config_name}. Min: {target.min().item()} - Max: {target.max().item()}, instead of [0, 1]")
+
+        return targets_values_out_of_range
 
 
     def plot_record_db(self, record: dict) -> None:

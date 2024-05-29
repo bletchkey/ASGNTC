@@ -289,6 +289,12 @@ def __calculate_targets(configs: list, stable_config: torch.Tensor, device: torc
     sim_targets[CONFIG_TARGET_STABLE]["q2"]      = results[3]
     sim_targets[CONFIG_TARGET_STABLE]["q3"]      = results[4]
 
+    # Clamp the values between 0 and 1
+    sim_targets[CONFIG_TARGET_EASY]["config"]   = torch.clamp(sim_targets[CONFIG_TARGET_EASY]["config"], min=0, max=1)
+    sim_targets[CONFIG_TARGET_MEDIUM]["config"] = torch.clamp(sim_targets[CONFIG_TARGET_MEDIUM]["config"], min=0, max=1)
+    sim_targets[CONFIG_TARGET_HARD]["config"]   = torch.clamp(sim_targets[CONFIG_TARGET_HARD]["config"], min=0, max=1)
+    sim_targets[CONFIG_TARGET_STABLE]["config"] = torch.clamp(sim_targets[CONFIG_TARGET_STABLE]["config"], min=0, max=1)
+
     return sim_targets
 
 
