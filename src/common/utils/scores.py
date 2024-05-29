@@ -87,8 +87,6 @@ def prediction_score(prediction: torch.Tensor, target: torch.Tensor) -> float:
     # Calculate the total elements per sample in the batch for normalization
     total_elements = matches.size(1) * matches.size(2) * matches.size(3)
 
-    print(total_elements)
-
     # Calculate match score
     match_score = matches.sum(dim=(1,2,3)) / total_elements
 

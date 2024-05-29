@@ -35,7 +35,7 @@ def get_prediction_score(model_folder_path):
 
     model_checkpoints = sorted(os.listdir(model_folder_path / "checkpoints"), key=__extract_checkpoint_index)
 
-    accuracies = []
+    scores = []
 
     for checkpoint in model_checkpoints:
         try:
@@ -49,7 +49,7 @@ def get_prediction_score(model_folder_path):
             model.to(device)
             model.eval()
 
-            total_accuracy = 0
+            total_score = 0
 
             with torch.no_grad():
                 for batch_count, (batch, _) in enumerate(dataloader_test, start=1):
@@ -61,15 +61,15 @@ def get_prediction_score(model_folder_path):
                                                    device)
 
                     predicted = model(input)
-                    score  = prediction_score(predicted, target)
+                    score     = prediction_score(predicted, target)
 
-                    total_accuracy += score
-                    running_avg_accuracy = total_accuracy / batch_count
+                    total_score       += score
+                    running_avg_score  = total_score / batch_count
 
-                    logging.debug(f"Batch {batch_count} - Accuracy: {100*score:.1f}% - Running average: {running_avg_accuracy*100:.1f}%")
+                    logging.debug(f"Batch {batch_count} - Accuracy: {100*score:.1f}% - Running average: {running_avg_score*100:.1f}%")
 
 
-            accuracies.append(running_avg_accuracy)
+            scores.append(running_avg_score)
 
             del model
             torch.cuda.empty_cache()
@@ -78,5 +78,5 @@ def get_prediction_score(model_folder_path):
             logging.error(f"Error processing checkpoint {checkpoint_path}: {e}")
             traceback.print_exc()
 
-    return accuracies
+    return scores
 

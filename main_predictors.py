@@ -209,13 +209,13 @@ def main():
     # plot_data_base_toro_vs_zero()
     # plot_baseline_on_all_targets()
 
-    plot_scores(TRAINED_MODELS_DIR / "predictors" / "Baseline_Toroidal_Easy")
+    # plot_scores(TRAINED_MODELS_DIR / "predictors" / "Baseline_Toroidal_Easy")
     # plot_scores(TRAINED_MODELS_DIR / "predictors" / "Baseline_Toroidal_Medium")
     # plot_scores(TRAINED_MODELS_DIR / "predictors" / "Baseline_Toroidal_Hard")
     # plot_scores(TRAINED_MODELS_DIR / "predictors" / "Baseline_Toroidal_Stable")
 
     # train_baseline(CONFIG_TARGET_EASY, TOPOLOGY_TOROIDAL)
-    # train_baseline(CONFIG_TARGET_MEDIUM, TOPOLOGY_TOROIDAL)
+    train_baseline(CONFIG_TARGET_MEDIUM, TOPOLOGY_TOROIDAL)
     # train_baseline(CONFIG_TARGET_HARD, TOPOLOGY_TOROIDAL)
     # train_baseline(CONFIG_TARGET_STABLE, TOPOLOGY_TOROIDAL)
 
