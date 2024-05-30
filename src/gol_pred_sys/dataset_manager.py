@@ -368,3 +368,125 @@ class DatasetManager():
 
         return PairedDataset(fixed_data, fixed_meta)
 
+
+    def get_metadata(self, dataset_type: str) -> FixedDataset:
+        """
+        Returns the metadata for a specified dataset type.
+
+        Parameters:
+            dataset_type (str): The type of the dataset.
+
+        """
+        if dataset_type not in self.dataset_types:
+            raise ValueError(f"Invalid dataset type: {dataset_type}")
+
+        return FixedDataset(f"{DATASET_DIR}/{DATASET_NAME}_metadata_{dataset_type}.pt")
+
+
+    def get_infos_transient_phase_per_n_initial_cells(self, dataset_type: str) -> dict:
+        """
+        Calculates the average, max and min transient phase for each initial cell count in the dataset.
+
+        Parameters:
+            dataset_type (str): The type of the dataset.
+
+        """
+
+        metadata = self.get_metadata(dataset_type)
+
+        counts = {}
+        for meta in metadata:
+            initial_cells   = meta[META_N_CELLS_INITIAL]
+            transient_phase = meta[META_TRANSIENT_PHASE]
+
+            if initial_cells in counts:
+                counts[initial_cells].append(transient_phase)
+            else:
+                counts[initial_cells] = [transient_phase]
+
+        avg_tp_in_cells = {k: np.mean(v) for k, v in counts.items()}
+        max_tp_in_cells = {k: np.max(v) for k, v in counts.items()}
+        min_tp_in_cells = {k: np.min(v) for k, v in counts.items()}
+
+        infos = {"avg": avg_tp_in_cells, "max": max_tp_in_cells, "min": min_tp_in_cells}
+
+        return infos
+
+
+    def get_infos_period_per_n_initial_cells(self, dataset_type: str) -> dict:
+        """
+        Calculates the average, max and min period for each initial cell count in the dataset.
+
+        Parameters:
+            dataset_type (str): The type of the dataset.
+
+        """
+
+        metadata = self.get_metadata(dataset_type)
+
+        counts = {}
+        for meta in metadata:
+            initial_cells = meta[META_N_CELLS_INITIAL]
+            period = meta[META_PERIOD]
+
+            if initial_cells in counts:
+                counts[initial_cells].append(period)
+            else:
+                counts[initial_cells] = [period]
+
+        avg_period_in_cells = {k: np.mean(v) for k, v in counts.items()}
+        max_period_in_cells = {k: np.max(v) for k, v in counts.items()}
+        min_period_in_cells = {k: np.min(v) for k, v in counts.items()}
+
+        infos = {"avg": avg_period_in_cells, "max": max_period_in_cells, "min": min_period_in_cells}
+
+        return infos
+
+
+    def get_transient_phases(self, dataset_type: str) -> torch.Tensor:
+        """
+        Returns the transient phases for the dataset.
+
+        Parameters:
+            dataset_type (str): The type of the dataset.
+
+        """
+        metadata = self.get_metadata(dataset_type)
+
+        return torch.tensor([meta[META_TRANSIENT_PHASE] for meta in metadata])
+
+
+    def get_periods(self, dataset_type: str) -> torch.Tensor:
+        """
+        Returns the periods for the dataset.
+
+        Parameters:
+            dataset_type (str): The type of the dataset.
+
+        """
+        metadata = self.get_metadata(dataset_type)
+
+        return torch.tensor([meta[META_PERIOD] for meta in metadata])
+
+
+    def get_frequency_of_n_cells_initial(self, dataset_type: str) -> dict:
+        """
+        Calculates the frequency of each number of initial cells in the dataset.
+
+        Parameters:
+            dataset_type (str): The type of the dataset.
+
+        """
+        metadata = self.get_metadata(dataset_type)
+
+        counts = {}
+        for meta in metadata:
+            initial_cells = meta[META_N_CELLS_INITIAL]
+
+            if initial_cells in counts:
+                counts[initial_cells] += 1
+            else:
+                counts[initial_cells] = 1
+
+        return counts
+

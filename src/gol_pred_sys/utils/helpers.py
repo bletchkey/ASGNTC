@@ -194,7 +194,7 @@ def save_progress_plot_dataset(plot_data: dict, epoch: int, results_path: str) -
     plt.subplots_adjust(left=0.05, right=0.95, top=0.95, bottom=0.05)
 
     pdf_path = Path(results_path, f"epoch_{current_epoch}.pdf")
-    plt.savefig(pdf_path)
+    export_figures_to_pdf(pdf_path, fig)
 
 
 def save_loss_acc_plot(losses_p_train: list, losses_p_val: list,

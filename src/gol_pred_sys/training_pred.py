@@ -10,6 +10,7 @@ import random
 import time
 import datetime
 import logging
+import gc
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -82,7 +83,7 @@ class TrainingPredictor(TrainingBase):
         self.lr_scheduler = optim.lr_scheduler.ReduceLROnPlateau(
                                 self.predictor.optimizer, mode="min", factor=0.1,
                                 patience=2, verbose=True, threshold=1e-4,
-                                threshold_mode="rel", cooldown=2, min_lr=0, eps=1e-8)
+                                threshold_mode="rel", cooldown=2, min_lr=1e-5, eps=1e-8)
 
         self.warmup_phase = {"enabled": True,
                              "values": np.linspace(WARMUP_INITIAL_LR,
@@ -123,6 +124,8 @@ class TrainingPredictor(TrainingBase):
         results = self._fit()
 
         logging.info(f"Training ended at {datetime.datetime.now().strftime('%d/%m/%Y %H:%M:%S')}")
+
+        self.__cleanup()
 
         return results
 
@@ -436,4 +439,22 @@ class TrainingPredictor(TrainingBase):
             logging.info(f"Model saved to {path} - epoch: {self.current_epoch+1}")
         except Exception as e:
             logging.error(f"Error saving the model: {e}")
+
+
+    def __cleanup(self):
+        torch.cuda.empty_cache()  # Clear CUDA cache
+
+        if hasattr(self, 'predictor'):
+            del self.predictor.model  # Delete the model
+            torch.cuda.empty_cache()
+
+        if hasattr(self, 'dataloader'):
+            self.dataloader = None  # Dereference dataloaders
+
+        # Manually trigger garbage collection
+        gc.collect()
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()  # Further clear CUDA cache after GC
+
+        logging.debug("Cleanup completed, freed up memory.")
 
