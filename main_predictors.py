@@ -168,9 +168,8 @@ def plot_data_base_toro_vs_zero():
     export_figures_to_pdf(pdf_path, fig)
 
 
-def plot_baselines_avg_pred_score_each_target():
+def plot_baseline_pred_score_each_target():
 
-    checkpoint_index = 100
     model_folder_path = TRAINED_MODELS_DIR / "predictors"
 
     model_easy   = model_folder_path / "Baseline_Toroidal_Easy"
@@ -178,11 +177,17 @@ def plot_baselines_avg_pred_score_each_target():
     model_hard   = model_folder_path / "Baseline_Toroidal_Hard"
     model_stable = model_folder_path / "Baseline_Toroidal_Stable"
 
+    avg_easy_scores_each_checkpoint   = get_prediction_score(model_easy)
+    avg_medium_scores_each_checkpoint = get_prediction_score(model_medium)
+    avg_hard_scores_each_checkpoint   = get_prediction_score(model_hard)
+    avg_stable_scores_each_checkpoint = get_prediction_score(model_stable)
+
+    checkpoint_index = 100
+
     avg_easy_p_score   = get_prediction_score(model_easy, checkpoint_index)
     avg_medium_p_score = get_prediction_score(model_medium, checkpoint_index)
     avg_hard_p_score   = get_prediction_score(model_hard, checkpoint_index)
     avg_stable_p_score = get_prediction_score(model_stable, checkpoint_index)
-
 
     model_easy_checkpoint   = model_easy / "checkpoints" / f"checkpoint_{checkpoint_index}.pt"
     model_medium_checkpoint = model_medium / "checkpoints" / f"checkpoint_{checkpoint_index}.pt"
@@ -194,85 +199,93 @@ def plot_baselines_avg_pred_score_each_target():
     avg_hard_p_scores_each_n_cells   = get_prediction_score_n_cells_initial(model_hard_checkpoint)
     avg_stable_p_scores_each_n_cells = get_prediction_score_n_cells_initial(model_stable_checkpoint)
 
-    # Plotting
-    fig, axs = plt.subplots(2, 2, figsize=(10, 10))
-    fig.suptitle("Baseline Model - Average Prediction Score for each Target - Test set", fontsize=18, fontweight='bold')
 
-    axs[0, 0].plot(avg_easy_p_scores_each_n_cells.keys(), avg_easy_p_scores_each_n_cells.values(),
-                   label='Average prediction score for each number of initial cells', color='blue')
-    axs[0, 0].plot(np.arange(0, 1025), [avg_easy_p_score]*1025,
-                   label='Average prediction score', color='red', linestyle="--", linewidth=0.8)
-    axs[0, 0].set_title("Easy")
-    axs[0, 0].set_xlabel("Number of initial cells")
+    # Plotting
+    fig, axs = plt.subplots(4, 2, figsize=(10, 10))
+    fig.suptitle("Baseline Model - Prediction Score Analysis on Test Dataset", fontsize=18, fontweight='bold')
+
+
+    # EASY
+    axs[0, 0].plot(avg_easy_scores_each_checkpoint.keys(), avg_easy_scores_each_checkpoint.values(),
+                     label='Average prediction score for each epoch', color='blue')
+    axs[0, 0].set_title("Easy - Performance during training")
+    axs[0, 0].set_xlabel("Epoch")
     axs[0, 0].set_ylabel("Score (%)")
     axs[0, 0].legend()
 
-    axs[0, 1].plot(avg_medium_p_scores_each_n_cells.keys(), avg_medium_p_scores_each_n_cells.values(),
+    axs[0, 1].plot(avg_easy_p_scores_each_n_cells.keys(), avg_easy_p_scores_each_n_cells.values(),
                    label='Average prediction score for each number of initial cells', color='blue')
-    axs[0, 1].plot(np.arange(0, 1025), [avg_medium_p_score]*1025,
+    axs[0, 1].plot(np.arange(0, 1025), [avg_easy_p_score]*1025,
                    label='Average prediction score', color='red', linestyle="--", linewidth=0.8)
-    axs[0, 1].set_title("Medium")
+    axs[0, 1].set_title(f"Easy - Performance on each number of initial cells - Epoch {checkpoint_index}")
     axs[0, 1].set_xlabel("Number of initial cells")
     axs[0, 1].set_ylabel("Score (%)")
     axs[0, 1].legend()
 
-    axs[1, 0].plot(avg_hard_p_scores_each_n_cells.keys(), avg_hard_p_scores_each_n_cells.values(),
-                   label='Average prediction score for each number of initial cells', color='blue')
-    axs[1, 0].plot(np.arange(0, 1025), [avg_hard_p_score]*1025,
-                   label='Average prediction score', color='red', linestyle="--", linewidth=0.8)
-    axs[1, 0].set_title("Hard")
-    axs[1, 0].set_xlabel("Number of initial cells")
+
+    # MEDIUM
+    axs[1, 0].plot(avg_medium_scores_each_checkpoint.keys(), avg_medium_scores_each_checkpoint.values(),
+                     label='Average prediction score for each epoch', color='blue')
+    axs[1, 0].set_title("Medium - Performance during training")
+    axs[1, 0].set_xlabel("Epoch")
     axs[1, 0].set_ylabel("Score (%)")
     axs[1, 0].legend()
 
-    axs[1, 1].plot(avg_stable_p_scores_each_n_cells.keys(), avg_stable_p_scores_each_n_cells.values(),
+    axs[1, 1].plot(avg_medium_p_scores_each_n_cells.keys(), avg_medium_p_scores_each_n_cells.values(),
                    label='Average prediction score for each number of initial cells', color='blue')
-    axs[1, 1].plot(np.arange(0, 1025), [avg_stable_p_score]*1025,
+    axs[1, 1].plot(np.arange(0, 1025), [avg_medium_p_score]*1025,
                    label='Average prediction score', color='red', linestyle="--", linewidth=0.8)
-    axs[1, 1].set_title("Stable")
+    axs[1, 1].set_title(f"Medium - Performance on each number of initial cells - Epoch {checkpoint_index}")
     axs[1, 1].set_xlabel("Number of initial cells")
     axs[1, 1].set_ylabel("Score (%)")
     axs[1, 1].legend()
 
-    plt.tight_layout()
 
+    # HARD
+    axs[2, 0].plot(avg_hard_scores_each_checkpoint.keys(), avg_hard_scores_each_checkpoint.values(),
+                        label='Average prediction score for each epoch', color='blue')
+    axs[2, 0].set_title("Hard - Performance during training")
+    axs[2, 0].set_xlabel("Epoch")
+    axs[2, 0].set_ylabel("Score (%)")
+    axs[2, 0].legend()
+
+    axs[2, 1].plot(avg_hard_p_scores_each_n_cells.keys(), avg_hard_p_scores_each_n_cells.values(),
+                   label='Average prediction score for each number of initial cells', color='blue')
+    axs[2, 1].plot(np.arange(0, 1025), [avg_hard_p_score]*1025,
+                   label='Average prediction score', color='red', linestyle="--", linewidth=0.8)
+    axs[2, 1].set_title(f"Hard - Performance on each number of initial cells - Epoch {checkpoint_index}")
+    axs[2, 1].set_xlabel("Number of initial cells")
+    axs[2, 1].set_ylabel("Score (%)")
+    axs[2, 1].legend()
+
+
+    # STABLE
+    axs[3, 0].plot(avg_stable_scores_each_checkpoint.keys(), avg_stable_scores_each_checkpoint.values(),
+                        label='Average prediction score for each epoch', color='blue')
+    axs[3, 0].set_title("Stable - Performance during training")
+    axs[3, 0].set_xlabel("Epoch")
+    axs[3, 0].set_ylabel("Score (%)")
+    axs[3, 0].legend()
+
+    axs[3, 1].plot(avg_stable_p_scores_each_n_cells.keys(), avg_stable_p_scores_each_n_cells.values(),
+                   label='Average prediction score for each number of initial cells', color='blue')
+    axs[3, 1].plot(np.arange(0, 1025), [avg_stable_p_score]*1025,
+                   label='Average prediction score', color='red', linestyle="--", linewidth=0.8)
+    axs[3, 1].set_title(f"Stable - Performance on each number of initial cells - Epoch {checkpoint_index}")
+    axs[3, 1].set_xlabel("Number of initial cells")
+    axs[3, 1].set_ylabel("Score (%)")
+    axs[3, 1].legend()
+
+    plt.tight_layout()
     pdf_path = OUTPUTS_DIR / "baseline_avg_pred_score_each_target.pdf"
     export_figures_to_pdf(pdf_path, fig)
 
 
-def plot_scores(model_folder_path):
-
-    scores = get_prediction_score(model_folder_path)
-
-    latest_checkpoint = get_latest_checkpoint_path(model_folder_path)
-    checkpoint_data   = get_model_data_from_checkpoint(latest_checkpoint)
-
-    name   = checkpoint_data[CHECKPOINT_MODEL_NAME_KEY]
-    target = checkpoint_data[CHECKPOINT_P_TARGET_TYPE]
-
-    # Plotting
-    fig, ax = plt.subplots(figsize=(10, 5))
-    plt.suptitle(f"Model: {name} - Target: {target}", fontsize=18)
-
-    ax.plot(scores, label='Prediction score', color='blue')
-
-    ax.set_title("Prediction Score")
-    ax.set_xlabel("Epoch")
-    ax.set_ylabel("Score (%)")
-    plt.ylim([0.0, 1.0])
-    ax.legend()
-
-    plt.tight_layout()
-
-    pdf_path = OUTPUTS_DIR / f"{name}_pred_score_{target}.pdf"
-    export_figures_to_pdf(pdf_path, fig)
-
-
-def train_baseline(target_type, topology, max_retries=5):
+def train(predictor, target_type, max_retries=5):
     attempts = 0
     while attempts < max_retries:
         try:
-            train_pred = TrainingPredictor(Predictor_Baseline(topology), target_type)
+            train_pred = TrainingPredictor(predictor, target_type)
             result = train_pred.run()
             del train_pred
             torch.cuda.empty_cache()
@@ -289,20 +302,6 @@ def train_baseline(target_type, topology, max_retries=5):
     raise RuntimeError("Failed to complete training after several retries due to memory issues.")
 
 
-# def train_unet(target_type):
-#     train_pred = TrainingPredictor(Predictor_UNet(), target_type)
-#     res = train_pred.run()
-
-#     return res
-
-
-# def train_proposed(target_type):
-#     train_pred = TrainingPredictor(Predictor_Proposed(32), target_type)
-#     res = train_pred.run()
-
-#     return res
-
-
 def main():
 
     setup_base_directory()
@@ -311,19 +310,15 @@ def main():
     # plot_data_base_toro_vs_zero()
     # plot_baseline_on_all_targets()
 
-    # plot_scores(TRAINED_MODELS_DIR / "predictors" / "Baseline_Toroidal_Easy")
-    # plot_scores(TRAINED_MODELS_DIR / "predictors" / "Baseline_Toroidal_Medium")
-    # plot_scores(TRAINED_MODELS_DIR / "predictors" / "Baseline_Toroidal_Hard")
-    # plot_scores(TRAINED_MODELS_DIR / "predictors" / "Baseline_Toroidal_Stable")
+    # plot_baseline_pred_score_each_target()
 
-    # plot_baselines_avg_pred_score_each_target()
+    train(Predictor_Baseline(TOPOLOGY_TOROIDAL), CONFIG_TARGET_STABLE)
 
-    # train_baseline(CONFIG_TARGET_EASY, TOPOLOGY_TOROIDAL)
-    # train_baseline(CONFIG_TARGET_MEDIUM, TOPOLOGY_TOROIDAL)
-    # train_baseline(CONFIG_TARGET_HARD, TOPOLOGY_TOROIDAL)
+    train(Predictor_Baseline(TOPOLOGY_FLAT), CONFIG_TARGET_MEDIUM)
 
-    train_baseline(CONFIG_TARGET_STABLE, TOPOLOGY_TOROIDAL)
-    train_baseline(CONFIG_TARGET_MEDIUM, TOPOLOGY_FLAT)
+    train(Predictor_Baseline(TOPOLOGY_TOROIDAL), CONFIG_TARGET_MEDIUM)
+
+    # train(Predictor_ResNet(TOPOLOGY_TOROIDAL, 10, 64), CONFIG_TARGET_MEDIUM)
 
     return 0
 
