@@ -185,7 +185,7 @@ def plot_baseline_on_all_targets():
 
     # Plotting
     fig, ax = plt.subplots(4, 2, figsize=(10, 12))
-    plt.suptitle("Baseline Model - Training", fontsize=18, fontweight='bold')
+    # plt.suptitle("Baseline Model - Training", fontsize=18, fontweight='bold')
 
     # Easy Loss
     __plot_trainings(ax[0, 0], metrics["easy"]["loss_train"], metrics["easy"]["loss_val"],
@@ -257,10 +257,10 @@ def plot_data_base_toro_vs_zero():
     }
 
     fig, ax = plt.subplots(2, 1, figsize=(8, 10))
-    plt.suptitle(f"Baseline Model - Toroidal padding vs Zero padding ", fontsize=18, fontweight='bold')
+    # plt.suptitle(f"Baseline Model - Toroidal padding vs Zero padding ", fontsize=18, fontweight='bold')
 
-    __plot_toro_zero(ax[0], losses, f"Training on {data_toro['target_type'].capitalize()} - Loss", "Epoch", "Loss", yscale='log')
-    __plot_toro_zero(ax[1], pred_scores, f"Training on {data_toro['target_type'].capitalize()} - Prediction score", "Epoch", "Prediction score (%)", legend_loc='lower right')
+    __plot_toro_zero(ax[0], losses, f"Training Loss - Target {data_toro['target_type'].capitalize()} ", "Epoch", "Loss", yscale='log')
+    __plot_toro_zero(ax[1], pred_scores, f"Training Prediction score - Target {data_toro['target_type'].capitalize()}", "Epoch", "Prediction score (%)", legend_loc='lower right')
 
     plt.tight_layout(rect=[0, 0.03, 1, 0.95])  # Adjust layout to make room for the title
 
@@ -268,7 +268,7 @@ def plot_data_base_toro_vs_zero():
     export_figures_to_pdf(pdf_path, fig)
 
 
-def plot_baseline_pred_score_each_target():
+def plot_baseline_pred_score_analysis():
 
     model_folder_path = TRAINED_MODELS_DIR / "predictors"
 
@@ -289,33 +289,16 @@ def plot_baseline_pred_score_each_target():
     avg_hard_p_score   = get_prediction_score(model_hard, checkpoint_index)
     avg_stable_p_score = get_prediction_score(model_stable, checkpoint_index)
 
-    model_easy_checkpoint   = model_easy   / "checkpoints" / f"predictor_{checkpoint_index}.pt"
-    model_medium_checkpoint = model_medium / "checkpoints" / f"predictor_{checkpoint_index}.pt"
-    model_hard_checkpoint   = model_hard   / "checkpoints" / f"predictor_{checkpoint_index}.pt"
-    model_stable_checkpoint = model_stable / "checkpoints" / f"predictor_{checkpoint_index}.pt"
+    model_easy_checkpoint   = model_easy   / "checkpoints" / f"predictor_{checkpoint_index}.pth.tar"
+    model_medium_checkpoint = model_medium / "checkpoints" / f"predictor_{checkpoint_index}.pth.tar"
+    model_hard_checkpoint   = model_hard   / "checkpoints" / f"predictor_{checkpoint_index}.pth.tar"
+    model_stable_checkpoint = model_stable / "checkpoints" / f"predictor_{checkpoint_index}.pth.tar"
 
     avg_easy_p_scores_each_n_cells   = get_prediction_score_n_cells_initial(model_easy_checkpoint)
     avg_medium_p_scores_each_n_cells = get_prediction_score_n_cells_initial(model_medium_checkpoint)
     avg_hard_p_scores_each_n_cells   = get_prediction_score_n_cells_initial(model_hard_checkpoint)
     avg_stable_p_scores_each_n_cells = get_prediction_score_n_cells_initial(model_stable_checkpoint)
 
-
-    # Save all data to load it in the future
-    base_folder = OUTPUTS_DIR / "info_baseline_model_pred_score"
-    np.save(base_folder / "avg_easy_scores_each_checkpoint.npy", avg_easy_scores_each_checkpoint)
-    np.save(base_folder / "avg_medium_scores_each_checkpoint.npy", avg_medium_scores_each_checkpoint)
-    np.save(base_folder / "avg_hard_scores_each_checkpoint.npy", avg_hard_scores_each_checkpoint)
-    np.save(base_folder / "avg_stable_scores_each_checkpoint.npy", avg_stable_scores_each_checkpoint)
-
-    np.save(base_folder / "avg_easy_p_score.npy", avg_easy_p_score)
-    np.save(base_folder / "avg_medium_p_score.npy", avg_medium_p_score)
-    np.save(base_folder / "avg_hard_p_score.npy", avg_hard_p_score)
-    np.save(base_folder / "avg_stable_p_score.npy", avg_stable_p_score)
-
-    np.save(base_folder / "avg_easy_p_scores_each_n_cells.npy", avg_easy_p_scores_each_n_cells)
-    np.save(base_folder / "avg_medium_p_scores_each_n_cells.npy", avg_medium_p_scores_each_n_cells)
-    np.save(base_folder / "avg_hard_p_scores_each_n_cells.npy", avg_hard_p_scores_each_n_cells)
-    np.save(base_folder / "avg_stable_p_scores_each_n_cells.npy", avg_stable_p_scores_each_n_cells)
 
     # Plotting
     fig, axs = plt.subplots(4, 2, figsize=(10, 12))
@@ -394,7 +377,7 @@ def plot_baseline_pred_score_each_target():
     axs[3, 1].legend()
 
     plt.tight_layout()
-    pdf_path = OUTPUTS_DIR / "baseline_avg_pred_score_each_target.pdf"
+    pdf_path = OUTPUTS_DIR / "baseline_pred_score_analysis.pdf"
     export_figures_to_pdf(pdf_path, fig)
 
 
@@ -427,9 +410,9 @@ def main():
     # plot_data_base_toro_vs_zero()
     # plot_baseline_on_all_targets()
 
-    plot_baseline_pred_score_each_target()
+    # plot_baseline_pred_score_analysis()
 
-    # train(Predictor_Baseline(TOPOLOGY_TOROIDAL), CONFIG_TARGET_MEDIUM)
+    train(Predictor_Baseline(TOPOLOGY_TOROIDAL), CONFIG_TARGET_MEDIUM)
     # train(Predictor_ResNet(TOPOLOGY_TOROIDAL, 10, 64), CONFIG_TARGET_MEDIUM)
     # train(Predictor_UNet(), CONFIG_TARGET_MEDIUM)
 

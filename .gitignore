@@ -6,6 +6,9 @@
 # Log files
 *.log
 
+# NumPy files
+*.npy
+
 # Image files
 *.jpg
 *.jpeg
