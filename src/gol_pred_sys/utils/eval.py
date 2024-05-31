@@ -39,7 +39,7 @@ def get_prediction_score(model_folder_path: Path, checkpoint_index:int = None):
     if checkpoint_index is None:
         model_checkpoints = sorted(os.listdir(model_folder_path / "checkpoints"), key=__extract_checkpoint_index)
     else:
-        model_checkpoints = [f"checkpoint_{checkpoint_index}.pt"]
+        model_checkpoints = [f"predictor_{checkpoint_index}.pt"]
 
     scores = []
 

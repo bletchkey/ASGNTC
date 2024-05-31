@@ -9,7 +9,8 @@ from configs.setup import setup_base_directory, setup_logging
 from configs.constants import *
 from configs.paths import CONFIG_DIR, OUTPUTS_DIR
 
-from src.common.playground          import Playground
+from src.common.playground            import Playground
+from src.gol_pred_sys.dataset_manager import DatasetManager
 
 
 def get_glider():
@@ -107,13 +108,14 @@ def playground():
     # init_config[0, 0, rows, cols] = 1
 
     # pg = Playground()
+    # dataset_manager = DatasetManager()
 
     # results = pg.simulate(init_config, steps=10)
 
     # print(f"Stable min: {results[CONFIG_TARGET_STABLE].min()}")
     # print(f"Stable max: {results[CONFIG_TARGET_STABLE].max()}")
 
-    # data = pg.get_record_from_id(200000)
+    # data = dataset_manager.get_record_from_id(200000)
     # pg.plot_record_db(data)
 
     pg = Playground()
@@ -157,13 +159,20 @@ def simulate_configs():
 
 def plot_record_structure():
 
-        pg = Playground()
+    pg = Playground()
 
-        initial_cells = [100, 200, 300, 400, 500]
+    initial_cells = [100, 200, 300, 400, 500]
 
-        for cells in initial_cells:
-            data = pg.get_record_from_id(2 * DATASET_BATCH_SIZE * cells)
-            pg.plot_record_db(data)
+    for cells in initial_cells:
+        data = pg.get_record_from_id(2 * DATASET_BATCH_SIZE * cells)
+        pg.plot_record_db(data)
+
+
+def plot_targets():
+    pg = Playground()
+
+    data = pg.get_record_from_id(2 * DATASET_BATCH_SIZE * 320)
+    pg.plot_targets(data)
 
 
 def main():
@@ -172,6 +181,7 @@ def main():
     setup_logging(path= CONFIG_DIR / "logging_playground.json")
 
     # plot_record_structure()
+    plot_targets()
     # simulate_configs()
 
     return 0

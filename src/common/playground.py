@@ -42,22 +42,23 @@ class Playground():
         targets           = sim_results["all_targets"]
 
         results = {
-            "period": period,
-            "transient_phase": transient_phase,
-            "n_cells_initial" : n_cells_initial,
-            "n_cells_simulated": n_cells_simulated,
-            "n_cells_final": n_cells_final,
-            "initial": initial,
-            "simulated": simulated,
-            "final": final,
-            "steps": steps,
-            "easy": targets[CONFIG_TARGET_EASY]["config"],
-            "medium": targets[CONFIG_TARGET_MEDIUM]["config"],
-            "hard": targets[CONFIG_TARGET_HARD]["config"],
-            "stable": targets[CONFIG_TARGET_STABLE]["config"]
+            "period"            : period,
+            "transient_phase"   : transient_phase,
+            "n_cells_initial"   : n_cells_initial,
+            "n_cells_simulated" : n_cells_simulated,
+            "n_cells_final"     : n_cells_final,
+            "initial"           : initial,
+            "simulated"         : simulated,
+            "final"             : final,
+            "steps"             : steps,
+            "easy"              : targets[CONFIG_TARGET_EASY]["config"],
+            "medium"            : targets[CONFIG_TARGET_MEDIUM]["config"],
+            "hard"              : targets[CONFIG_TARGET_HARD]["config"],
+            "stable"            : targets[CONFIG_TARGET_STABLE]["config"]
         }
 
         return results
+
 
     def gol_basic_simulation(self, config: torch.Tensor, steps: int, topology:str = TOPOLOGY_TOROIDAL) -> torch.Tensor:
 
@@ -66,25 +67,6 @@ class Playground():
                                           device=self.__device_manager.default_device)
 
         return configs
-
-    def get_record_from_id(self, id: int) -> typing.Tuple[torch.Tensor, dict]:
-        """
-        Search for a record with the given id in the datasets and return it as a dictionary.
-        TRAIN, VALIDATION and TEST datasets are searched in this order, since the train dataset
-        is the largest the likelihood of finding the record is higher.
-
-        """
-
-        datasets = [TRAIN, VALIDATION, TEST]
-
-        for type in datasets:
-            dataset = self.__dataset_manager.get_dataset(type)
-
-            for data, metadata in dataset:
-                if metadata[META_ID] == id:
-                    return self.__create_record_dict(data, metadata)
-
-        raise ValueError(f"Could not find the data for id {id}")
 
 
     def check_targets_values(self):
@@ -127,11 +109,12 @@ class Playground():
                   "Target: Medium", "Target: Hard", "Target: Stable"]
 
         # Image plots in the first row
-        for i, config in enumerate(["initial_config", "final_config", "easy", "medium", "hard", "stable"]):
+        for i, config in enumerate([CONFIG_INITIAL, CONFIG_FINAL, CONFIG_TARGET_EASY,
+                                    CONFIG_TARGET_MEDIUM, CONFIG_TARGET_HARD, CONFIG_TARGET_STABLE]):
             if i == 0:
                 ax = fig.add_subplot(gs[0, i])
                 ax.imshow(record[f"{config}"].detach().cpu().numpy().squeeze(), **imshow_kwargs)
-                ax.set_title(f"Initial - {record[META_N_CELLS_INITIAL ]} cells", fontsize=18, fontweight='bold')
+                ax.set_title(f"Initial - {record[META_N_CELLS_INITIAL]} cells", fontsize=18, fontweight='bold')
                 ax.axis('off')
                 continue
             if i == 1:
@@ -141,8 +124,8 @@ class Playground():
                 ax.axis('off')
                 continue
             ax = fig.add_subplot(gs[0, i])
-            ax.imshow(record[f"{config}"]["config"].detach().cpu().numpy().squeeze(), **imshow_kwargs)
-            ax.set_title(f"{titles[i]}", fontsize=18, fontweight='bold')
+            ax.imshow(record[f"{config}"].detach().cpu().numpy().squeeze(), **imshow_kwargs)
+            ax.set_title(f"{titles[i].capitalize()}", fontsize=18, fontweight='bold')
             ax.axis('off')
 
         # Text plot for targets in the first row
@@ -163,14 +146,14 @@ class Playground():
                 ax.axis('off')
                 continue
 
-            text_str = record[f"{config}"]
-            ax.text(0, 0, f"Min: {text_str['minimum']:.4f}\nMax: {text_str['maximum']:.4f}\n"
-                                f"Q1: {text_str['q1']:.4f}\nQ2: {text_str['q2']:.4f}\nQ3: {text_str['q3']:.4f}",
+            ax.text(0, 0, f"Min: {record[f'{config}_minimum']:.4f}\nMax: {record[f'{config}_maximum']:.4f}\n"
+                        f"Q1: {record[f'{config}_q1']:.4f}\nQ2: {record[f'{config}_q2']:.4f}\nQ3: {record[f'{config}_q3']:.4f}",
                     ha="left", va="center", fontsize=16, wrap=True)
             ax.axis('off')
 
+
         # Save and close
-        pdf_path  = OUTPUTS_DIR / f"record_{record['id']}.pdf"
+        pdf_path  = OUTPUTS_DIR / f"record_{record[META_ID]}.pdf"
         export_figures_to_pdf(pdf_path, fig)
 
 
@@ -245,51 +228,50 @@ class Playground():
         export_figures_to_pdf(pdf_path, fig)
 
 
-    def __create_record_dict(self, data: torch.Tensor, metadata: dict) -> typing.Tuple[torch.Tensor, dict]:
+    def plot_targets(self, record: dict):
+        fig = plt.figure(figsize=(10, 12))
+        fig.suptitle("Targets", fontsize=18, fontweight='bold')
 
-        informations = {
-            "id"              : metadata[META_ID],
-            "n_cells_init"    : metadata[META_N_CELLS_INITIAL],
-            "n_cells_final"   : metadata[META_N_CELLS_FINAL],
-            "period"          : metadata[META_PERIOD],
-            "transient_phase" : metadata[META_TRANSIENT_PHASE],
-            "initial_config"  : data[0, :, :, :],
-            "final_config"    : data[1, :, :, :],
-            "easy"     : {
-                "config"  : data[2, :, :, :],
-                "minimum" : metadata[META_EASY_MIN],
-                "maximum" : metadata[META_EASY_MAX],
-                "q1"      : metadata[META_EASY_Q1],
-                "q2"      : metadata[META_EASY_Q2],
-                "q3"      : metadata[META_EASY_Q3],
-            },
-            "medium"  : {
-                "config"  : data[3, :, :, :],
-                "minimum" : metadata[META_MEDIUM_MIN],
-                "maximum" : metadata[META_MEDIUM_MAX],
-                "q1"      : metadata[META_MEDIUM_Q1],
-                "q2"      : metadata[META_MEDIUM_Q2],
-                "q3"      : metadata[META_MEDIUM_Q3],
-            },
-            "hard"    : {
-                "config"  : data[4, :, :, :],
-                "minimum" : metadata[META_HARD_MIN],
-                "maximum" : metadata[META_HARD_MAX],
-                "q1"      : metadata[META_HARD_Q1],
-                "q2"      : metadata[META_HARD_Q2],
-                "q3"      : metadata[META_HARD_Q3],
-            },
-            "stable"  : {
-                "config"  : data[5, :, :, :],
-                "minimum" : metadata[META_STABLE_MIN],
-                "maximum" : metadata[META_STABLE_MAX],
-                "q1"      : metadata[META_STABLE_Q1],
-                "q2"      : metadata[META_STABLE_Q2],
-                "q3"      : metadata[META_STABLE_Q3],
-            }
-        }
+        # Define plot positions and titles
+        titles = [
+            "Initial - {} cells".format(record[META_N_CELLS_INITIAL]),
+            "Final - {} cells".format(record[META_N_CELLS_FINAL]),
+            "Target Easy", "Target Medium", "Target Hard", "Target Stable"
+        ]
+        configs = [
+            CONFIG_INITIAL, CONFIG_FINAL,
+            CONFIG_TARGET_EASY, CONFIG_TARGET_MEDIUM,
+            CONFIG_TARGET_HARD, CONFIG_TARGET_STABLE
+        ]
 
-        return informations
+        # Plot configurations
+        imshow_kwargs = {'cmap': 'gray', 'vmin': 0, 'vmax': 1}
+
+        # Create subplots for images
+        for i in range(6):
+            ax = plt.subplot2grid((4, 2), (i // 2, i % 2), fig=fig)
+            img = record[configs[i]].detach().cpu().numpy().squeeze()
+            ax.imshow(img, **imshow_kwargs)
+            ax.set_title(titles[i], fontsize=18, fontweight='bold')
+            ax.axis('off')
+
+        # Merge cells for record details
+        ax = plt.subplot2grid((4, 2), (3, 0), colspan=2, fig=fig)
+        ax.text(0.5, 0.3, f"Transient phase: {record[META_TRANSIENT_PHASE]}", ha='center', va='center', fontsize=18, fontweight='bold')
+        ax.text(0.5, 0.1, f"Period: {record[META_PERIOD]}", ha='center', va='center', fontsize=18, fontweight='bold')
+        ax.axis('off')
+
+        plt.subplots_adjust(left=0.05, right=0.95, top=0.9, bottom=0.1, hspace=0.2, wspace=0.1)
+        plt.tight_layout(pad=0.2)
+
+        # Save the figure
+        pdf_path = OUTPUTS_DIR / f"targets_{record[META_ID]}.pdf"
+        fig.savefig(pdf_path)
+        plt.close(fig)
+
+
+    def get_record_from_id(self, id:int) -> dict:
+        return self.__dataset_manager.get_record_from_id(id)
 
 
     def ulam_spiral(self, size: int) -> torch.Tensor:

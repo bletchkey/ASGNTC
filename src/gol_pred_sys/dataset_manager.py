@@ -1,8 +1,8 @@
 import numpy as np
 import logging
-
+import gc
 import torch
-from   torch.utils.data import Dataset, DataLoader
+from   torch.utils.data import Dataset, ConcatDataset, DataLoader
 
 
 from configs.paths import DATASET_DIR
@@ -489,4 +489,67 @@ class DatasetManager():
                 counts[initial_cells] = 1
 
         return counts
+
+
+    def get_combined_dataset(self) -> ConcatDataset:
+        """
+        Returns a ConcatDataset containing the training, validation, and test datasets.
+
+        """
+        dataset_train      = self.get_dataset(TRAIN)
+        dataset_validation = self.get_dataset(VALIDATION)
+        dataset_test       = self.get_dataset(TEST)
+
+        return ConcatDataset([dataset_train, dataset_validation, dataset_test])
+
+
+    def get_record_from_id(self, id: int) -> dict:
+        """
+        Search for a record with the given ID in the datasets and return it as a dictionary.
+
+        """
+
+        dataset_train      = self.get_dataset(TRAIN)
+        dataset_validation = self.get_dataset(VALIDATION)
+        dataset_test       = self.get_dataset(TEST)
+
+        combined_dataset = ConcatDataset([dataset_train, dataset_validation, dataset_test])
+
+        for data, metadata in combined_dataset:
+            if metadata[META_ID] == id:
+                return {
+                    CONFIG_INITIAL       : data[0],
+                    CONFIG_FINAL         : data[1],
+                    CONFIG_TARGET_EASY   : data[2],
+                    CONFIG_TARGET_MEDIUM : data[3],
+                    CONFIG_TARGET_HARD   : data[4],
+                    CONFIG_TARGET_STABLE : data[5],
+                    META_ID              : metadata[META_ID],
+                    META_N_CELLS_INITIAL : metadata[META_N_CELLS_INITIAL],
+                    META_N_CELLS_FINAL   : metadata[META_N_CELLS_FINAL],
+                    META_TRANSIENT_PHASE : metadata[META_TRANSIENT_PHASE],
+                    META_PERIOD          : metadata[META_PERIOD],
+                    META_EASY_MIN        : metadata[META_EASY_MIN],
+                    META_EASY_MAX        : metadata[META_EASY_MAX],
+                    META_EASY_Q1         : metadata[META_EASY_Q1],
+                    META_EASY_Q2         : metadata[META_EASY_Q2],
+                    META_EASY_Q3         : metadata[META_EASY_Q3],
+                    META_MEDIUM_MIN      : metadata[META_MEDIUM_MIN],
+                    META_MEDIUM_MAX      : metadata[META_MEDIUM_MAX],
+                    META_MEDIUM_Q1       : metadata[META_MEDIUM_Q1],
+                    META_MEDIUM_Q2       : metadata[META_MEDIUM_Q2],
+                    META_MEDIUM_Q3       : metadata[META_MEDIUM_Q3],
+                    META_HARD_MIN        : metadata[META_HARD_MIN],
+                    META_HARD_MAX        : metadata[META_HARD_MAX],
+                    META_HARD_Q1         : metadata[META_HARD_Q1],
+                    META_HARD_Q2         : metadata[META_HARD_Q2],
+                    META_HARD_Q3         : metadata[META_HARD_Q3],
+                    META_STABLE_MIN      : metadata[META_STABLE_MIN],
+                    META_STABLE_MAX      : metadata[META_STABLE_MAX],
+                    META_STABLE_Q1       : metadata[META_STABLE_Q1],
+                    META_STABLE_Q2       : metadata[META_STABLE_Q2],
+                    META_STABLE_Q3       : metadata[META_STABLE_Q3]
+                }
+
+        raise ValueError(f"Could not find the data for id {id}")
 

@@ -11,7 +11,7 @@ import torch
 
 from src.common.utils.helpers import export_figures_to_pdf
 from configs.setup            import setup_base_directory, setup_logging
-from configs.paths            import CONFIG_DIR
+from configs.paths            import CONFIG_DIR, OUTPUTS_DIR
 
 from src.gol_pred_sys.dataset_manager import DatasetCreator, DatasetManager
 from src.common.device_manager        import DeviceManager
@@ -151,29 +151,26 @@ def plot_dataset_infos(saving_path: Path, dataset_type: str):
 
     transient_phases = dataset_manager.get_transient_phases(dataset_type)
     transient_phases = np.array(transient_phases)
-    sorted_tps       = np.sort(transient_phases)
 
     ax3 = fig.add_subplot(gs[1, 0])
-    ax3.plot(sorted_tps, np.arange(1, len(sorted_tps) + 1) / len(sorted_tps))
+    ax3.hist(transient_phases, bins=20, color='#7573d1', edgecolor='#3330a1')
     ax3.set_xlabel("Transient Phase Length")
-    ax3.set_ylabel("Empirical Cumulative Distribution Function")
+    ax3.set_ylabel("Count")
 
     periods = dataset_manager.get_periods(dataset_type)
     periods = np.array(periods)
-    sorted_ps = np.sort(periods)
 
     ax4 = fig.add_subplot(gs[1, 1])
-    ax4.plot(sorted_ps, np.arange(1, len(sorted_ps) + 1) / len(sorted_ps))
+    ax4.hist(periods, bins=20, color='#7573d1', edgecolor='#3330a1')
     ax4.set_xlabel("Period Length")
-    ax4.set_ylabel("Empirical Cumulative Distribution Function")
+    ax4.set_ylabel("Count")
 
     frequency = dataset_manager.get_frequency_of_n_cells_initial(dataset_type)
 
     ax5 = fig.add_subplot(gs[2, :])
-    ax5.set_title("Distribution of Living Cells")
-    ax5.set_xlabel("Number of Living Cells")
-    ax5.set_ylabel("Frequency")
-    ax5.bar(frequency.keys(), frequency.values(), color='skyblue')
+    ax5.set_xlabel("Number of Initial Living Cells")
+    ax5.set_ylabel("Configurations count")
+    ax5.bar(frequency.keys(), frequency.values(), color='#3330a1')
 
     pdf_path = Path(saving_path) / f"{dataset_type}_infos.pdf"
     export_figures_to_pdf(pdf_path, fig)
@@ -221,127 +218,10 @@ def main():
     setup_base_directory()
     setup_logging(path= CONFIG_DIR / "logging_dataset.json")
 
-    plot_infos()
+    # plot_infos()
 
 
 if __name__ == "__main__":
     return_code = main()
     exit(return_code)
-
-
-
-# def plot_transient_phases(transient_phases, avg_tp_in_cells, saving_path):
-#     """
-#     Create and save plots of transient phases statistics.
-#     """
-#     fig, axs = plt.subplots(2, 2, figsize=(12, 12))
-
-#     # Bar chart for average transient phases
-#     axs[0, 0].bar(avg_tp_in_cells.keys(), avg_tp_in_cells.values(), color='#7573d1', edgecolor='#3330a1', linewidth=1.5)
-#     axs[0, 0].set_title("Average Transient Phase Length by Initial Cells", fontsize=14, fontweight='bold')
-#     axs[0, 0].set_xlabel("Number of Initial Cells")
-#     axs[0, 0].set_ylabel("Average Transient Phase Length")
-#     axs[0, 0].xaxis.set_major_locator(MaxNLocator(integer=True))
-
-#     # ECDF plot
-#     sorted_phases = np.sort(transient_phases)
-#     ecdf = np.arange(1, len(sorted_phases) + 1) / len(sorted_phases)
-#     axs[0, 1].plot(sorted_phases, ecdf, color='#7573d1')
-#     axs[0, 1].set_title("ECDF of Transient Phases", fontsize=14, fontweight='bold')
-#     axs[0, 1].set_xlabel("Transient Phase Length")
-#     axs[0, 1].set_ylabel("ECDF")
-
-#     # Histogram of transient phases
-#     axs[1, 0].hist(transient_phases, bins=20, color='#7573d1', edgecolor='#3330a1')
-#     axs[1, 0].set_title("Histogram of Transient Phases", fontsize=14, fontweight='bold')
-#     axs[1, 0].set_xlabel("Transient Phase Length")
-#     axs[1, 0].set_ylabel("Frequency")
-
-#     # Boxplot of transient phases
-#     axs[1, 1].boxplot(transient_phases, vert=False, patch_artist=True, boxprops=dict(facecolor='#7573d1'))
-#     axs[1, 1].set_title("Boxplot of Transient Phases", fontsize=14, fontweight='bold')
-#     axs[1, 1].set_xlabel("Transient Phase Length")
-
-#     plt.tight_layout()
-#     pdf_path = Path(saving_path) / "transient_phases.pdf"
-#     plt.savefig(pdf_path)
-#     plt.close()
-
-#     infos = [(meta[META_ID],
-#               meta[META_N_CELLS_INITIAL],
-#               meta[META_N_CELLS_FINAL],
-#               meta[META_PERIOD],
-#               meta[META_TRANSIENT_PHASE]) for meta in metadata]
-
-#     ids, n_cells_initial, n_cells_final, periods, transient_phases = zip(*infos)
-#     transient_phases = np.array(transient_phases)
-
-
-#     avg_tp_in_cells = [(0, 0) for _ in range(GRID_SIZE ** 2 + 1)]
-
-#     for i in infos:
-#         avg_tp_in_cells[i[1]] = (avg_tp_in_cells[i[1]][0] + i[4], avg_tp_in_cells[i[1]][1] + 1)
-
-#     avg_tp_in_cells = [(i[0] / i[1]) if i[1] != 0 else 0 for i in avg_tp_in_cells]
-
-
-#     # Plotting
-#     fig, axs = plt.subplots(2, 2, figsize=(10, 10))
-
-#     # Bar chart for transient phases
-#     axs[0,0].bar(range(len(avg_tp_in_cells)), avg_tp_in_cells, color='#7573d1', edgecolor='#3330a1', linewidth=1.5)
-#     axs[0,0].set_xlabel("Number of initial Cells", fontsize=12)
-#     axs[0,0].set_ylabel("Average Transient Phase Length", fontsize=12)
-#     axs[0,0].set_title("Average Transient Phase Length per Initial Cells", fontsize=14, fontweight='bold')
-#     axs[0,0].xaxis.set_major_locator(MaxNLocator(integer=True))
-
-#     # ECDF for transient phases
-#     sorted_phases = np.sort(transient_phases)
-#     ecdf = np.arange(1, len(sorted_phases) + 1) / len(sorted_phases)
-#     axs[0, 1].plot(sorted_phases, ecdf, color='#7573d1')
-#     axs[0, 1].set_xlabel("Transient Phase Length", fontsize=12)
-#     axs[0, 1].set_ylabel("ECDF", fontsize=12)
-#     axs[0, 1].set_title("ECDF of Transient Phases", fontsize=14, fontweight='bold')
-
-#     # Histogram for transient phases
-#     axs[1,0].hist(transient_phases, bins=20, color='#7573d1', edgecolor='#3330a1')
-#     axs[1,0].set_title("Histogram", fontsize=14, fontweight='bold')
-#     axs[1,0].set_xlabel("Transient Phase Length", fontsize=12)
-#     axs[1,0].set_ylabel("Frequency", fontsize=12)
-
-#     # Boxplot for transient phases
-#     axs[1,1].boxplot(transient_phases, vert=False, patch_artist=True, boxprops=dict(facecolor='#7573d1'))
-#     axs[1,1].set_title("Boxplot", fontsize=14, fontweight='bold')
-#     axs[1,1].set_xlabel("Transient Phase Length", fontsize=12)
-
-#     plt.tight_layout()
-#     pdf_path = Path(saving_path) / "transient_phases.pdf"
-#     export_figures_to_pdf(pdf_path, fig)
-
-#     DISTRIBUTION
-
-#     n = GRID_SIZE ** 2
-#     bins = torch.zeros(n + 1, dtype=torch.int64)
-
-#     for config in dataset:
-#         living_cells = torch.sum(config[0].view(-1)).item()
-#         if living_cells <= n:
-#             bins[int(living_cells)] += 1
-#         else:
-#             print(f"Warning: Living cells count {living_cells} exceeds grid size squared.")
-
-#     bins_cpu = bins.numpy()
-#     max_value = bins_cpu.max()
-
-#     # Plotting
-#     plt.figure(figsize=(10, 6))
-#     plt.bar(range(n + 1), bins_cpu, color='skyblue')
-#     plt.title('Distribution of Living Cells')
-#     plt.xlabel('Number of Living Cells')
-#     plt.ylabel('Frequency')
-#     plt.ylim(0, max_value + max_value * 0.1)
-#     plt.grid(True, linestyle='--', linewidth=1)
-
-#     pdf_path = Path(saving_path) / "distribution.pdf"
-#     export_figures_to_pdf(pdf_path, plt.gcf())
 
