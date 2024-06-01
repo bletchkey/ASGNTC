@@ -89,7 +89,7 @@ def get_prediction_score(model_folder_path: Path, checkpoint_index:int = None):
     return scores
 
 
-def get_prediction_score_n_cells_initial(checkpoint_path: Path) -> Dict[int, float]:
+def get_prediction_score_n_cells_initial(checkpoint_path: Path) -> list:
     try:
         device_manager = DeviceManager()
         device = device_manager.default_device
@@ -103,7 +103,7 @@ def get_prediction_score_n_cells_initial(checkpoint_path: Path) -> Dict[int, flo
         model.to(device)
         model.eval()
 
-        avg_score_each_n_cells = {}
+        score_each_n_cells = [[] for _ in range(GRID_SIZE**2+1)]
 
         with torch.no_grad():
             for batch, metadata in dataloader_test:
@@ -111,17 +111,21 @@ def get_prediction_score_n_cells_initial(checkpoint_path: Path) -> Dict[int, flo
                 target = get_config_from_batch(batch, checkpoint[CHECKPOINT_P_TARGET_TYPE], device)
 
                 predicted = model(input)
-                score     = prediction_score(predicted, target)
+                scores    = prediction_score(predicted, target, batch_mean=False)
                 n_cells   = metadata[META_N_CELLS_INITIAL]
 
-                if n_cells not in avg_score_each_n_cells:
-                    avg_score_each_n_cells[n_cells] = []
+                for c, score in zip(n_cells, scores):
+                    score_each_n_cells[c.item()].append(score.item())
 
-                avg_score_each_n_cells[n_cells].append(score)
+            for i in range(GRID_SIZE**2+1):
+                if len(score_each_n_cells[i]) > 0:
+                    score_each_n_cells[i] = np.mean(score_each_n_cells[i])
+                else:
+                    score_each_n_cells[i] = None
 
-        avg_score_each_n_cells = {k: np.mean(v) for k, v in avg_score_each_n_cells.items()}
+        logging.debug(f"Prediction score for each n_cells_initial - Epoch {checkpoint[CHECKPOINT_EPOCH_KEY]+1}: {score_each_n_cells}")
 
-        return avg_score_each_n_cells
+        return score_each_n_cells
 
     except Exception as e:
         print(f"An error occurred: {e}")

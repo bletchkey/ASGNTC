@@ -1,7 +1,9 @@
+from pathlib import Path
 import sys
 import logging
 import os
 import gc
+import re
 import time
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
@@ -269,27 +271,29 @@ def plot_data_base_toro_vs_zero():
 
 
 def plot_pred_score_test_set(ax, scores, title, xlabel, ylabel):
-    ax.plot(scores, color='#385BA8', marker='o', linestyle='-', linewidth=0.8)
-    ax.set_title(title, fontsize=14, fontweight='bold')
+    ax.plot(scores, color='#385BA8', linestyle='-', linewidth=1)
+    ax.set_title(title, fontsize=12, fontweight='bold')
     ax.set_xlabel(xlabel)
     ax.set_ylabel(ylabel)
     ax.set_ylim([0, 100])
 
 
-def plot_performance_by_cells(ax, scores_dict, avg_score, title, xlabel, ylabel):
-    keys, values = zip(*scores_dict.items())
-    ax.scatter(keys, values, color='#6e0b2f', label='Prediction score for each number of initial cells', marker='x')
-    ax.hlines(avg_score, keys[0], keys[-1], colors='#75849c', linestyles="--", label='Overall average prediction score', linewidth=0.8)
-    ax.set_title(title, fontsize=14, fontweight='bold')
+def plot_performance_by_cells(ax, scores, avg_score, title, xlabel, ylabel):
+    ax.scatter(np.arange(0, GRID_SIZE**2+1), scores, color='#6e0b2f', label='Prediction score for each number of initial cells', marker='x', s=2)
+    ax.hlines(avg_score, 0, GRID_SIZE**2, colors='#75849c', linestyles="--", label='Overall average prediction score', linewidth=0.8)
+    ax.set_title(title, fontsize=12, fontweight='bold')
     ax.set_xlabel(xlabel)
     ax.set_ylabel(ylabel)
+    ax.set_xlim([0, GRID_SIZE**2])
     ax.set_ylim([0, 100])
-    ax.legend(frameon=False)
+
+    specific_ticks = [0, 100, 200, 300, 400, 500, 600, 700, 800, 900, 1024]
+    ax.set_xticks(specific_ticks)  # Apply the specific tick marks to the x-axis
 
 
 def plot_baseline_pred_score_analysis():
 
-    models = ['easy', 'medium', 'hard', 'stable']
+    targets = ['easy', 'medium', 'hard', 'stable']
 
     model_folder_path = TRAINED_MODELS_DIR / "predictors"
 
@@ -299,14 +303,41 @@ def plot_baseline_pred_score_analysis():
     model_stable = model_folder_path / "Baseline_Toroidal_Stable"
 
     pred_scores_each_checkpoint ={
-        'easy'  : get_prediction_score(model_easy),
-        'medium': get_prediction_score(model_medium),
-        'hard'  : get_prediction_score(model_hard),
-        'stable': get_prediction_score(model_stable)
+        'easy'  : [],
+        'medium': [],
+        'hard'  : [],
+        'stable': []
     }
 
-    # Multiply each score by 100 to convert to percentage
-    pred_scores_each_checkpoint = {key: [score * 100 for score in scores] for key, scores in pred_scores_each_checkpoint.items()}
+
+    log = (OUTPUTS_DIR / "test_set_pred_score.txt").read_text()
+
+    if not log:
+        pred_scores_each_checkpoint["easy"]   = get_prediction_score(model_easy),
+        pred_scores_each_checkpoint["medium"] = get_prediction_score(model_medium),
+        pred_scores_each_checkpoint["hard"]   = get_prediction_score(model_hard),
+        pred_scores_each_checkpoint["stable"] = get_prediction_score(model_stable)
+
+        # Multiply each score by 100 to convert to percentage
+        pred_scores_each_checkpoint = {key: [score * 100 for score in scores] for key, scores in pred_scores_each_checkpoint.items()}
+
+    else:
+        # Regular expression to match lines with scores
+        pattern = r"Checkpoint (\w+) predictor_\d+ - Prediction score: ([\d.]+)%"
+
+        # Process each line that matches the pattern
+        for match in re.finditer(pattern, log):
+            category = match.group(1).lower()
+            score = float(match.group(2))
+
+            if category == 'easy':
+                pred_scores_each_checkpoint['easy'].append(score)
+            elif category == 'medium':
+                pred_scores_each_checkpoint['medium'].append(score)
+            elif category == 'hard':
+                pred_scores_each_checkpoint['hard'].append(score)
+            elif category == 'stable':
+                pred_scores_each_checkpoint['stable'].append(score)
 
     checkpoint_index = 100
     pred_score_checkpoint = {
@@ -328,21 +359,21 @@ def plot_baseline_pred_score_analysis():
         'stable': get_prediction_score_n_cells_initial(model_stable_checkpoint)
     }
 
-    for model in models:
-        pred_scores_each_n_cells[model] = {key: [score * 100 for score in scores] for key, scores in pred_scores_each_n_cells[model].items()}
+    # Multiply each score by 100 to convert to percentage
+    pred_scores_each_n_cells = {key: [score * 100 for score in scores] for key, scores in pred_scores_each_n_cells.items()}
 
-    fig, axs = plt.subplots(4, 2, figsize=(8, 10))
+    fig, axs = plt.subplots(4, 2, figsize=(10, 12))
     # fig.suptitle("Baseline Model - Prediction Score Analysis on Test Dataset", fontsize=18, fontweight='bold')
 
-    for i, model in enumerate(models):
+    for i, target in enumerate(targets):
 
-        plot_pred_score_test_set(axs[i, 0], pred_scores_each_checkpoint[model],
-                                 f"{model.capitalize()} - Prediction score", "Epoch", "Prediction score (%)")
+        plot_pred_score_test_set(axs[i, 0], pred_scores_each_checkpoint[target],
+                                 f"Target {target.capitalize()} - Prediction score", "Epoch", "Prediction score (%)")
 
         plot_performance_by_cells(axs[i, 1],
-                                  pred_scores_each_n_cells[model],
-                                  pred_score_checkpoint[model],
-                                  f"{model.capitalize()} - Prediction score - Epoch {checkpoint_index}", "Number of initial cells", "Prediction score (%)")
+                                  pred_scores_each_n_cells[target],
+                                  pred_score_checkpoint[target],
+                                  f"Target {target.capitalize()} - Prediction score - Epoch {checkpoint_index}", "Number of initial cells", "Prediction score (%)")
 
 
     plt.tight_layout()
@@ -379,10 +410,10 @@ def main():
     # plot_data_base_toro_vs_zero()
     # plot_baseline_on_all_targets()
 
-    # plot_baseline_pred_score_analysis()
+    plot_baseline_pred_score_analysis()
 
     # train(Predictor_ResNet(TOPOLOGY_TOROIDAL, 10, 64), CONFIG_TARGET_MEDIUM)
-    train(Predictor_UNet(), CONFIG_TARGET_MEDIUM)
+    # train(Predictor_UNet(), CONFIG_TARGET_MEDIUM)
 
     return 0
 

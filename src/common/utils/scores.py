@@ -6,7 +6,7 @@ from typing import Union
 from configs.constants import *
 
 
-def prediction_score(prediction: torch.Tensor, target: torch.Tensor) -> float:
+def prediction_score(prediction: torch.Tensor, target: torch.Tensor, batch_mean:bool = True) -> float:
 
     if (target < 0).any() or (target > 1).any():
         raise ValueError("Target values must be between 0 and 1.")
@@ -40,7 +40,10 @@ def prediction_score(prediction: torch.Tensor, target: torch.Tensor) -> float:
     # Clamp the score to ensure it's between 0 and 1
     score = torch.clamp(score, min=0, max=1)
 
-    return score.mean().item()
+    if batch_mean == True:
+        return score.mean().item()
+    else:
+        return score
 
 
 def calculate_stable_target_complexity(targets: torch.Tensor,
