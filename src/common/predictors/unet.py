@@ -35,6 +35,8 @@ class UNet(nn.Module):
 
         x = self._u_structure(x)
 
+        x = torch.sigmoid(x)
+
         return x
 
     def name(self):

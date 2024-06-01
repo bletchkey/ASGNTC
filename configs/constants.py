@@ -83,10 +83,6 @@ DATASET_NAME = "gol_dataset"
 TRAINING_TYPE_PREDICTOR   = "training_predictor"
 TRAINING_TYPE_ADVERSARIAL = "training_adversarial"
 
-# Accuracy scores
-ACCURACY_BINS      = "accuracy_bins"
-ACCURACY_TOLERANCE = "accuracy_tolerance"
-
 # Dataset keys
 TRAIN      = "train"
 VALIDATION = "validation"

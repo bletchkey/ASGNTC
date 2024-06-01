@@ -33,7 +33,7 @@ from src.common.utils.scores import prediction_score
 from src.common.utils.helpers import get_elapsed_time_str
 
 from src.gol_pred_sys.utils.helpers import test_predictor_model_dataset, save_progress_plot_dataset, \
-                                           save_loss_acc_plot, get_config_from_batch
+                                           save_loss_pred_score_plot, get_config_from_batch
 
 
 class TrainingPredictor(TrainingBase):
@@ -56,7 +56,7 @@ class TrainingPredictor(TrainingBase):
         n_times_trained_p (int): The number of times the predictor model was trained.
         learning_rates (list): The learning rates used during the training session.
         losses (dict): The losses of the predictor model on the training, validation and test sets.
-        accuracies (dict): The accuracies of the predictor model on the training, validation and test sets.
+        prediction_scores (dict): The prediction scores of the predictor model on the training, validation and test sets.
         dataloader (dict): The dataloaders used for training, validation and testing the predictor model.
         path_log_file (str): The path to the log file for the training session.
 
@@ -98,8 +98,8 @@ class TrainingPredictor(TrainingBase):
 
         self.learning_rates = []
 
-        self.losses     = {TRAIN: [], VALIDATION: [], TEST: []}
-        self.accuracies = {TRAIN: [], VALIDATION: [], TEST: []}
+        self.losses            = {TRAIN: [], VALIDATION: [], TEST: []}
+        self.prediction_scores = {TRAIN: [], VALIDATION: [], TEST: []}
 
         self.dataloader = {TRAIN: self.dataset_manager.get_dataloader(TRAIN, P_BATCH_SIZE, shuffle=True),
                            VALIDATION: self.dataset_manager.get_dataloader(VALIDATION, P_BATCH_SIZE, shuffle=False),
@@ -113,7 +113,7 @@ class TrainingPredictor(TrainingBase):
         Function used for running the training session.
 
         returns:
-            results (dict): Contains the losses and accuracies of the predictor model on the training, validation and test sets.
+            results (dict): Contains the losses and prediction scores of the predictor model on the training, validation and test sets.
 
         """
 
@@ -140,7 +140,7 @@ class TrainingPredictor(TrainingBase):
         The training loop consists of P_NUM_EPOCHS epochs.
 
         returns:
-            results (dict): Contains the losses and accuracies of the predictor model on the training, validation and test sets.
+            results (dict): Contains the losses and prediction scores of the predictor model on the training, validation and test sets.
 
         """
 
@@ -178,7 +178,7 @@ class TrainingPredictor(TrainingBase):
 
             self.__log_training_epoch(epoch_elapsed_time)
 
-            self.__save_loss_acc_plot()
+            self.__save_loss_pred_score_plot()
 
             # Test the predictor model
             logging.debug(f"Plotting the progress of the predictor model using the test set")
@@ -189,7 +189,7 @@ class TrainingPredictor(TrainingBase):
 
             self.device_manager.clear_resources()
 
-        return {"losses": self.losses, "accuracies": self.accuracies}
+        return {"losses": self.losses, "prediction_scores": self.prediction_scores}
 
 
     def process_predictor_model(self, mode) -> None:
@@ -216,9 +216,9 @@ class TrainingPredictor(TrainingBase):
         if mode not in [TRAIN, VALIDATION, TEST]:
             raise ValueError(f"Invalid mode: {mode}, must be one of '{TRAIN}', '{VALIDATION}', '{TEST}'")
 
-        total_loss     = 0
-        total_accuracy = 0
-        dataloader     = self.dataloader[mode]
+        total_loss       = 0
+        total_pred_score = 0
+        dataloader       = self.dataloader[mode]
 
         if mode == TRAIN:
             self.predictor.model.train()
@@ -246,19 +246,19 @@ class TrainingPredictor(TrainingBase):
                         logging.debug("Warm-up phase")
                         logging.debug(f"Learning rate: {self.predictor.get_learning_rate()}")
 
-                accuracy = prediction_score(predicted, self.__get_config_type(batch, self.config_type_pred_target))
+                pred_score = prediction_score(predicted, self.__get_config_type(batch, self.config_type_pred_target))
 
-                total_loss     += errP.item()
-                total_accuracy += accuracy
+                total_loss       += errP.item()
+                total_pred_score += pred_score
 
-                running_avg_loss     = total_loss / batch_count
-                running_avg_accuracy = total_accuracy / batch_count
+                running_avg_loss       = total_loss / batch_count
+                running_avg_pred_score = total_pred_score / batch_count
 
         self.losses[mode].append(running_avg_loss)
-        self.accuracies[mode].append(running_avg_accuracy)
+        self.prediction_scores[mode].append(running_avg_pred_score)
 
         logging.debug(f"Predictor loss on {mode} data: {self.losses[mode][-1]}")
-        logging.debug(f"Accuracy on {mode} data: {self.accuracies[mode][-1]}")
+        logging.debug(f"Prediction score on {mode} data: {self.prediction_scores[mode][-1]}")
 
 
     def __test_predictor_model(self) -> dict:
@@ -285,27 +285,27 @@ class TrainingPredictor(TrainingBase):
 
         """
 
-        str_epoch_time  = f"{get_elapsed_time_str(time)}"
-        str_epoch       = f"{self.current_epoch+1}/{P_NUM_EPOCHS}"
-        str_err_p_train = f"{self.losses[TRAIN][-1]:.6f}"
-        str_err_p_val   = f"{self.losses[VALIDATION][-1]:.6f}"
-        str_acc_p_train = f"{(100*self.accuracies[TRAIN][-1]):.1f}%"
-        str_acc_p_val   = f"{(100*self.accuracies[VALIDATION][-1]):.1f}%"
-        str_losses      = f"Losses P [train: {str_err_p_train}, val: {str_err_p_val}]"
-        str_accuracies  = f"Accuracies P [train: {str_acc_p_train}, val: {str_acc_p_val}]"
-        lr              = self.learning_rates[self.current_epoch]
+        str_epoch_time         = f"{get_elapsed_time_str(time)}"
+        str_epoch              = f"{self.current_epoch+1}/{P_NUM_EPOCHS}"
+        str_err_p_train        = f"{self.losses[TRAIN][-1]:.6f}"
+        str_err_p_val          = f"{self.losses[VALIDATION][-1]:.6f}"
+        str_pred_score_p_train = f"{(100*self.prediction_scores[TRAIN][-1]):.1f}%"
+        str_pred_score_p_val   = f"{(100*self.prediction_scores[VALIDATION][-1]):.1f}%"
+        str_losses             = f"Losses P [train: {str_err_p_train}, val: {str_err_p_val}]"
+        str_prediction_scores  = f"Prediction scores P [train: {str_pred_score_p_train}, val: {str_pred_score_p_val}]"
+        lr                     = self.learning_rates[self.current_epoch]
 
         with open(self.path_log_file, "a") as log:
-            log.write(f"{str_epoch_time} | Epoch: {str_epoch} | {str_losses} | {str_accuracies} | LR: {lr}\n")
+            log.write(f"{str_epoch_time} | Epoch: {str_epoch} | {str_losses} | {str_prediction_scores} | LR: {lr}\n")
 
             if self.current_epoch+1 == P_NUM_EPOCHS:
-                str_err_p_test  = f"{self.losses[TEST][-1]:.6f}"
-                str_acc_p_test  = f"{(100*self.accuracies[TEST][-1]):.1f}%"
+                str_err_p_test        = f"{self.losses[TEST][-1]:.6f}"
+                str_pred_score_p_test = f"{(100*self.prediction_scores[TEST][-1]):.1f}%"
 
                 log.write(f"\n\n")
                 log.write(f"Performance of the predictor model on the test set:\n")
                 log.write(f"Loss P [test: {str_err_p_test}]\n")
-                log.write(f"Accuracy P [test: {str_acc_p_test}]\n\n")
+                log.write(f"Prediction score P [test: {str_pred_score_p_test}]\n\n")
                 log.write(f"The predictor model was trained {self.n_times_trained_p} times\n\n")
                 log.write(f"Training ended at {datetime.datetime.now().strftime('%d/%m/%Y %H:%M:%S')}\n")
 
@@ -374,15 +374,15 @@ class TrainingPredictor(TrainingBase):
         save_progress_plot_dataset(data, self.current_epoch, self.__folders.results_folder)
 
 
-    def __save_loss_acc_plot(self) -> None:
+    def __save_loss_pred_score_plot(self) -> None:
         """
         Function for plotting and saving the losses of training and validation for the predictor model.
 
         """
 
-        save_loss_acc_plot(self.losses[TRAIN], self.losses[VALIDATION],
-                           self.accuracies[TRAIN], self.accuracies[VALIDATION],
-                           self.learning_rates, self.__folders.base_folder)
+        save_loss_pred_score_plot(self.losses[TRAIN], self.losses[VALIDATION],
+                                  self.prediction_scores[TRAIN], self.prediction_scores[VALIDATION],
+                                  self.learning_rates, self.__folders.base_folder)
 
 
     def __initialize_seed(self) -> None:

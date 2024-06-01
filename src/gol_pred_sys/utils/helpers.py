@@ -197,17 +197,17 @@ def save_progress_plot_dataset(plot_data: dict, epoch: int, results_path: str) -
     export_figures_to_pdf(pdf_path, fig)
 
 
-def save_loss_acc_plot(losses_p_train: list, losses_p_val: list,
-                       accuracies_p_train: list, accuracies_p_val: list,
-                       learning_rates: list, path: str) -> None:
+def save_loss_pred_score_plot(losses_p_train: list, losses_p_val: list,
+                              prediction_scores_p_train: list, prediction_scores_p_val: list,
+                              learning_rates: list, path: str) -> None:
     """
     Function to save the losses plot
 
     Args:
         losses_p_train (list): The training losses for the predictor model
         losses_p_val (list): The validation losses for the predictor model
-        accuracies_p_train (list): The training accuracies for the predictor model
-        accuracies_p_val (list): The validation accuracies for the predictor model
+        prediction_scores_p_train (list): The training prediction_scores for the predictor model
+        prediction_scores_p_val (list): The validation prediction_scores for the predictor model
         learning_rates (list): The learning rates used during training for each epoch
         path (str): The path to where the results will be saved
 
@@ -237,12 +237,12 @@ def save_loss_acc_plot(losses_p_train: list, losses_p_val: list,
     ax[0].set_ylabel("Loss", fontsize=12)
     ax[0].legend(loc='upper right')
 
-    # Plot training and validation accuracies
-    ax[1].plot(epochs, accuracies_p_train, label="Training Accuracy", color='blue', linewidth=0.7)
-    ax[1].plot(epochs, accuracies_p_val, label="Validation Accuracy", color='orange', linewidth=0.7, linestyle='--')
+    # Plot training and validation prediction scores
+    ax[1].plot(epochs, prediction_scores_p_train, label="Training Prediction score", color='blue', linewidth=0.7)
+    ax[1].plot(epochs, prediction_scores_p_val, label="Validation Prediction score", color='orange', linewidth=0.7, linestyle='--')
 
     ax[1].set_xlabel("Epoch", fontsize=12)
-    ax[1].set_ylabel("Accuracy", fontsize=12)
+    ax[1].set_ylabel("Prediction score", fontsize=12)
     ax[1].legend(loc='lower right')
 
     # Mark learning rate changes on the x-axis and annotate the learning rate value
@@ -254,7 +254,7 @@ def save_loss_acc_plot(losses_p_train: list, losses_p_val: list,
                      textcoords="offset points", xytext=(-10,0), ha='left', fontsize=2, color='green')
 
     plt.tight_layout()
-    pdf_path = Path(path, "loss_acc_graph.pdf")
+    pdf_path = Path(path, "loss_pred_score_graph.pdf")
     export_figures_to_pdf(pdf_path, fig)
 
 

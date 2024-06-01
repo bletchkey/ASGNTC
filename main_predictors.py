@@ -55,8 +55,8 @@ def __plot_trainings(ax, train_data, val_data, title, xlabel, ylabel, yscale='li
         last_val_epoch = len(val_data) - 1
 
         if yscale == 'log':
-            ax.annotate(f'Min: {min(val_data):.3f}', (min_val_epoch, min(val_data)), textcoords="offset points", xytext=(10,20),    ha='center',    color=val_color, fontsize=8)
-            ax.annotate(f'Max: {max(val_data):.3f}', (max_val_epoch, max(val_data)), textcoords="offset points", xytext=(25,0),    ha='center',   color=val_color, fontsize=8)
+            ax.annotate(f'Min: {min(val_data):.3f}', (min_val_epoch, min(val_data)), textcoords="offset points", xytext=(-5,20),    ha='center',    color=val_color, fontsize=8)
+            ax.annotate(f'Max: {max(val_data):.3f}', (max_val_epoch, max(val_data)), textcoords="offset points", xytext=(30,0),    ha='center',   color=val_color, fontsize=8)
 
             if (val_data[-1] >= 90):
                 pos_y = -15
@@ -117,8 +117,8 @@ def __plot_toro_zero(ax, data, title, xlabel, ylabel, yscale='linear', ylim=None
             last_val_epoch = len(data) - 1
 
             if yscale == 'log':
-                ax.annotate(f'Min: {min(data):.3f}', (min_val_epoch, min(data)), textcoords="offset points", xytext=(10,20),    ha='center',    color=color, fontsize=8)
-                ax.annotate(f'Max: {max(data):.3f}', (max_val_epoch, max(data)), textcoords="offset points", xytext=(25,0),    ha='center',   color=color, fontsize=8)
+                ax.annotate(f'Min: {min(data):.3f}', (min_val_epoch, min(data)), textcoords="offset points", xytext=(-10,20),    ha='center',    color=color, fontsize=8)
+                ax.annotate(f'Max: {max(data):.3f}', (max_val_epoch, max(data)), textcoords="offset points", xytext=(30,0),    ha='center',   color=color, fontsize=8)
 
                 if (data[-1] >= 90):
                     pos_y = -15
@@ -129,7 +129,7 @@ def __plot_toro_zero(ax, data, title, xlabel, ylabel, yscale='linear', ylim=None
 
             else:
                 ax.annotate(f'Min: {min(data):.1f}%', (min_val_epoch, min(data)), textcoords="offset points", xytext=(15,20),    ha='center',    color=color, fontsize=8)
-                ax.annotate(f'Max: {max(data):.1f}%', (max_val_epoch, max(data)), textcoords="offset points", xytext=(5,-30),    ha='center',   color=color, fontsize=8)
+                ax.annotate(f'Max: {max(data):.1f}%', (max_val_epoch, max(data)), textcoords="offset points", xytext=(5,-25),    ha='center',   color=color, fontsize=8)
 
                 if (data[-1] >= 90):
                     pos_y = -15
@@ -155,31 +155,31 @@ def plot_baseline_on_all_targets():
     data_hard   = retrieve_log_data(log_paths["hard"])
     data_stable = retrieve_log_data(log_paths["stable"])
 
-    # Extract training and validation losses and accuracies
+    # Extract training and validation losses and prediction scores
     metrics = {
         "easy": {
             "loss_train": data_easy["train_losses"],
             "loss_val": data_easy["val_losses"],
-            "acc_train": data_easy["train_accuracies"],
-            "acc_val": data_easy["val_accuracies"]
+            "pred_score_train": data_easy["train_prediction_scores"],
+            "pred_score_val": data_easy["val_prediction_scores"]
         },
         "medium": {
             "loss_train": data_medium["train_losses"],
             "loss_val": data_medium["val_losses"],
-            "acc_train": data_medium["train_accuracies"],
-            "acc_val": data_medium["val_accuracies"]
+            "pred_score_train": data_medium["train_prediction_scores"],
+            "pred_score_val": data_medium["val_prediction_scores"]
         },
         "hard": {
             "loss_train": data_hard["train_losses"],
             "loss_val": data_hard["val_losses"],
-            "acc_train": data_hard["train_accuracies"],
-            "acc_val": data_hard["val_accuracies"]
+            "pred_score_train": data_hard["train_prediction_scores"],
+            "pred_score_val": data_hard["val_prediction_scores"]
         },
         "stable": {
             "loss_train": data_stable["train_losses"],
             "loss_val": data_stable["val_losses"],
-            "acc_train": data_stable["train_accuracies"],
-            "acc_val": data_stable["val_accuracies"]
+            "pred_score_train": data_stable["train_prediction_scores"],
+            "pred_score_val": data_stable["val_prediction_scores"]
         }
     }
 
@@ -192,7 +192,7 @@ def plot_baseline_on_all_targets():
                  "Target Easy - Loss", "Epoch", "Loss", yscale='log')
 
     # Easy Prediction score
-    __plot_trainings(ax[0, 1], metrics["easy"]["acc_train"], metrics["easy"]["acc_val"],
+    __plot_trainings(ax[0, 1], metrics["easy"]["pred_score_train"], metrics["easy"]["pred_score_val"],
                  "Target Easy - Prediction score", "Epoch", "Prediction score (%)", ylim=[0, 100], legend_loc='lower right')
 
     # Medium Loss
@@ -200,7 +200,7 @@ def plot_baseline_on_all_targets():
                  "Target Medium - Loss", "Epoch", "Loss", yscale='log')
 
     # Medium Prediction score
-    __plot_trainings(ax[1, 1], metrics["medium"]["acc_train"], metrics["medium"]["acc_val"],
+    __plot_trainings(ax[1, 1], metrics["medium"]["pred_score_train"], metrics["medium"]["pred_score_val"],
                  "Target Medium - Prediction score", "Epoch", "Prediction score (%)", ylim=[0, 100], legend_loc='lower right')
 
     # Hard Loss
@@ -208,7 +208,7 @@ def plot_baseline_on_all_targets():
                  "Target Hard - Loss", "Epoch", "Loss", yscale='log')
 
     # Hard Prediction score
-    __plot_trainings(ax[2, 1], metrics["hard"]["acc_train"], metrics["hard"]["acc_val"],
+    __plot_trainings(ax[2, 1], metrics["hard"]["pred_score_train"], metrics["hard"]["pred_score_val"],
                     "Target Hard - Prediction score", "Epoch", "Prediction score (%)", ylim=[0, 100], legend_loc='lower right')
 
     # Stable Loss
@@ -216,7 +216,7 @@ def plot_baseline_on_all_targets():
                  "Target Stable - Loss", "Epoch", "Loss", yscale='log')
 
     # Stable Prediction score
-    __plot_trainings(ax[3, 1], metrics["stable"]["acc_train"], metrics["stable"]["acc_val"],
+    __plot_trainings(ax[3, 1], metrics["stable"]["pred_score_train"], metrics["stable"]["pred_score_val"],
                  "Target Stable - Prediction score", "Epoch", "Prediction score (%)", ylim=[0, 100], legend_loc='lower right')
 
     plt.tight_layout(rect=[0, 0.03, 1, 0.95])  # Adjust layout to make room for the title
@@ -247,12 +247,12 @@ def plot_data_base_toro_vs_zero():
 
     pred_scores = {
         "toro": {
-            "train": data_toro["train_accuracies"],
-            "val": data_toro["val_accuracies"]
+            "train": data_toro["train_prediction_scores"],
+            "val": data_toro["val_prediction_scores"]
         },
         "zero": {
-            "train": data_zero["train_accuracies"],
-            "val": data_zero["val_accuracies"]
+            "train": data_zero["train_prediction_scores"],
+            "val": data_zero["val_prediction_scores"]
         }
     }
 
@@ -268,7 +268,28 @@ def plot_data_base_toro_vs_zero():
     export_figures_to_pdf(pdf_path, fig)
 
 
+def plot_pred_score_test_set(ax, scores, title, xlabel, ylabel):
+    ax.plot(scores, color='#385BA8', marker='o', linestyle='-', linewidth=0.8)
+    ax.set_title(title, fontsize=14, fontweight='bold')
+    ax.set_xlabel(xlabel)
+    ax.set_ylabel(ylabel)
+    ax.set_ylim([0, 100])
+
+
+def plot_performance_by_cells(ax, scores_dict, avg_score, title, xlabel, ylabel):
+    keys, values = zip(*scores_dict.items())
+    ax.scatter(keys, values, color='#6e0b2f', label='Prediction score for each number of initial cells', marker='x')
+    ax.hlines(avg_score, keys[0], keys[-1], colors='#75849c', linestyles="--", label='Overall average prediction score', linewidth=0.8)
+    ax.set_title(title, fontsize=14, fontweight='bold')
+    ax.set_xlabel(xlabel)
+    ax.set_ylabel(ylabel)
+    ax.set_ylim([0, 100])
+    ax.legend(frameon=False)
+
+
 def plot_baseline_pred_score_analysis():
+
+    models = ['easy', 'medium', 'hard', 'stable']
 
     model_folder_path = TRAINED_MODELS_DIR / "predictors"
 
@@ -277,104 +298,52 @@ def plot_baseline_pred_score_analysis():
     model_hard   = model_folder_path / "Baseline_Toroidal_Hard"
     model_stable = model_folder_path / "Baseline_Toroidal_Stable"
 
-    avg_easy_scores_each_checkpoint   = get_prediction_score(model_easy)
-    avg_medium_scores_each_checkpoint = get_prediction_score(model_medium)
-    avg_hard_scores_each_checkpoint   = get_prediction_score(model_hard)
-    avg_stable_scores_each_checkpoint = get_prediction_score(model_stable)
+    pred_scores_each_checkpoint ={
+        'easy'  : get_prediction_score(model_easy),
+        'medium': get_prediction_score(model_medium),
+        'hard'  : get_prediction_score(model_hard),
+        'stable': get_prediction_score(model_stable)
+    }
+
+    # Multiply each score by 100 to convert to percentage
+    pred_scores_each_checkpoint = {key: [score * 100 for score in scores] for key, scores in pred_scores_each_checkpoint.items()}
 
     checkpoint_index = 100
-
-    avg_easy_p_score   = get_prediction_score(model_easy, checkpoint_index)
-    avg_medium_p_score = get_prediction_score(model_medium, checkpoint_index)
-    avg_hard_p_score   = get_prediction_score(model_hard, checkpoint_index)
-    avg_stable_p_score = get_prediction_score(model_stable, checkpoint_index)
+    pred_score_checkpoint = {
+        'easy'  : pred_scores_each_checkpoint['easy'][checkpoint_index-1],
+        'medium': pred_scores_each_checkpoint['medium'][checkpoint_index-1],
+        'hard'  : pred_scores_each_checkpoint['hard'][checkpoint_index-1],
+        'stable': pred_scores_each_checkpoint['stable'][checkpoint_index-1]
+    }
 
     model_easy_checkpoint   = model_easy   / "checkpoints" / f"predictor_{checkpoint_index}.pth.tar"
     model_medium_checkpoint = model_medium / "checkpoints" / f"predictor_{checkpoint_index}.pth.tar"
     model_hard_checkpoint   = model_hard   / "checkpoints" / f"predictor_{checkpoint_index}.pth.tar"
     model_stable_checkpoint = model_stable / "checkpoints" / f"predictor_{checkpoint_index}.pth.tar"
 
-    avg_easy_p_scores_each_n_cells   = get_prediction_score_n_cells_initial(model_easy_checkpoint)
-    avg_medium_p_scores_each_n_cells = get_prediction_score_n_cells_initial(model_medium_checkpoint)
-    avg_hard_p_scores_each_n_cells   = get_prediction_score_n_cells_initial(model_hard_checkpoint)
-    avg_stable_p_scores_each_n_cells = get_prediction_score_n_cells_initial(model_stable_checkpoint)
+    pred_scores_each_n_cells = {
+        'easy'  : get_prediction_score_n_cells_initial(model_easy_checkpoint),
+        'medium': get_prediction_score_n_cells_initial(model_medium_checkpoint),
+        'hard'  : get_prediction_score_n_cells_initial(model_hard_checkpoint),
+        'stable': get_prediction_score_n_cells_initial(model_stable_checkpoint)
+    }
 
+    for model in models:
+        pred_scores_each_n_cells[model] = {key: [score * 100 for score in scores] for key, scores in pred_scores_each_n_cells[model].items()}
 
-    # Plotting
-    fig, axs = plt.subplots(4, 2, figsize=(10, 12))
-    fig.suptitle("Baseline Model - Prediction Score Analysis on Test Dataset", fontsize=18, fontweight='bold')
+    fig, axs = plt.subplots(4, 2, figsize=(8, 10))
+    # fig.suptitle("Baseline Model - Prediction Score Analysis on Test Dataset", fontsize=18, fontweight='bold')
 
+    for i, model in enumerate(models):
 
-    # EASY
-    axs[0, 0].plot(avg_easy_scores_each_checkpoint,
-                     label='Average prediction score for each epoch', color='blue')
-    axs[0, 0].set_title("Easy - Performance during training")
-    axs[0, 0].set_xlabel("Epoch")
-    axs[0, 0].set_ylabel("Score (%)")
-    axs[0, 0].legend()
+        plot_pred_score_test_set(axs[i, 0], pred_scores_each_checkpoint[model],
+                                 f"{model.capitalize()} - Prediction score", "Epoch", "Prediction score (%)")
 
-    axs[0, 1].plot(avg_easy_p_scores_each_n_cells.keys(), avg_easy_p_scores_each_n_cells.values(),
-                   label='Average prediction score for each number of initial cells', color='blue')
-    axs[0, 1].plot(np.arange(0, 1025), [avg_easy_p_score]*1025,
-                   label='Average prediction score', color='red', linestyle="--", linewidth=0.8)
-    axs[0, 1].set_title(f"Easy - Performance on each number of initial cells - Epoch {checkpoint_index}")
-    axs[0, 1].set_xlabel("Number of initial cells")
-    axs[0, 1].set_ylabel("Score (%)")
-    axs[0, 1].legend()
+        plot_performance_by_cells(axs[i, 1],
+                                  pred_scores_each_n_cells[model],
+                                  pred_score_checkpoint[model],
+                                  f"{model.capitalize()} - Prediction score - Epoch {checkpoint_index}", "Number of initial cells", "Prediction score (%)")
 
-
-    # MEDIUM
-    axs[1, 0].plot(avg_medium_scores_each_checkpoint,
-                     label='Average prediction score for each epoch', color='blue')
-    axs[1, 0].set_title("Medium - Performance during training")
-    axs[1, 0].set_xlabel("Epoch")
-    axs[1, 0].set_ylabel("Score (%)")
-    axs[1, 0].legend()
-
-    axs[1, 1].plot(avg_medium_p_scores_each_n_cells.keys(), avg_medium_p_scores_each_n_cells.values(),
-                   label='Average prediction score for each number of initial cells', color='blue')
-    axs[1, 1].plot(np.arange(0, 1025), [avg_medium_p_score]*1025,
-                   label='Average prediction score', color='red', linestyle="--", linewidth=0.8)
-    axs[1, 1].set_title(f"Medium - Performance on each number of initial cells - Epoch {checkpoint_index}")
-    axs[1, 1].set_xlabel("Number of initial cells")
-    axs[1, 1].set_ylabel("Score (%)")
-    axs[1, 1].legend()
-
-
-    # HARD
-    axs[2, 0].plot(avg_hard_scores_each_checkpoint,
-                        label='Average prediction score for each epoch', color='blue')
-    axs[2, 0].set_title("Hard - Performance during training")
-    axs[2, 0].set_xlabel("Epoch")
-    axs[2, 0].set_ylabel("Score (%)")
-    axs[2, 0].legend()
-
-    axs[2, 1].plot(avg_hard_p_scores_each_n_cells.keys(), avg_hard_p_scores_each_n_cells.values(),
-                   label='Average prediction score for each number of initial cells', color='blue')
-    axs[2, 1].plot(np.arange(0, 1025), [avg_hard_p_score]*1025,
-                   label='Average prediction score', color='red', linestyle="--", linewidth=0.8)
-    axs[2, 1].set_title(f"Hard - Performance on each number of initial cells - Epoch {checkpoint_index}")
-    axs[2, 1].set_xlabel("Number of initial cells")
-    axs[2, 1].set_ylabel("Score (%)")
-    axs[2, 1].legend()
-
-
-    # STABLE
-    axs[3, 0].plot(avg_stable_scores_each_checkpoint,
-                        label='Average prediction score for each epoch', color='blue')
-    axs[3, 0].set_title("Stable - Performance during training")
-    axs[3, 0].set_xlabel("Epoch")
-    axs[3, 0].set_ylabel("Score (%)")
-    axs[3, 0].legend()
-
-    axs[3, 1].plot(avg_stable_p_scores_each_n_cells.keys(), avg_stable_p_scores_each_n_cells.values(),
-                   label='Average prediction score for each number of initial cells', color='blue')
-    axs[3, 1].plot(np.arange(0, 1025), [avg_stable_p_score]*1025,
-                   label='Average prediction score', color='red', linestyle="--", linewidth=0.8)
-    axs[3, 1].set_title(f"Stable - Performance on each number of initial cells - Epoch {checkpoint_index}")
-    axs[3, 1].set_xlabel("Number of initial cells")
-    axs[3, 1].set_ylabel("Score (%)")
-    axs[3, 1].legend()
 
     plt.tight_layout()
     pdf_path = OUTPUTS_DIR / "baseline_pred_score_analysis.pdf"
@@ -412,9 +381,8 @@ def main():
 
     # plot_baseline_pred_score_analysis()
 
-    train(Predictor_Baseline(TOPOLOGY_TOROIDAL), CONFIG_TARGET_MEDIUM)
     # train(Predictor_ResNet(TOPOLOGY_TOROIDAL, 10, 64), CONFIG_TARGET_MEDIUM)
-    # train(Predictor_UNet(), CONFIG_TARGET_MEDIUM)
+    train(Predictor_UNet(), CONFIG_TARGET_MEDIUM)
 
     return 0
 

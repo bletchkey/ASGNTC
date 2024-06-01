@@ -14,7 +14,7 @@ from src.gol_pred_sys.dataset_manager import DatasetManager
 from src.common.predictor             import Predictor_Baseline
 
 from src.gol_pred_sys.utils.helpers import get_config_from_batch
-from src.common.utils.scores        import prediction_accuracy_bins, prediction_score
+from src.common.utils.scores        import prediction_score
 
 
 def __extract_checkpoint_index(filename):
@@ -72,10 +72,9 @@ def get_prediction_score(model_folder_path: Path, checkpoint_index:int = None):
                     total_score       += score
                     running_avg_score  = total_score / batch_count
 
-                    logging.debug(f"Batch {batch_count} - Accuracy: {100*score:.1f}% - Running average: {running_avg_score*100:.1f}%")
-
-
             scores.append(running_avg_score)
+
+            logging.debug(f"Checkpoint {checkpoint_path} - Prediction score: {running_avg_score*100:.2f}%")
 
             del model
             torch.cuda.empty_cache()
