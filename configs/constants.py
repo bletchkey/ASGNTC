@@ -32,6 +32,10 @@ NUM_TRAINING_STEPS = 5
 # Average loss of P threshold before training G
 THRESHOLD_AVG_LOSS_P = 0.05
 
+# Number of configurations to generate for evaluation
+NUM_CONFIGS_GEN_EVAL = 8192
+NUM_BATCHES_GEN_EVAL = NUM_CONFIGS_GEN_EVAL // BATCH_SIZE
+
 ### TRAINING GENERAL ##############################################################
 
 # File name for monitoring the training progress

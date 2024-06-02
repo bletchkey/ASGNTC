@@ -325,7 +325,7 @@ def generate_new_batches(model_g: torch.nn.Module,
 
     for _ in range(n_batches):
 
-        generated_config = __generate_initial_config_from_noise(model_g, device)
+        generated_config = generate_initial_config_from_noise(model_g, device)
 
         with torch.no_grad():
             initial_config = get_initialized_initial_config(generated_config, init_config_initial_type)
@@ -362,8 +362,8 @@ def generate_new_batches(model_g: torch.nn.Module,
     return data
 
 
-def __generate_initial_config_from_noise(model_g: torch.nn.Module,
-                                         device: torch.device) -> torch.Tensor:
+def generate_initial_config_from_noise(model_g: torch.nn.Module,
+                                       device: torch.device) -> torch.Tensor:
 
     """
     Function to generate the initial configuration

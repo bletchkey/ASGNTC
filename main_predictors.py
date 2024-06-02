@@ -270,7 +270,7 @@ def plot_data_base_toro_vs_zero():
     export_figures_to_pdf(pdf_path, fig)
 
 
-def plot_pred_score_test_set(ax, scores, title, xlabel, ylabel):
+def __plot_pred_score_test_set(ax, scores, title, xlabel, ylabel):
     ax.plot(scores, color='#385BA8', linestyle='-', linewidth=1)
     ax.set_title(title, fontsize=12, fontweight='bold')
     ax.set_xlabel(xlabel)
@@ -278,7 +278,7 @@ def plot_pred_score_test_set(ax, scores, title, xlabel, ylabel):
     ax.set_ylim([0, 100])
 
 
-def plot_performance_by_cells(ax, scores, avg_score, title, xlabel, ylabel):
+def __plot_performance_by_cells(ax, scores, avg_score, title, xlabel, ylabel):
     ax.scatter(np.arange(0, GRID_SIZE**2+1), scores, color='#6e0b2f', label='Prediction score for each number of initial cells', marker='x', s=2)
     ax.hlines(avg_score, 0, GRID_SIZE**2, colors='#75849c', linestyles="--", label='Overall average prediction score', linewidth=0.8)
     ax.set_title(title, fontsize=12, fontweight='bold')
@@ -367,14 +367,13 @@ def plot_baseline_pred_score_analysis():
 
     for i, target in enumerate(targets):
 
-        plot_pred_score_test_set(axs[i, 0], pred_scores_each_checkpoint[target],
-                                 f"Target {target.capitalize()} - Prediction score", "Epoch", "Prediction score (%)")
+        __plot_pred_score_test_set(axs[i, 0], pred_scores_each_checkpoint[target],
+                                   f"Target {target.capitalize()} - Prediction score", "Epoch", "Prediction score (%)")
 
-        plot_performance_by_cells(axs[i, 1],
-                                  pred_scores_each_n_cells[target],
-                                  pred_score_checkpoint[target],
-                                  f"Target {target.capitalize()} - Prediction score - Epoch {checkpoint_index}", "Number of initial cells", "Prediction score (%)")
-
+        __plot_performance_by_cells(axs[i, 1],
+                                    pred_scores_each_n_cells[target],
+                                    pred_score_checkpoint[target],
+                                    f"Target {target.capitalize()} - Prediction score - Epoch {checkpoint_index}", "Number of initial   cells", "Prediction score (%)")
 
     plt.tight_layout()
     pdf_path = OUTPUTS_DIR / "baseline_pred_score_analysis.pdf"
@@ -409,11 +408,10 @@ def main():
 
     # plot_data_base_toro_vs_zero()
     # plot_baseline_on_all_targets()
-
-    plot_baseline_pred_score_analysis()
+    # plot_baseline_pred_score_analysis()
 
     # train(Predictor_ResNet(TOPOLOGY_TOROIDAL, 10, 64), CONFIG_TARGET_MEDIUM)
-    # train(Predictor_UNet(), CONFIG_TARGET_MEDIUM)
+    train(Predictor_UNet(), CONFIG_TARGET_MEDIUM)
 
     return 0
 

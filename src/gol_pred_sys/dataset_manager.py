@@ -101,7 +101,7 @@ class DatasetCreator():
                 initial_config = initial_config.view(DATASET_BATCH_SIZE, 1, GRID_SIZE, GRID_SIZE)
                 with torch.no_grad():
                     sim_results = simulate_config(config=initial_config, topology=self.__simulation_topology,
-                                              steps=DATASET_N_SIM_STEPS, device=self.device_manager.default_device)
+                                                  steps=DATASET_N_SIM_STEPS, device=self.device_manager.default_device)
 
                     final           = sim_results["final"]
                     targets         = sim_results["all_targets"]
