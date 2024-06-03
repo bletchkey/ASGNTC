@@ -1,9 +1,11 @@
 import logging
+import torch
+from torch import nn
 
 from configs.constants import *
-from src.common.predictors.unet        import UNet
-from src.common.predictors.resnet      import ResNet
-from src.common.predictors.proposed    import UNetResNetAttention
+from src.common.predictors.unet             import UNet
+from src.common.predictors.resnet           import ResNet
+from src.common.predictors.resnet_attention import ResNetAttention
 
 
 def Predictor_Baseline(topology):
@@ -29,8 +31,12 @@ def Predictor_UNet():
     return model
 
 
-def Predictor_Proposed(num_hidden):
-    model = UNetResNetAttention(num_hidden)
+def Predictor_ResNetAttention(num_hidden):
+    model = ResNetAttention(num_hidden)
+
+    if isinstance(model, nn.Conv2d) or isinstance(model, nn.ConvTranspose2d):
+        torch.nn.init.kaiming_uniform_(model.weight)
+
     logging.debug(model)
 
     return model

@@ -230,7 +230,6 @@ class TrainingPredictor(TrainingBase):
         with process_context:
             for batch_count, (batch, _) in enumerate(dataloader, start=1):
                 if mode == TRAIN:
-                    logging.debug(f"Processing batch {batch_count} of epoch {self.current_epoch+1}/{P_NUM_EPOCHS}")
                     self.predictor.optimizer.zero_grad()
 
                 predicted = self.predictor.model(self.__get_config_type(batch, self.config_type_pred_input))
@@ -253,6 +252,7 @@ class TrainingPredictor(TrainingBase):
 
                 running_avg_loss       = total_loss / batch_count
                 running_avg_pred_score = total_pred_score / batch_count
+
 
         self.losses[mode].append(running_avg_loss)
         self.prediction_scores[mode].append(running_avg_pred_score)
@@ -442,19 +442,23 @@ class TrainingPredictor(TrainingBase):
 
 
     def __cleanup(self):
-        torch.cuda.empty_cache()  # Clear CUDA cache
+        try:
+            if torch.cuda.is_available():
+                torch.cuda.empty_cache()  # Clear CUDA cache initially
 
-        if hasattr(self, 'predictor'):
-            del self.predictor.model  # Delete the model
-            torch.cuda.empty_cache()
+            if hasattr(self, 'predictor') and self.predictor is not None:
+                self.predictor = None
 
-        if hasattr(self, 'dataloader'):
-            self.dataloader = None  # Dereference dataloaders
+            if hasattr(self, 'dataloader') and self.dataloader is not None:
+                self.dataloader = None
 
-        # Manually trigger garbage collection
-        gc.collect()
-        if torch.cuda.is_available():
-            torch.cuda.empty_cache()  # Further clear CUDA cache after GC
+            # Manually trigger garbage collection
+            gc.collect()
 
-        logging.debug("Cleanup completed, freed up memory.")
+            if torch.cuda.is_available():
+                torch.cuda.empty_cache()  # Further clear CUDA cache after GC
+
+            logging.debug("Cleanup completed, freed up memory.")
+        except Exception as e:
+            logging.error(f"Error during cleanup: {e}")
 

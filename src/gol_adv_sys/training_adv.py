@@ -77,7 +77,7 @@ class TrainingAdversarial(TrainingBase):
         self.device_manager = DeviceManager()
 
         self.simulation_topology      = TOPOLOGY_TOROIDAL
-        self.config_type_pred_target  = CONFIG_TARGET_MEDIUM
+        self.config_type_pred_target  = CONFIG_TARGET_EASY
         self.init_config_initial_type = INIT_CONFIG_INITIAL_SIGN
 
         self.n_times_trained_p = 0

@@ -23,7 +23,7 @@ from src.common.utils.helpers       import export_figures_to_pdf, retrieve_log_d
                                            get_model_data_from_checkpoint, get_latest_checkpoint_path
 
 from src.common.predictor           import Predictor_Baseline, Predictor_ResNet,\
-                                           Predictor_UNet, Predictor_Proposed
+                                           Predictor_UNet, Predictor_ResNetAttention
 
 
 def __plot_trainings(ax, train_data, val_data, title, xlabel, ylabel, yscale='linear', ylim=None, legend_loc='upper right'):
@@ -79,71 +79,9 @@ def __plot_trainings(ax, train_data, val_data, title, xlabel, ylabel, yscale='li
             ax.annotate(f'Last: {val_data[-1]:.1f}%', (last_val_epoch, val_data[-1]), textcoords="offset points", xytext=(-20, pos_y),   ha='center', color=val_color, fontsize=8)
 
 
-def __plot_toro_zero(ax, data, title, xlabel, ylabel, yscale='linear', ylim=None, legend_loc='upper right'):
-        # Use distinct, easily distinguishable colors
-        toro_color = '#385BA8'
-        zero_color = '#366926'
-
-        toro_data = data["toro"]
-        zero_data = data["zero"]
-
-        # Plot data with markers and different line styles
-        ax.plot(toro_data["train"], label='toroidal padding', color=toro_color, marker='o', markersize=1.5)
-        ax.plot(zero_data["train"], label='zero padding', color=zero_color, marker='o', markersize=1.5)
-        ax.plot(toro_data["val"], color=toro_color, linestyle='--', linewidth=0.5)
-        ax.plot(zero_data["val"], color=zero_color, linestyle='--', linewidth=0.5)
-
-        ax.set_title(title, fontsize=12, fontweight='bold')
-
-        ax.set_xlabel(xlabel)
-        ax.set_ylabel(ylabel)
-        ax.set_yscale(yscale)
-
-        # Automatically adjust ylim based on data if not provided
-        if ylim is None:
-            all_data = toro_data["train"] + toro_data["val"] + zero_data["train"] + zero_data["val"]
-            buffer = (max(all_data) - min(all_data)) * 0.1
-            ylim = [min(all_data) - buffer, max(all_data) + buffer]
-        ax.set_ylim(ylim)
-        print(ylim)
-
-        ax.legend(loc=legend_loc)
-        ax.grid(True, which='both', linestyle='--', linewidth=0.5)
-
-        # Annotate important points
-        for data in [toro_data["val"], zero_data["val"]]:
-
-            color = toro_color if data == toro_data["val"] else zero_color
-            min_val_epoch  = data.index(min(data))
-            max_val_epoch  = data.index(max(data))
-            last_val_epoch = len(data) - 1
-
-            if yscale == 'log':
-                ax.annotate(f'Min: {min(data):.3f}', (min_val_epoch, min(data)), textcoords="offset points", xytext=(-10,20),    ha='center',    color=color, fontsize=8)
-                ax.annotate(f'Max: {max(data):.3f}', (max_val_epoch, max(data)), textcoords="offset points", xytext=(30,0),    ha='center',   color=color, fontsize=8)
-
-                if (data[-1] >= 90):
-                    pos_y = -15
-                else:
-                    pos_y = 8
-
-                ax.annotate(f'Last: {data[-1]:.3f}', (last_val_epoch, data[-1]), textcoords="offset points", xytext=(-20, pos_y),   ha='center', color=color, fontsize=8)
-
-            else:
-                ax.annotate(f'Min: {min(data):.1f}%', (min_val_epoch, min(data)), textcoords="offset points", xytext=(15,20),    ha='center',    color=color, fontsize=8)
-                ax.annotate(f'Max: {max(data):.1f}%', (max_val_epoch, max(data)), textcoords="offset points", xytext=(5,-25),    ha='center',   color=color, fontsize=8)
-
-                if (data[-1] >= 90):
-                    pos_y = -15
-                else:
-                    pos_y = 8
-
-                ax.annotate(f'Last: {data[-1]:.1f}%', (last_val_epoch, data[-1]), textcoords="offset points", xytext=(-20, pos_y),   ha='center', color=color, fontsize=8)
-
-
 def plot_baseline_on_all_targets():
 
-    # Retrieve log data for easy and medium targetss
+    # Retrieve log data for all baseline models
     log_paths = {
 
         "easy"  : TRAINED_MODELS_DIR / "predictors/Baseline_Toroidal_Easy/logs/training_progress.txt",
@@ -225,6 +163,68 @@ def plot_baseline_on_all_targets():
 
     pdf_path = OUTPUTS_DIR / "trainings_baseline_model.pdf"
     export_figures_to_pdf(pdf_path, fig)
+
+
+def __plot_toro_zero(ax, data, title, xlabel, ylabel, yscale='linear', ylim=None, legend_loc='upper right'):
+        # Use distinct, easily distinguishable colors
+        toro_color = '#385BA8'
+        zero_color = '#366926'
+
+        toro_data = data["toro"]
+        zero_data = data["zero"]
+
+        # Plot data with markers and different line styles
+        ax.plot(toro_data["train"], label='toroidal padding', color=toro_color, marker='o', markersize=1.5)
+        ax.plot(zero_data["train"], label='zero padding', color=zero_color, marker='o', markersize=1.5)
+        ax.plot(toro_data["val"], color=toro_color, linestyle='--', linewidth=0.5)
+        ax.plot(zero_data["val"], color=zero_color, linestyle='--', linewidth=0.5)
+
+        ax.set_title(title, fontsize=12, fontweight='bold')
+
+        ax.set_xlabel(xlabel)
+        ax.set_ylabel(ylabel)
+        ax.set_yscale(yscale)
+
+        # Automatically adjust ylim based on data if not provided
+        if ylim is None:
+            all_data = toro_data["train"] + toro_data["val"] + zero_data["train"] + zero_data["val"]
+            buffer = (max(all_data) - min(all_data)) * 0.1
+            ylim = [min(all_data) - buffer, max(all_data) + buffer]
+        ax.set_ylim(ylim)
+        print(ylim)
+
+        ax.legend(loc=legend_loc)
+        ax.grid(True, which='both', linestyle='--', linewidth=0.5)
+
+        # Annotate important points
+        for data in [toro_data["val"], zero_data["val"]]:
+
+            color = toro_color if data == toro_data["val"] else zero_color
+            min_val_epoch  = data.index(min(data))
+            max_val_epoch  = data.index(max(data))
+            last_val_epoch = len(data) - 1
+
+            if yscale == 'log':
+                ax.annotate(f'Min: {min(data):.3f}', (min_val_epoch, min(data)), textcoords="offset points", xytext=(-10,20),    ha='center',    color=color, fontsize=8)
+                ax.annotate(f'Max: {max(data):.3f}', (max_val_epoch, max(data)), textcoords="offset points", xytext=(30,0),    ha='center',   color=color, fontsize=8)
+
+                if (data[-1] >= 90):
+                    pos_y = -15
+                else:
+                    pos_y = 8
+
+                ax.annotate(f'Last: {data[-1]:.3f}', (last_val_epoch, data[-1]), textcoords="offset points", xytext=(-20, pos_y),   ha='center', color=color, fontsize=8)
+
+            else:
+                ax.annotate(f'Min: {min(data):.1f}%', (min_val_epoch, min(data)), textcoords="offset points", xytext=(15,20),    ha='center',    color=color, fontsize=8)
+                ax.annotate(f'Max: {max(data):.1f}%', (max_val_epoch, max(data)), textcoords="offset points", xytext=(5,-25),    ha='center',   color=color, fontsize=8)
+
+                if (data[-1] >= 90):
+                    pos_y = -15
+                else:
+                    pos_y = 8
+
+                ax.annotate(f'Last: {data[-1]:.1f}%', (last_val_epoch, data[-1]), textcoords="offset points", xytext=(-20, pos_y),   ha='center', color=color, fontsize=8)
 
 
 def plot_data_base_toro_vs_zero():
@@ -380,6 +380,113 @@ def plot_baseline_pred_score_analysis():
     export_figures_to_pdf(pdf_path, fig)
 
 
+def __plot_base_unet(ax, data_base, data_unet, title, xlabel, ylabel, yscale='linear', ylim=None, legend_loc='upper right'):
+    # Use distinct, easily distinguishable colors
+        base_color = 'darkblue'
+        unet_color = '#fc7f03'
+
+        # Plot data with markers and different line styles
+        ax.plot(data_base, label='Baseline', color=base_color, marker='o', markersize=1.5)
+        ax.plot(data_unet, label='UNet', color=unet_color, linestyle="--", linewidth=0.5, marker='x', markersize=1.5)
+
+        ax.set_title(title, fontsize=12, fontweight='bold')
+        ax.set_xlabel(xlabel)
+        ax.set_ylabel(ylabel)
+        ax.set_yscale(yscale)
+
+        # Automatically adjust ylim based on data if not provided
+        if ylim is None:
+            all_data = data_base + data_unet
+            buffer = (max(all_data) - min(all_data)) * 0.8
+            ylim = [min(all_data) - buffer, max(all_data) + buffer]
+        ax.set_ylim(ylim)
+        print(ylim)
+
+        ax.legend(loc=legend_loc)
+        ax.grid(True, which='both', linestyle='--', linewidth=0.5)
+
+        # Annotate important points
+        for data in [data_base, data_unet]:
+
+            color = base_color if data == data_base else unet_color
+            min_val_epoch  = data.index(min(data))
+            max_val_epoch  = data.index(max(data))
+            last_val_epoch = len(data) - 1
+
+            if yscale == 'log':
+                ax.annotate(f'Min: {min(data):.3f}', (min_val_epoch, min(data)), textcoords="offset points", xytext=(-10,2),    ha='center',    color=color, fontsize=8)
+                ax.annotate(f'Max: {max(data):.3f}', (max_val_epoch, max(data)), textcoords="offset points", xytext=(30,0),    ha='center',   color=color, fontsize=8)
+
+                ax.annotate(f'Last: {data[-1]:.3f}', (last_val_epoch, data[-1]), textcoords="offset points", xytext=(-20, -10),   ha='center', color=color, fontsize=8)
+
+            else:
+                ax.annotate(f'Min: {min(data):.1f}%', (min_val_epoch, min(data)), textcoords="offset points", xytext=(15,20),    ha='center',    color=color, fontsize=8)
+                ax.annotate(f'Max: {max(data):.1f}%', (max_val_epoch, max(data)), textcoords="offset points", xytext=(5,-10),    ha='center',   color=color, fontsize=8)
+
+                ax.annotate(f'Last: {data[-1]:.1f}%', (last_val_epoch, data[-1]), textcoords="offset points", xytext=(-10, -15),   ha='center', color=color, fontsize=8)
+
+
+def plot_baseline_vs_unet():
+    # Retrieve log data
+    log_paths = {
+        "base_easy"  : TRAINED_MODELS_DIR / "predictors/Baseline_Toroidal_Easy/logs/training_progress.txt",
+        "base_medium": TRAINED_MODELS_DIR / "predictors/Baseline_Toroidal_Medium/logs/training_progress.txt",
+        "base_hard"  : TRAINED_MODELS_DIR / "predictors/Baseline_Toroidal_Hard/logs/training_progress.txt",
+        "base_stable": TRAINED_MODELS_DIR / "predictors/Baseline_Toroidal_Stable/logs/training_progress.txt",
+        "unet_easy"  : TRAINED_MODELS_DIR / "predictors/UNet_Toroidal_Easy/logs/training_progress.txt",
+        "unet_medium": TRAINED_MODELS_DIR / "predictors/UNet_Toroidal_Medium/logs/training_progress.txt",
+        "unet_hard"  : TRAINED_MODELS_DIR / "predictors/UNet_Toroidal_Hard/logs/training_progress.txt",
+        "unet_stable": TRAINED_MODELS_DIR / "predictors/UNet_Toroidal_Stable/logs/training_progress.txt"
+    }
+
+    data = {key: retrieve_log_data(log_paths[key]) for key in log_paths.keys()}
+
+    stats = { key: {"loss_val": data[key]["val_losses"],
+                    "pred_score_val": data[key]["val_prediction_scores"]}
+                    for key in data.keys() }
+
+    # Plotting
+    fig, ax = plt.subplots(4, 2, figsize=(10, 12))
+    # plt.suptitle("Baseline Model vs UNet Model - Training", fontsize=18, fontweight='bold')
+
+    # Easy Loss
+    __plot_base_unet(ax[0, 0], stats["base_easy"]["loss_val"], stats["unet_easy"]["loss_val"],
+                 "Target Easy - Loss", "Epoch", "Loss", yscale='log')
+
+    # Easy Prediction score
+    __plot_base_unet(ax[0, 1], stats["base_easy"]["pred_score_val"], stats["unet_easy"]["pred_score_val"],
+                    "Target Easy - Prediction score", "Epoch", "Prediction score (%)", ylim=[0, 100], legend_loc='lower right')
+
+    # Medium Loss
+    __plot_base_unet(ax[1, 0], stats["base_medium"]["loss_val"], stats["unet_medium"]["loss_val"],
+                 "Target Medium - Loss", "Epoch", "Loss", yscale='log')
+
+    # Medium Prediction score
+    __plot_base_unet(ax[1, 1], stats["base_medium"]["pred_score_val"], stats["unet_medium"]["pred_score_val"],
+                    "Target Medium - Prediction score", "Epoch", "Prediction score (%)", ylim=[0, 100], legend_loc='lower right')
+
+    # Hard Loss
+    __plot_base_unet(ax[2, 0], stats["base_hard"]["loss_val"], stats["unet_hard"]["loss_val"],
+                 "Target Hard - Loss", "Epoch", "Loss", yscale='log')
+
+    # Hard Prediction score
+    __plot_base_unet(ax[2, 1], stats["base_hard"]["pred_score_val"], stats["unet_hard"]["pred_score_val"],
+                    "Target Hard - Prediction score", "Epoch", "Prediction score (%)", ylim=[0, 100], legend_loc='lower right')
+
+    # Stable Loss
+    __plot_base_unet(ax[3, 0], stats["base_stable"]["loss_val"], stats["unet_stable"]["loss_val"],
+                 "Target Stable - Loss", "Epoch", "Loss", yscale='log')
+
+    # Stable Prediction score
+    __plot_base_unet(ax[3, 1], stats["base_stable"]["pred_score_val"], stats["unet_stable"]["pred_score_val"],
+                    "Target Stable - Prediction score", "Epoch", "Prediction score (%)", ylim=[0, 100])
+
+    plt.tight_layout(rect=[0, 0.03, 1, 0.95])  # Adjust layout to make room for the title
+
+    pdf_path = OUTPUTS_DIR / "baseline_vs_unet_model.pdf"
+    export_figures_to_pdf(pdf_path, fig)
+
+
 def train(predictor, target_type, max_retries=5):
     attempts = 0
     while attempts < max_retries:
@@ -409,9 +516,11 @@ def main():
     # plot_data_base_toro_vs_zero()
     # plot_baseline_on_all_targets()
     # plot_baseline_pred_score_analysis()
+    # plot_baseline_vs_unet()
 
     # train(Predictor_ResNet(TOPOLOGY_TOROIDAL, 10, 64), CONFIG_TARGET_MEDIUM)
-    train(Predictor_UNet(), CONFIG_TARGET_MEDIUM)
+
+    train(Predictor_ResNetAttention(128), CONFIG_TARGET_EASY)
 
     return 0
 
