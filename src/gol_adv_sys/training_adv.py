@@ -310,14 +310,14 @@ class TrainingAdversarial(TrainingBase):
 
         """
 
-        data, avg_stable_target_complexity = get_data_tensor(self.data_tensor,
-                                                             self.generator.model,
-                                                             self.simulation_topology,
-                                                             self.init_config_initial_type,
-                                                             self.device_manager.default_device)
+        data = get_data_tensor(self.data_tensor,
+                               self.generator.model,
+                               self.simulation_topology,
+                               self.init_config_initial_type,
+                               self.device_manager.default_device)
 
         self.data_tensor = data
-        self.complexity_stable_targets.append(avg_stable_target_complexity)
+        # self.complexity_stable_targets.append(avg_stable_target_complexity
 
         # Create the dataloader from the tensor
         self.train_dataloader = DataLoader(self.data_tensor, batch_size=BATCH_SIZE, shuffle=True)
@@ -365,11 +365,11 @@ class TrainingAdversarial(TrainingBase):
 
         self.predictor.model.train()
 
-        data, _ = get_data_tensor(None,
-                                  self.generator.model,
-                                  self.simulation_topology,
-                                  self.init_config_initial_type,
-                                  self.device_manager.default_device)
+        data = get_data_tensor(None,
+                               self.generator.model,
+                               self.simulation_topology,
+                               self.init_config_initial_type,
+                               self.device_manager.default_device)
 
 
         # Create the dataloader from the tensor

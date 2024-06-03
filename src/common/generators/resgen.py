@@ -35,7 +35,6 @@ class ResGen(nn.Module):
             x = resBlock(x)
 
         x = self.out_conv(x)
-
         x = torch.tanh(x)
 
         return x

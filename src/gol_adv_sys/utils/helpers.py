@@ -51,7 +51,7 @@ def test_models_DCGAN(model_g: torch.nn.Module,
         model_g.eval()
         model_p.eval()
         # generated_config_fixed = model_g(fixed_noise)
-        # data["generated"]        = generated_config_fixed
+        # data["generated"]      = generated_config_fixed
         generated_config  = generate_initial_config(model_g, device)
         data["generated"] = generated_config
         data["initial"]   = get_initialized_initial_config(generated_config, init_config_initial_type)
@@ -180,6 +180,10 @@ def save_progress_plot(plot_data: dict, iteration: int, results_path: str) -> No
             if key != "metadata":
                 axs[i, j].imshow(plot_data[key][indices[i]], cmap='gray', vmin=vmin, vmax=vmax)
 
+                for spine in axs[i, j].spines.values():
+                    spine.set_edgecolor('black')
+                    spine.set_linewidth(1)
+
             if key == "metadata":
                 text_data = ""
                 for k in plot_data[key].keys():
@@ -281,8 +285,8 @@ def get_data_tensor(data_tensor: torch.Tensor,
     new_configs = generate_new_batches(model_g, N_BATCHES, topology, init_config_initial_type, device)
 
     # Calculate the average complexity of the stable targets
-    stable_targets               = get_config_from_batch(new_configs, CONFIG_TARGET_STABLE, device)
-    avg_stable_target_complexity = calculate_stable_target_complexity(stable_targets, mean=True)
+    # stable_targets               = get_config_from_batch(new_configs, CONFIG_TARGET_STABLE, device)
+    # avg_stable_target_complexity = calculate_stable_target_complexity(stable_targets, mean=True)
 
     # If data_tensor is None, initialize it with new_configs
     if data_tensor is None:
@@ -300,7 +304,7 @@ def get_data_tensor(data_tensor: torch.Tensor,
         else:
             data_tensor = combined_tensor
 
-    return data_tensor, avg_stable_target_complexity
+    return data_tensor
 
 
 def generate_new_batches(model_g: torch.nn.Module,
