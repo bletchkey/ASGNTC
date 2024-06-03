@@ -152,7 +152,7 @@ class TrainingAdversarial(TrainingBase):
 
             with open(self.path_log_file, "a") as log:
                 log_content = (
-                    f"\Iteration: {iteration+1}/{NUM_ITERATIONS}\n"
+                    f"Iteration: {iteration+1}/{NUM_ITERATIONS}\n"
                     f"Number of generated configurations in the dataset: {len(self.train_dataloader) * BATCH_SIZE}\n"
                 )
 
@@ -284,7 +284,7 @@ class TrainingAdversarial(TrainingBase):
             f"Optimizer P: {self.predictor.optimizer.__class__.__name__}\n"
             f"Criterion P: {self.predictor.criterion.__class__.__name__}\n"
             f"{generator_info}"
-            f"\nTraining progress:\n\n\n"
+            f"\nTraining progress: \n\n\n"
         )
 
         with open(path, "w") as log_file:
@@ -406,11 +406,11 @@ class TrainingAdversarial(TrainingBase):
         """
 
         loss = 0
+
+        logging.debug(f"Training predictor")
         self.predictor.model.train()
 
         for batch_count, batch in enumerate(self.train_dataloader, start=1):
-
-            logging.debug(f"Training predictor: batch {batch_count}/{len(self.train_dataloader)}")
 
             self.predictor.optimizer.zero_grad()
 
@@ -444,11 +444,10 @@ class TrainingAdversarial(TrainingBase):
 
         loss = 0
 
+        logging.debug(f"Training generator")
         self.generator.model.train()
 
         for batch_count in range(1, N_BATCHES+1):
-
-            logging.debug(f"Training generator: batch {batch_count}/{len(self.train_dataloader)}")
 
             self.generator.optimizer.zero_grad()
 

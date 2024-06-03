@@ -16,7 +16,19 @@ class ResGen(nn.Module):
 
         self.out_conv = nn.Conv2d(32, GRID_NUM_CHANNELS, kernel_size=1, stride=1, padding=0)
 
+    def generate_log_normal(self, mu, sigma, shape):
+        # Generate samples from a normal distribution
+        normal_samples = torch.randn(shape) * sigma + mu
+
+        # Apply exponential to convert to log-normal
+        log_normal_samples = torch.exp(normal_samples)
+
+        return log_normal_samples
+
     def forward(self, x):
+
+        # x = self.generate_log_normal(0, 0.1, x.shape)
+
         x = self.startBlock(x)
 
         for resBlock in self.backBone:
@@ -35,18 +47,16 @@ class ResGen(nn.Module):
 
 
 class ResBlock(nn.Module):
-    def __init__(self, num_hidden, topology):
+    def __init__(self, num_hidden):
         super().__init__()
-
-        conv_layer = nn.Conv2d(num_hidden, num_hidden, kernel_size=3, stride=1, padding=1)
 
         self.block = nn.Sequential(
             nn.BatchNorm2d(num_hidden),
             nn.ReLU(),
-            conv_layer,
+            nn.Conv2d(num_hidden, num_hidden, kernel_size=3, stride=1, padding=1),
             nn.BatchNorm2d(num_hidden),
             nn.ReLU(),
-            conv_layer,
+            nn.Conv2d(num_hidden, num_hidden, kernel_size=3, stride=1, padding=1),
         )
 
     def forward(self, x):

@@ -10,7 +10,7 @@ from configs.constants import *
 
 from src.common.device_manager        import DeviceManager
 
-from src.gol_adv_sys.utils.helpers         import generate_initial_config_from_noise, \
+from src.gol_adv_sys.utils.helpers         import generate_initial_config, \
                                                   get_initialized_initial_config
 
 from src.common.utils.simulation_functions import simulate_config
@@ -68,7 +68,7 @@ def get_generator_eval_stats(folder_path: Path, checkpoint_index:int = None):
             with torch.no_grad():
                 for i in range(NUM_BATCHES_GEN_EVAL):
 
-                    generated_config = generate_initial_config_from_noise(model, device)
+                    generated_config = generate_initial_config(model, device)
                     initial_config   = get_initialized_initial_config(generated_config, INIT_CONFIG_INITIAL_SIGN)
                     sim_results      = simulate_config(config=initial_config, topology=TOPOLOGY_TOROIDAL,
                                                        steps=N_SIM_STEPS, device=device)

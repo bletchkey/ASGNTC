@@ -12,11 +12,11 @@ import torch
 
 from configs.setup     import setup_base_directory, setup_logging
 from configs.constants import *
-from configs.paths     import CONFIG_DIR, TRAININGS_ADVERSARIAL_DIR, OUTPUTS_DIR
+from configs.paths     import CONFIG_DIR, OUTPUTS_DIR, TRAINED_MODELS_DIR
 
 from src.gol_adv_sys.training_adv import TrainingAdversarial
 from src.common.predictor         import Predictor_Baseline, Predictor_ResNet, Predictor_UNet
-from src.common.generator         import Generator_DCGAN
+from src.common.generator         import Generator_DCGAN, Generator_ResGen
 from src.gol_adv_sys.utils.eval   import get_generator_eval_stats
 from src.common.utils.helpers     import export_figures_to_pdf
 
@@ -53,7 +53,7 @@ def plot_generator_stats(stats):
 
 
 def evaluate_generator():
-    path = TRAININGS_ADVERSARIAL_DIR / "2024-06-01_19-28-08"
+    path  = TRAINED_MODELS_DIR / "adversarial" / "DCGAN_Medium"
     stats = get_generator_eval_stats(path)
 
     plot_generator_stats(stats)
@@ -61,7 +61,7 @@ def evaluate_generator():
 
 def train_adversarial():
     train_adv = TrainingAdversarial(model_p=Predictor_Baseline(TOPOLOGY_TOROIDAL),
-                                    model_g=Generator_DCGAN())
+                                    model_g=Generator_ResGen())
     train_adv.run()
 
 
@@ -70,8 +70,8 @@ def main():
     setup_base_directory()
     setup_logging(path= CONFIG_DIR / "logging_asgntc.json")
 
-    # train_adversarial()
-    evaluate_generator()
+    train_adversarial()
+    # evaluate_generator()
 
     return 0
 
