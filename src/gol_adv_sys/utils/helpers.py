@@ -50,11 +50,13 @@ def test_models_DCGAN(model_g: torch.nn.Module,
     with torch.no_grad():
         model_g.eval()
         model_p.eval()
-        generated_config_fixed = model_g(fixed_noise)
-        data["generated"] = generated_config_fixed
-        data["initial"]   = get_initialized_initial_config(generated_config_fixed, init_config_initial_type)
-        sim_results = simulate_config(config=data["initial"], topology=topology,
-                                      steps=N_SIM_STEPS, device=device)
+        # generated_config_fixed = model_g(fixed_noise)
+        # data["generated"]        = generated_config_fixed
+        generated_config  = generate_initial_config(model_g, device)
+        data["generated"] = generated_config
+        data["initial"]   = get_initialized_initial_config(generated_config, init_config_initial_type)
+        sim_results       = simulate_config(config=data["initial"], topology=topology,
+                                            steps=N_SIM_STEPS, device=device)
 
         data["final"]     = sim_results["final"]
         data["simulated"] = sim_results["simulated"]
