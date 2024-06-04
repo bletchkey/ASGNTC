@@ -15,10 +15,10 @@ NUM_ITERATIONS = 200
 BATCH_SIZE = 64
 
 # Number of batches to generate at each epoch
-N_BATCHES = 128
+N_BATCHES = 64
 
 # Max number of batches in the dataloader
-N_MAX_BATCHES = 8*N_BATCHES
+N_MAX_BATCHES = 16*N_BATCHES
 
 # Number of new configurations to generate at each epoch
 N_CONFIGS = N_BATCHES * BATCH_SIZE
@@ -35,6 +35,10 @@ THRESHOLD_AVG_LOSS_P = 0.05
 # Number of configurations to generate for evaluation
 NUM_CONFIGS_GEN_EVAL = 8192
 NUM_BATCHES_GEN_EVAL = NUM_CONFIGS_GEN_EVAL // BATCH_SIZE
+
+# Dirichlet alpha parameter - used for the Dirichlet distribution to generate the input for G
+DIRICHLET_ALPHA = 0.1
+
 
 ### TRAINING GENERAL ##############################################################
 

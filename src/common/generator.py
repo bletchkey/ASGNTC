@@ -13,8 +13,8 @@ def Generator_DCGAN():
     return model
 
 
-def Generator_ResGen():
-    model = ResGen()
+def Generator_ResGen(num_hidden):
+    model = ResGen(num_hidden)
     logging.debug(model)
 
     return model

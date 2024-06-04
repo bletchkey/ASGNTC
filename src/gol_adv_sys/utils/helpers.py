@@ -2,6 +2,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import logging
 import torch
+import torch.distributions as dist
 from typing import Tuple
 from pathlib import Path
 
@@ -52,9 +53,9 @@ def test_models_DCGAN(model_g: torch.nn.Module,
         model_p.eval()
         # generated_config_fixed = model_g(fixed_noise)
         # data["generated"]      = generated_config_fixed
-        generated_config  = generate_initial_config(model_g, device)
+        generated_config  = get_generated_config(model_g, device)
         data["generated"] = generated_config
-        data["initial"]   = get_initialized_initial_config(generated_config, init_config_initial_type)
+        data["initial"]   = get_initial_config(generated_config, init_config_initial_type)
         sim_results       = simulate_config(config=data["initial"], topology=topology,
                                             steps=N_SIM_STEPS, device=device)
 
@@ -285,6 +286,7 @@ def get_data_tensor(data_tensor: torch.Tensor,
     new_configs = generate_new_batches(model_g, N_BATCHES, topology, init_config_initial_type, device)
 
     # Calculate the average complexity of the stable targets
+
     # stable_targets               = get_config_from_batch(new_configs, CONFIG_TARGET_STABLE, device)
     # avg_stable_target_complexity = calculate_stable_target_complexity(stable_targets, mean=True)
 
@@ -292,17 +294,16 @@ def get_data_tensor(data_tensor: torch.Tensor,
     if data_tensor is None:
         data_tensor = new_configs
     else:
-        # Concatenate current data with new_configs
-        combined_tensor = torch.cat([data_tensor, new_configs], dim=0)
+        future_combination_size = data_tensor.size(0) + new_configs.size(0)
 
         # If the combined size exceeds the max allowed size, trim the oldest entries
-        max_size = N_MAX_BATCHES * BATCH_SIZE
-        if combined_tensor.size(0) > max_size:
+        if future_combination_size > N_MAX_BATCHES * BATCH_SIZE:
             # Calculate number of entries to drop from the start to fit the new_configs
-            excess_entries = combined_tensor.size(0) - max_size
-            data_tensor = combined_tensor[excess_entries:]
+            n_entries_to_drop = future_combination_size - N_MAX_BATCHES * BATCH_SIZE
+            data_tensor = data_tensor[n_entries_to_drop:, :, :, :, :]
+            data_tensor = torch.cat([data_tensor, new_configs], dim=0)
         else:
-            data_tensor = combined_tensor
+            data_tensor = torch.cat([data_tensor, new_configs], dim=0)
 
     return data_tensor
 
@@ -331,22 +332,21 @@ def generate_new_batches(model_g: torch.nn.Module,
 
     for _ in range(n_batches):
 
-        generated_config = generate_initial_config(model_g, device)
+        generated_config = get_generated_config(model_g, device)
 
         with torch.no_grad():
-            initial_config = get_initialized_initial_config(generated_config, init_config_initial_type)
+            initial_config = get_initial_config(generated_config, init_config_initial_type)
             sim_results    = simulate_config(config=initial_config, topology=topology,
                                              steps=N_SIM_STEPS, device=device)
 
-        simulated_config = sim_results["simulated"]
-        targets          = sim_results["all_targets"]
-        final_config     = sim_results["final"]
+
+        targets = sim_results["all_targets"]
 
         configs.append({
             CONFIG_INITIAL       : initial_config,
             CONFIG_GENERATED     : generated_config,
-            CONFIG_SIMULATED     : simulated_config,
-            CONFIG_FINAL         : final_config,
+            CONFIG_SIMULATED     : sim_results["simulated"],
+            CONFIG_FINAL         : sim_results["final"],
             CONFIG_TARGET_EASY   : targets[CONFIG_TARGET_EASY]["config"],
             CONFIG_TARGET_MEDIUM : targets[CONFIG_TARGET_MEDIUM]["config"],
             CONFIG_TARGET_HARD   : targets[CONFIG_TARGET_HARD]["config"],
@@ -368,29 +368,19 @@ def generate_new_batches(model_g: torch.nn.Module,
     return data
 
 
-def generate_initial_config(model_g: torch.nn.Module,
-                            device: torch.device,
-                            noise_vector: bool = False) -> Tuple[torch.Tensor, torch.Tensor]:
+def get_generated_config(model_g: torch.nn.Module,
+                         device: torch.device,
+                         noise_vector: bool = False) -> Tuple[torch.Tensor, torch.Tensor]:
 
     """
     Function to generate the initial configuration
 
     Args:
         model_g (torch.nn.Module): The generator model
-        device (torch.device): The device used for computation
+        device (torch.device)    : The device used for computation
 
     Returns:
-        torch.Tensor: The initial configuration
-
-    Infos:
-
-    Previuosly, the initial configuration was generated using a noise tensor.
-    This procedure was applied when generating the initial configuration with the generator model
-    that used transposed convolutions.
-
-        noise = torch.randn(BATCH_SIZE, N_Z, 1, 1, device=device)
-        generated_config = model_g(noise)
-        initial_config = get_initialized_initial_config(generated_config, init_config_initial_type)
+        torch.Tensor: The generated initial configuration
 
     """
 
@@ -400,16 +390,15 @@ def generate_initial_config(model_g: torch.nn.Module,
 
         return generated_config
 
-    input_config = torch.zeros(BATCH_SIZE, GRID_NUM_CHANNELS, GRID_SIZE, GRID_SIZE, device=device)
-    input_config[:, :, GRID_SIZE // 2, GRID_SIZE // 2] = 1
-
+    concentration = torch.ones([GRID_SIZE, GRID_SIZE], device=device) * DIRICHLET_ALPHA
+    input_config  = dist.Dirichlet(concentration).sample((BATCH_SIZE, GRID_NUM_CHANNELS))
     generated_config = model_g(input_config)
 
     return generated_config
 
 
-def get_initialized_initial_config(config: torch.Tensor,
-                                   init_config_initial_type: str) -> torch.Tensor:
+def get_initial_config(config: torch.Tensor,
+                       init_config_initial_type: str) -> torch.Tensor:
     """
     Function to get the initial configuration from the generated configuration
 

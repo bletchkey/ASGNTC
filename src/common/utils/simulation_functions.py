@@ -60,7 +60,7 @@ def simulate_config(config: torch.Tensor, topology: str, steps: int,
     # Mapping of topology types to their corresponding simulation functions
     simulation_functions = {
         TOPOLOGY_TOROIDAL: __simulate_config_toroidal,
-        TOPOLOGY_FLAT: __simulate_config_flat
+        TOPOLOGY_FLAT    : __simulate_config_flat
     }
 
     # Retrieve the appropriate simulation function based on the provided topology
@@ -100,14 +100,14 @@ def simulate_config(config: torch.Tensor, topology: str, steps: int,
     n_cells_final     = torch.sum(final_config, dim=[2, 3], dtype=torch.float32)
 
     results = {
-        "simulated": simulated,
-        "final": final["config"],
-        "all_targets": all_targets,
-        "transient_phase": final["transient_phase"],
-        "period": final["period"],
-        "n_cells_initial": n_cells_initial.int(),
+        "simulated"        : simulated,
+        "final"            : final["config"],
+        "all_targets"      : all_targets,
+        "transient_phase"  : final["transient_phase"],
+        "period"           : final["period"],
+        "n_cells_initial"  : n_cells_initial.int(),
         "n_cells_simulated": n_cells_simulated.int(),
-        "n_cells_final": n_cells_final.int(),
+        "n_cells_final"    : n_cells_final.int(),
     }
 
     return results

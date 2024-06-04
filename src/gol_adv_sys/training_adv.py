@@ -260,8 +260,7 @@ class TrainingAdversarial(TrainingBase):
 
         generator_info = ""
         if self.properties_g["enabled"]:
-            generator_info += (f"Latent space size: {N_Z}\n"
-                               f"Optimizer G: {self.generator.optimizer.__class__.__name__}\n"
+            generator_info += (f"Optimizer G: {self.generator.optimizer.__class__.__name__}\n"
                                f"Criterion G: {self.generator.criterion.__class__.__name__}\n")
 
         log_contents = (
@@ -317,7 +316,7 @@ class TrainingAdversarial(TrainingBase):
                                self.device_manager.default_device)
 
         self.data_tensor = data
-        # self.complexity_stable_targets.append(avg_stable_target_complexity
+        # self.complexity_stable_targets.append(avg_stable_target_complexity)
 
         # Create the dataloader from the tensor
         self.train_dataloader = DataLoader(self.data_tensor, batch_size=BATCH_SIZE, shuffle=True)
