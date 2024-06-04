@@ -10,23 +10,23 @@ class UNet(nn.Module):
         super(UNet, self).__init__()
 
         # Encoder (Downsampling)
-        self.enc_conv1 = ToroidalConv2d(nn.Conv2d(GRID_NUM_CHANNELS, N_PREDICTOR_FEATURES, kernel_size=3, padding=0))
-        self.enc_conv2 = ToroidalConv2d(nn.Conv2d(N_PREDICTOR_FEATURES, N_PREDICTOR_FEATURES*2, kernel_size=3, padding=0))
+        self.enc_conv1 = ToroidalConv2d(nn.Conv2d(NUM_CHANNELS_GRID, NUM_PREDICTOR_FEATURES, kernel_size=3, padding=0))
+        self.enc_conv2 = ToroidalConv2d(nn.Conv2d(NUM_PREDICTOR_FEATURES, NUM_PREDICTOR_FEATURES*2, kernel_size=3, padding=0))
 
         self.avgpool = nn.AvgPool2d(2, 2)
         self.maxpool = nn.MaxPool2d(2, 2)
 
         # Bottleneck
-        self.bottleneck_conv = ToroidalConv2d(nn.Conv2d(N_PREDICTOR_FEATURES*2, N_PREDICTOR_FEATURES*4, kernel_size=3, padding=0))
+        self.bottleneck_conv = ToroidalConv2d(nn.Conv2d(NUM_PREDICTOR_FEATURES*2, NUM_PREDICTOR_FEATURES*4, kernel_size=3, padding=0))
 
         # Decoder (Upsampling)
-        self.up_conv1  = nn.ConvTranspose2d(N_PREDICTOR_FEATURES*4, N_PREDICTOR_FEATURES*2, kernel_size=2, stride=2)
-        self.dec_conv1 = ToroidalConv2d(nn.Conv2d(N_PREDICTOR_FEATURES*4, N_PREDICTOR_FEATURES*2, kernel_size=3, padding=0))
-        self.up_conv2  = nn.ConvTranspose2d(N_PREDICTOR_FEATURES*2, N_PREDICTOR_FEATURES, kernel_size=2, stride=2)
-        self.dec_conv2 = ToroidalConv2d(nn.Conv2d(N_PREDICTOR_FEATURES*2, N_PREDICTOR_FEATURES, kernel_size=3, padding=0))
+        self.up_conv1  = nn.ConvTranspose2d(NUM_PREDICTOR_FEATURES*4, NUM_PREDICTOR_FEATURES*2, kernel_size=2, stride=2)
+        self.dec_conv1 = ToroidalConv2d(nn.Conv2d(NUM_PREDICTOR_FEATURES*4, NUM_PREDICTOR_FEATURES*2, kernel_size=3, padding=0))
+        self.up_conv2  = nn.ConvTranspose2d(NUM_PREDICTOR_FEATURES*2, NUM_PREDICTOR_FEATURES, kernel_size=2, stride=2)
+        self.dec_conv2 = ToroidalConv2d(nn.Conv2d(NUM_PREDICTOR_FEATURES*2, NUM_PREDICTOR_FEATURES, kernel_size=3, padding=0))
 
         # Output Convolution
-        self.output_conv = nn.Conv2d(N_PREDICTOR_FEATURES, GRID_NUM_CHANNELS, kernel_size=1, padding = 0)
+        self.output_conv = nn.Conv2d(N_PREDICTOR_FEATURES, NUM_CHANNELS_GRID, kernel_size=1, padding = 0)
 
         # Activation Function
         self.relu = nn.ReLU()

@@ -57,7 +57,7 @@ def test_models_DCGAN(model_g: torch.nn.Module,
         data["generated"] = generated_config
         data["initial"]   = get_initial_config(generated_config, init_config_initial_type)
         sim_results       = simulate_config(config=data["initial"], topology=topology,
-                                            steps=N_SIM_STEPS, device=device)
+                                            steps=NUM_SIM_STEPS, device=device)
 
         data["final"]     = sim_results["final"]
         data["simulated"] = sim_results["simulated"]
@@ -119,7 +119,7 @@ def test_models(model_g: torch.nn.Module, model_p: torch.nn.Module,
         data["generated"] = generated_config_fixed
         data["initial"]   = generated_config_fixed
         sim_results = simulate_config(config=data["initial"], topology=topology,
-                                      steps=N_SIM_STEPS, device=device)
+                                      steps=NUM_SIM_STEPS, device=device)
 
         data["final"]     = sim_results["final"]
         data["simulated"] = sim_results["simulated"]
@@ -167,7 +167,7 @@ def save_progress_plot(plot_data: dict, iteration: int, results_path: str) -> No
     current_iteration = iteration+1
 
     # Get 4 equally spaced indices
-    indices = np.linspace(0, BATCH_SIZE-1, 4).astype(int)
+    indices = np.linspace(0, ADV_BATCH_SIZE-1, 4).astype(int)
 
     # Create figure and subplots
     fig, axs = plt.subplots(len(indices), len(plot_data), figsize=(len(indices)*len(plot_data), len(indices)*4))
@@ -204,7 +204,7 @@ def save_progress_plot(plot_data: dict, iteration: int, results_path: str) -> No
             elif key == "initial":
                 axs[i, j].set_title(titles[j] + f" - {plot_data['metadata']['n_cells_initial'][indices[i]].item()} cells")
             elif key == "simulated":
-                axs[i, j].set_title(titles[j] + f" - {N_SIM_STEPS} steps - {plot_data['metadata']['n_cells_simulated'][indices[i]].item()} cells")
+                axs[i, j].set_title(titles[j] + f" - {NUM_SIM_STEPS} steps - {plot_data['metadata']['n_cells_simulated'][indices[i]].item()} cells")
             elif key == "final":
                 axs[i, j].set_title(titles[j] + f" - {plot_data['metadata']['n_cells_final'][indices[i]].item()} cells")
             elif key == "target":
@@ -283,7 +283,8 @@ def get_data_tensor(data_tensor: torch.Tensor,
 
     """
 
-    new_configs = generate_new_batches(model_g, N_BATCHES, topology, init_config_initial_type, device)
+    new_configs = generate_new_batches(model_g, NUM_BATCHES, topology, init_config_initial_type, device)
+    new_configs = new_configs.to("cpu")
 
     # Calculate the average complexity of the stable targets
 
@@ -297,13 +298,15 @@ def get_data_tensor(data_tensor: torch.Tensor,
         future_combination_size = data_tensor.size(0) + new_configs.size(0)
 
         # If the combined size exceeds the max allowed size, trim the oldest entries
-        if future_combination_size > N_MAX_BATCHES * BATCH_SIZE:
+        if future_combination_size > NUM_MAX_BATCHES * ADV_BATCH_SIZE:
             # Calculate number of entries to drop from the start to fit the new_configs
-            n_entries_to_drop = future_combination_size - N_MAX_BATCHES * BATCH_SIZE
+            n_entries_to_drop = future_combination_size - NUM_MAX_BATCHES * ADV_BATCH_SIZE
             data_tensor = data_tensor[n_entries_to_drop:, :, :, :, :]
             data_tensor = torch.cat([data_tensor, new_configs], dim=0)
         else:
             data_tensor = torch.cat([data_tensor, new_configs], dim=0)
+
+    data_tensor = data_tensor.to("cpu")
 
     return data_tensor
 
@@ -337,7 +340,7 @@ def generate_new_batches(model_g: torch.nn.Module,
         with torch.no_grad():
             initial_config = get_initial_config(generated_config, init_config_initial_type)
             sim_results    = simulate_config(config=initial_config, topology=topology,
-                                             steps=N_SIM_STEPS, device=device)
+                                             steps=NUM_SIM_STEPS, device=device)
 
 
         targets = sim_results["all_targets"]
@@ -385,13 +388,15 @@ def get_generated_config(model_g: torch.nn.Module,
     """
 
     if noise_vector == True:
-        noise            = torch.randn(BATCH_SIZE, N_Z, 1, 1, device=device)
+        noise            = torch.randn(ADV_BATCH_SIZE, LATENT_VEC_SIZE, 1, 1, device=device)
+
         generated_config = model_g(noise)
 
         return generated_config
 
     concentration = torch.ones([GRID_SIZE, GRID_SIZE], device=device) * DIRICHLET_ALPHA
-    input_config  = dist.Dirichlet(concentration).sample((BATCH_SIZE, GRID_NUM_CHANNELS))
+    input_config  = dist.Dirichlet(concentration).sample((ADV_BATCH_SIZE, NUM_CHANNELS_GRID))
+
     generated_config = model_g(input_config)
 
     return generated_config
@@ -436,7 +441,7 @@ def __initialize_config_n_living_cells(config: torch.Tensor) -> torch.Tensor:
     config_flat = config.view(batch_size, -1)  # Flatten each image in the batch
 
     # Find the indices of the top values for each image in the batch
-    _, indices = torch.topk(config_flat, N_LIVING_CELLS_INITIAL, dim=1)
+    _, indices = torch.topk(config_flat, NUM_LIVING_CELLS_INITIAL, dim=1)
 
     # Create a zero tensor of the same shape
     updated_config = torch.zeros_like(config_flat)

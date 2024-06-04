@@ -11,7 +11,7 @@ class ResGen(nn.Module):
 
         self.num_hidden = num_hidden
 
-        self.startBlock = ToroidalConv2d(nn.Conv2d(GRID_NUM_CHANNELS, 32, kernel_size=3, stride=1, padding=0))
+        self.startBlock = ToroidalConv2d(nn.Conv2d(NUM_CHANNELS_GRID, 32, kernel_size=3, stride=1, padding=0))
 
         self.backBone = nn.Sequential(
             ToroidalConv2d(nn.Conv2d(num_hidden, num_hidden, kernel_size=3, stride=1, padding=0)),
@@ -27,7 +27,7 @@ class ResGen(nn.Module):
             nn.BatchNorm2d(num_hidden),
             nn.ReLU())
 
-        self.out_conv = nn.Conv2d(32, GRID_NUM_CHANNELS, kernel_size=1, stride=1, padding=0)
+        self.out_conv = nn.Conv2d(32, NUM_CHANNELS_GRID, kernel_size=1, stride=1, padding=0)
 
     def forward(self, x):
 

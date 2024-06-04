@@ -15,9 +15,9 @@ class ResNet(nn.Module):
 
         self.startBlock = nn.Sequential(
             *(
-                [ToroidalConv2d(nn.Conv2d(GRID_NUM_CHANNELS, num_hidden, kernel_size=3, stride=1, padding=0))]
+                [ToroidalConv2d(nn.Conv2d(NUM_CHANNELS_GRID, num_hidden, kernel_size=3, stride=1, padding=0))]
                 if self.topology == TOPOLOGY_TOROIDAL
-                else [nn.Conv2d(GRID_NUM_CHANNELS, num_hidden, kernel_size=3, stride=1, padding=1)]
+                else [nn.Conv2d(NUM_CHANNELS_GRID, num_hidden, kernel_size=3, stride=1, padding=1)]
             )
         )
 
@@ -26,7 +26,7 @@ class ResNet(nn.Module):
             [ResBlock(num_hidden, self.topology) for _ in range(num_resBlocks)]
         )
 
-        self.out_conv = nn.Conv2d(num_hidden, GRID_NUM_CHANNELS, kernel_size=1, stride=1, padding=0)
+        self.out_conv = nn.Conv2d(num_hidden, NUM_CHANNELS_GRID, kernel_size=1, stride=1, padding=0)
 
     def forward(self, x):
         x = self.startBlock(x)

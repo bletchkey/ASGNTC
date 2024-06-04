@@ -110,7 +110,7 @@ class TrainingAdversarial(TrainingBase):
                                       device_manager=self.device_manager)
 
 
-        self.fixed_noise  = torch.randn(BATCH_SIZE, N_Z, 1, 1, device=self.device_manager.default_device)
+        self.fixed_noise  = torch.randn(ADV_BATCH_SIZE, LATENT_VEC_SIZE, 1, 1, device=self.device_manager.default_device)
 
         self.properties_g = {"enabled": True, "can_train": True}
 
@@ -153,13 +153,13 @@ class TrainingAdversarial(TrainingBase):
             with open(self.path_log_file, "a") as log:
                 log_content = (
                     f"Iteration: {iteration+1}/{NUM_ITERATIONS}\n"
-                    f"Number of generated configurations in the dataset: {len(self.train_dataloader) * BATCH_SIZE}\n"
+                    f"Number of generated configurations in the dataset: {len(self.train_dataloader) * ADV_BATCH_SIZE}\n"
                 )
 
                 if len(self.complexity_stable_targets) > 0:
                     log_content += (
                         f"Average complexity of the stable targets on the last "
-                        f"{N_BATCHES * BATCH_SIZE} generated configurations: "
+                        f"{NUM_BATCHES * ADV_BATCH_SIZE} generated configurations: "
                         f"{100*self.complexity_stable_targets[-1]:.1f}/100\n\n"
                     )
 
@@ -269,14 +269,14 @@ class TrainingAdversarial(TrainingBase):
             f"Default device: {self.device_manager.default_device}\n"
             f"{balanced_gpu_info}\n"
             f"Training specs:\n"
-            f"Batch size: {BATCH_SIZE}\n"
+            f"Batch size: {ADV_BATCH_SIZE}\n"
             f"Iterations: {NUM_ITERATIONS}\n"
             f"Number of training steps in each iteration: {NUM_TRAINING_STEPS}\n"
-            f"Number of batches generated in each iteration: {N_BATCHES} ({N_CONFIGS} configs)\n"
-            f"Max number of generated batches in dataset: {N_MAX_BATCHES} ({N_MAX_CONFIGS} configs)\n"
+            f"Number of batches generated in each iteration: {NUM_BATCHES} ({NUM_CONFIGS} configs)\n"
+            f"Max number of generated batches in dataset: {NUM_MAX_BATCHES} ({NUM_MAX_CONFIGS} configs)\n"
             f"\nSimulation specs:\n"
             f"Grid size: {GRID_SIZE}\n"
-            f"Simulation steps: {N_SIM_STEPS}\n"
+            f"Simulation steps: {NUM_SIM_STEPS}\n"
             f"{topology_info}\n"
             f"\nPredicting config type: {self.config_type_pred_target}\n"
             f"\nModel specs:\n"
@@ -319,9 +319,9 @@ class TrainingAdversarial(TrainingBase):
         # self.complexity_stable_targets.append(avg_stable_target_complexity)
 
         # Create the dataloader from the tensor
-        self.train_dataloader = DataLoader(self.data_tensor, batch_size=BATCH_SIZE, shuffle=True)
+        self.train_dataloader = DataLoader(self.data_tensor, batch_size=ADV_BATCH_SIZE, shuffle=True)
 
-        logging.debug(f"Dataloader updated, batches in dataloader: {len(self.train_dataloader)}/{N_MAX_BATCHES}")
+        logging.debug(f"Dataloader updated, batches in dataloader: {len(self.train_dataloader)}/{NUM_MAX_BATCHES}")
 
         return self.train_dataloader
 
@@ -372,7 +372,7 @@ class TrainingAdversarial(TrainingBase):
 
 
         # Create the dataloader from the tensor
-        dataloader_warmup = DataLoader(data, batch_size=BATCH_SIZE, shuffle=True)
+        dataloader_warmup = DataLoader(data, batch_size=ADV_BATCH_SIZE, shuffle=True)
 
         warmup_values = np.linspace(WARMUP_INITIAL_LR, WARMUP_TARGET_LR, len(dataloader_warmup))
 
@@ -413,6 +413,8 @@ class TrainingAdversarial(TrainingBase):
 
             self.predictor.optimizer.zero_grad()
 
+            batch = batch.to(self.device_manager.default_device)
+
             config_input  = self.__get_config_type(batch, CONFIG_GENERATED).detach()
             target_config = self.__get_config_type(batch, self.config_type_pred_target).detach()
 
@@ -446,7 +448,7 @@ class TrainingAdversarial(TrainingBase):
         logging.debug(f"Training generator")
         self.generator.model.train()
 
-        for batch_count in range(1, N_BATCHES+1):
+        for batch_count in range(1, NUM_BATCHES+1):
 
             self.generator.optimizer.zero_grad()
 

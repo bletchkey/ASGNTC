@@ -71,7 +71,7 @@ def get_generator_eval_stats(folder_path: Path, checkpoint_index:int = None):
                     generated_config = get_generated_config(model, device)
                     initial_config   = get_initial_config(generated_config, INIT_CONFIG_INITIAL_SIGN)
                     sim_results      = simulate_config(config=initial_config, topology=TOPOLOGY_TOROIDAL,
-                                                       steps=N_SIM_STEPS, device=device)
+                                                       steps=NUM_SIM_STEPS, device=device)
 
                     temp_stats["n_cells_initial"].append(sim_results["n_cells_initial"].cpu())
                     temp_stats["n_cells_final"].append(sim_results["n_cells_final"].cpu())

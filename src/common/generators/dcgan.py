@@ -10,10 +10,10 @@ class DCGAN(nn.Module):
         super(DCGAN, self).__init__()
 
         layers = [
-            self._make_layer(N_Z, N_GENERATOR_FEATURES * 4, kernel_size=4, stride=1, padding=0),
-            self._make_layer(N_GENERATOR_FEATURES * 4, N_GENERATOR_FEATURES * 2),
-            self._make_layer(N_GENERATOR_FEATURES * 2, N_GENERATOR_FEATURES),
-            self._make_final_layer(N_GENERATOR_FEATURES, GRID_NUM_CHANNELS),
+            self._make_layer(LATENT_VEC_SIZE, NUM_GENERATOR_FEATURES * 4, kernel_size=4, stride=1, padding=0),
+            self._make_layer(NUM_GENERATOR_FEATURES * 4, NUM_GENERATOR_FEATURES * 2),
+            self._make_layer(NUM_GENERATOR_FEATURES * 2, NUM_GENERATOR_FEATURES),
+            self._make_final_layer(NUM_GENERATOR_FEATURES, NUM_CHANNELS_GRID),
         ]
 
         self.model = nn.Sequential(*layers)
@@ -50,10 +50,10 @@ class DCGAN_noisy(nn.Module):
         self.noise_std = noise_std
 
         layers = [
-            self._make_layer(N_Z, N_GENERATOR_FEATURES * 4, kernel_size=4, stride=1, padding=0),
-            self._make_layer(N_GENERATOR_FEATURES * 4, N_GENERATOR_FEATURES * 2),
-            self._make_layer(N_GENERATOR_FEATURES * 2, N_GENERATOR_FEATURES),
-            self._make_final_layer(N_GENERATOR_FEATURES, GRID_NUM_CHANNELS),
+            self._make_layer(N_Z, NUM_GENERATOR_FEATURES * 4, kernel_size=4, stride=1, padding=0),
+            self._make_layer(NUM_GENERATOR_FEATURES * 4, NUM_GENERATOR_FEATURES * 2),
+            self._make_layer(NUM_GENERATOR_FEATURES * 2, NUM_GENERATOR_FEATURES),
+            self._make_final_layer(N_GENERATOR_FEATURES, NUM_CHANNELS_GRID),
         ]
 
         self.model = nn.Sequential(*layers)

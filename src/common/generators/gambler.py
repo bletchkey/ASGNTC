@@ -15,10 +15,10 @@ class Gambler(nn.Module):
         super(Gambler, self).__init__()
 
         self.convs = nn.ModuleList([
-            ToroidalConv2d(nn.Conv2d(GRID_NUM_CHANNELS, 32, kernel_size=3, stride=1, padding=0)),
+            ToroidalConv2d(nn.Conv2d(NUM_CHANNELS_GRID, 32, kernel_size=3, stride=1, padding=0)),
             ToroidalConv2d(nn.Conv2d(32,         32, kernel_size=3, stride=1, padding=0)),
         ])
-        self.last_conv = nn.Conv2d(32, GRID_NUM_CHANNELS, kernel_size=1, stride=1, padding=0)
+        self.last_conv = nn.Conv2d(32, NUM_CHANNELS_GRID, kernel_size=1, stride=1, padding=0)
 
         self.softmax = nn.Softmax(dim=1)
         self.relu    = nn.ReLU()
@@ -36,7 +36,7 @@ class Gambler(nn.Module):
 
         x = self.softmax(x.view(x.size(0), -1)).view_as(x)
 
-        values, indices = torch.topk(x.view(x.size(0), -1), N_LIVING_CELLS_INITIAL)
+        values, indices = torch.topk(x.view(x.size(0), -1), NUM_LIVING_CELLS_INITIAL)
 
         y = torch.zeros_like(x.view(x.size(0), -1))
         y.scatter_(1, indices, 1)
@@ -52,10 +52,10 @@ class Gambler_v2(nn.Module):
     def __init__(self) -> None:
         super(Gambler_v2, self).__init__()
 
-        self.in_conv   = ToroidalConv2d(nn.Conv2d(GRID_NUM_CHANNELS,  8, kernel_size=3, stride=1, padding=0))
+        self.in_conv   = ToroidalConv2d(nn.Conv2d(NUM_CHANNELS_GRID,  8, kernel_size=3, stride=1, padding=0))
         self.conv_1    = ToroidalConv2d(nn.Conv2d(8,          16, kernel_size=3, stride=1, padding=0))
         self.conv_2    = ToroidalConv2d(nn.Conv2d(16,         32, kernel_size=3, stride=1, padding=0))
-        self.out_conv  = nn.Conv2d(32, GRID_NUM_CHANNELS, kernel_size=1, stride=1, padding=0)
+        self.out_conv  = nn.Conv2d(32, NUM_CHANNELS_GRID, kernel_size=1, stride=1, padding=0)
 
         self.linear_1  = nn.Linear(64, GRID_SIZE * GRID_SIZE)
 
@@ -93,7 +93,7 @@ class Gambler_v2(nn.Module):
         x = self.linear_1(x)
 
         softmax           = self.softmax(x)
-        indices           = torch.multinomial(softmax, N_LIVING_CELLS_INITIAL)
+        indices           = torch.multinomial(softmax, NUM_LIVING_CELLS_INITIAL)
         log_probabilities = -1 * torch.log(softmax.gather(1, indices)).sum(dim=1)
 
         config = torch.scatter(config.view(batch_size, -1), 1, indices, 1).view_as(config)
@@ -105,9 +105,9 @@ class Gambler_v3(nn.Module):
     def __init__(self) -> None:
         super(Gambler_v3, self).__init__()
 
-        self.in_conv   = ToroidalConv2d(nn.Conv2d(GRID_NUM_CHANNELS,  8, kernel_size=3, stride=1, padding=0))
+        self.in_conv   = ToroidalConv2d(nn.Conv2d(NUM_CHANNELS_GRID,  8, kernel_size=3, stride=1, padding=0))
         self.conv_1    = ToroidalConv2d(nn.Conv2d(8,          16, kernel_size=3, stride=1, padding=0))
-        self.out_conv  = nn.Conv2d(16, GRID_NUM_CHANNELS, kernel_size=1, stride=1, padding=0)
+        self.out_conv  = nn.Conv2d(16, NUM_CHANNELS_GRID, kernel_size=1, stride=1, padding=0)
         self.linear_1  = nn.Linear(256, GRID_SIZE * GRID_SIZE)
 
         self.pool    = nn.MaxPool2d(kernel_size=2, stride=2)
@@ -122,7 +122,7 @@ class Gambler_v3(nn.Module):
         config = torch.zeros_like(x)
         mask   = torch.ones_like(x.view(batch_size, -1))
 
-        for _ in range(N_LIVING_CELLS_INITIAL):
+        for _ in range(NUM_LIVING_CELLS_INITIAL):
 
             x = self.in_conv(x)
             x = self.relu(x)
@@ -158,9 +158,9 @@ class Gambler_v4(nn.Module):
     def __init__(self) -> None:
         super(Gambler_v4, self).__init__()
 
-        self.in_conv   = ToroidalConv2d(nn.Conv2d(GRID_NUM_CHANNELS,  8, kernel_size=3, stride=1, padding=0))
+        self.in_conv   = ToroidalConv2d(nn.Conv2d(NUM_CHANNELS_GRID,  8, kernel_size=3, stride=1, padding=0))
         self.conv_1    = ToroidalConv2d(nn.Conv2d(8,          16, kernel_size=3, stride=1, padding=0))
-        self.out_conv  = nn.Conv2d(16, GRID_NUM_CHANNELS, kernel_size=1, stride=1, padding=0)
+        self.out_conv  = nn.Conv2d(16, NUM_CHANNELS_GRID, kernel_size=1, stride=1, padding=0)
         self.linear_1  = nn.Linear(256, GRID_SIZE * GRID_SIZE)
 
         self.pool    = nn.MaxPool2d(kernel_size=2, stride=2)
@@ -175,7 +175,7 @@ class Gambler_v4(nn.Module):
         config = torch.zeros_like(x)
         mask   = torch.ones_like(x.view(batch_size, -1))
 
-        for _ in range(N_LIVING_CELLS_INITIAL):
+        for _ in range(NUM_LIVING_CELLS_INITIAL):
 
             x = self.in_conv(x)
             x = self.relu(x)
@@ -210,9 +210,9 @@ class GamblerBernoullian(nn.Module):
     def __init__(self) -> None:
         super(GamblerBernoullian, self).__init__()
 
-        self.in_conv   = ToroidalConv2d(nn.Conv2d(GRID_NUM_CHANNELS,  8, kernel_size=3, stride=1, padding=0))
+        self.in_conv   = ToroidalConv2d(nn.Conv2d(NUM_CHANNELS_GRID,  8, kernel_size=3, stride=1, padding=0))
         self.conv_1    = ToroidalConv2d(nn.Conv2d(8,          16, kernel_size=3, stride=1, padding=0))
-        self.out_conv  = nn.Conv2d(16, GRID_NUM_CHANNELS, kernel_size=1, stride=1, padding=0)
+        self.out_conv  = nn.Conv2d(16, NUM_CHANNELS_GRID, kernel_size=1, stride=1, padding=0)
         self.linear_1  = nn.Linear(256, GRID_SIZE * GRID_SIZE)  # Check if 256 is correct
 
         self.pool    = nn.MaxPool2d(kernel_size=2, stride=2)
@@ -240,7 +240,7 @@ class GamblerBernoullian(nn.Module):
         log_probs = distribution.log_prob(samples)
         log_probability += log_probs.sum(1)  # Sum across pixels for each batch
 
-        samples = samples.view(batch_size, GRID_NUM_CHANNELS, GRID_SIZE, GRID_SIZE)
+        samples = samples.view(batch_size, NUM_CHANNELS_GRID, GRID_SIZE, GRID_SIZE)
 
         return samples, -log_probability
 
@@ -249,9 +249,9 @@ class GamblerGumble(nn.Module):
     def __init__(self) -> None:
         super(GamblerGumble, self).__init__()
 
-        self.in_conv   = ToroidalConv2d(nn.Conv2d(GRID_NUM_CHANNELS,  8, kernel_size=3, stride=1, padding=0))
+        self.in_conv   = ToroidalConv2d(nn.Conv2d(NUM_CHANNELS_GRID,  8, kernel_size=3, stride=1, padding=0))
         self.conv_1    = ToroidalConv2d(nn.Conv2d(8,          16, kernel_size=3, stride=1, padding=0))
-        self.out_conv  = nn.Conv2d(16, GRID_NUM_CHANNELS, kernel_size=1, stride=1, padding=0)
+        self.out_conv  = nn.Conv2d(16, NUM_CHANNELS_GRID, kernel_size=1, stride=1, padding=0)
         self.linear_1  = nn.Linear(256, GRID_SIZE * GRID_SIZE)
 
         self.pool    = nn.MaxPool2d(kernel_size=2, stride=2)
@@ -265,7 +265,7 @@ class GamblerGumble(nn.Module):
         config = torch.zeros_like(x)
         mask   = torch.ones_like(x.view(batch_size, -1))
 
-        for _ in range(N_LIVING_CELLS_INITIAL):
+        for _ in range(NUM_LIVING_CELLS_INITIAL):
 
             x = self.in_conv(x)
             x = self.relu(x)
@@ -306,10 +306,10 @@ class GamblerGumble(nn.Module):
 class GamblerGumble_v2(nn.Module):
     def __init__(self):
         super(GamblerGumble_v2, self).__init__()
-        self.in_conv   = ToroidalConv2d(nn.Conv2d(GRID_NUM_CHANNELS,  8, kernel_size=3, stride=1, padding=0))
+        self.in_conv   = ToroidalConv2d(nn.Conv2d(NUM_CHANNELS_GRID,  8, kernel_size=3, stride=1, padding=0))
         self.conv_1    = ToroidalConv2d(nn.Conv2d(8,          16, kernel_size=3, stride=1, padding=0))
         self.conv_2    = ToroidalConv2d(nn.Conv2d(16,         32, kernel_size=3, stride=1, padding=0))
-        self.out_conv  = nn.Conv2d(32, GRID_NUM_CHANNELS, kernel_size=1, stride=1, padding=0)
+        self.out_conv  = nn.Conv2d(32, NUM_CHANNELS_GRID, kernel_size=1, stride=1, padding=0)
 
         self.linear_1  = nn.Linear(64, 256)
         self.linear_2  = nn.Linear(256, GRID_SIZE * GRID_SIZE)
@@ -349,14 +349,14 @@ class GamblerGumble_v2(nn.Module):
         gumbel_softmax = self.gumbel_softmax(x, tau=0.5, dim=1)
 
         # Choosing the best actions
-        values, indices = torch.topk(gumbel_softmax, N_LIVING_CELLS_INITIAL, dim=1)
+        values, indices = torch.topk(gumbel_softmax, NUM_LIVING_CELLS_INITIAL, dim=1)
 
         y = torch.zeros_like(x)
         y = y.scatter_(1, indices, 1)
 
         log_probability = torch.log(values).sum(dim=1)
 
-        y = y.view(batch_size, GRID_NUM_CHANNELS, GRID_SIZE, GRID_SIZE)
+        y = y.view(batch_size, NUM_CHANNELS_GRID, GRID_SIZE, GRID_SIZE)
 
         return y, -log_probability
 
@@ -371,9 +371,9 @@ class GamblerGumble_v3(nn.Module):
     def __init__(self):
         super(GamblerGumble_v3, self).__init__()
         self.convs = nn.ModuleList([
-            nn.Conv2d(GRID_NUM_CHANNELS, 32, kernel_size=3, stride=1, padding=1),
+            nn.Conv2d(NUM_CHANNELS_GRID, 32, kernel_size=3, stride=1, padding=1),
             nn.Conv2d(32, 32, kernel_size=3, stride=1, padding=1),
-            nn.Conv2d(32, GRID_NUM_CHANNELS, kernel_size=3, stride=1, padding=1)
+            nn.Conv2d(32, NUM_CHANNELS_GRID, kernel_size=3, stride=1, padding=1)
         ])
 
         self.softmax = nn.Softmax(dim=1)
@@ -391,8 +391,8 @@ class GamblerGumble_v3(nn.Module):
         # Generate a continuous probability distribution using Gumbel-Softmax
         gumbel_output = self.gumbel_softmax(x_flat, tau=1.0, dim=1)
 
-        # Select N_LIVING_CELLS_INITIAL pixels by choosing the top probabilities
-        values, indices = torch.topk(gumbel_output, N_LIVING_CELLS_INITIAL, dim=1)
+        # Select NUM_LIVING_CELLS_INITIAL pixels by choosing the top probabilities
+        values, indices = torch.topk(gumbel_output, NUM_LIVING_CELLS_INITIAL, dim=1)
 
         # Create a new zero tensor and set the selected indices to 1
         y = torch.zeros_like(x_flat)
@@ -401,7 +401,7 @@ class GamblerGumble_v3(nn.Module):
         log_probability = torch.log(values).sum(dim=1)
 
         # Reshape the output to have the correct dimensions
-        y = y.view(batch_size, GRID_NUM_CHANNELS, GRID_SIZE, GRID_SIZE)
+        y = y.view(batch_size, NUM_CHANNELS_GRID, GRID_SIZE, GRID_SIZE)
 
         return y, -log_probability
 
@@ -417,9 +417,9 @@ class GamblerGumble(nn.Module):
     def __init__(self):
         super(GamblerGumble, self).__init__()
         self.convs = nn.ModuleList([
-            nn.Conv2d(GRID_NUM_CHANNELS, 32, kernel_size=3, stride=1, padding=1),
+            nn.Conv2d(NUM_CHANNELS_GRID, 32, kernel_size=3, stride=1, padding=1),
             nn.Conv2d(32, 32, kernel_size=3, stride=1, padding=1),
-            nn.Conv2d(32, GRID_NUM_CHANNELS, kernel_size=3, stride=1, padding=1)
+            nn.Conv2d(32, NUM_CHANNELS_GRID, kernel_size=3, stride=1, padding=1)
         ])
 
         self.softmax = nn.Softmax(dim=1)
@@ -437,8 +437,8 @@ class GamblerGumble(nn.Module):
         # Generate a continuous probability distribution using Gumbel-Softmax
         gumbel_output = self.gumbel_softmax(x_flat, tau=1.0, dim=1)
 
-        # Select N_LIVING_CELLS_INITIAL pixels by choosing the top probabilities
-        values, indices = torch.topk(gumbel_output, N_LIVING_CELLS_INITIAL, dim=1)
+        # Select NUM_LIVING_CELLS_INITIAL pixels by choosing the top probabilities
+        values, indices = torch.topk(gumbel_output, NUM_LIVING_CELLS_INITIAL, dim=1)
 
         # Create a new zero tensor and set the selected indices to 1
         y = torch.zeros_like(x_flat)

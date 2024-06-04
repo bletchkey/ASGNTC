@@ -42,12 +42,12 @@ class ResNetAttention(nn.Module):
 
         self.num_hidden = num_hidden
 
-        self.inconv = ToroidalConv2d(nn.Conv2d(GRID_NUM_CHANNELS, num_hidden, kernel_size=3, stride=1, padding=0))
+        self.inconv = ToroidalConv2d(nn.Conv2d(NUM_CHANNELS_GRID, num_hidden, kernel_size=3, stride=1, padding=0))
 
         self.attention = AttentionBlock(num_hidden)
         self.backBone  = nn.ModuleList([ResBlock(num_hidden)] * 4)
 
-        self.outconv = nn.Conv2d(num_hidden, GRID_NUM_CHANNELS, kernel_size=1, stride=1, padding=0)
+        self.outconv = nn.Conv2d(num_hidden, NUM_CHANNELS_GRID, kernel_size=1, stride=1, padding=0)
         self.sigmoid = nn.Sigmoid()
 
 

@@ -135,7 +135,7 @@ def playground():
     print(f"Prob: {prob}")
 
 
-    config, prob = pg.generate_gambler(BATCH_SIZE)
+    config, prob = pg.generate_gambler(ADV_BATCH_SIZE)
     results      = pg.simulate(config, steps=20, topology=TOPOLOGY_TOROIDAL)
     pg.plot_record_sim(results)
 
