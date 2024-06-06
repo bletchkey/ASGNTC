@@ -188,7 +188,20 @@ def save_progress_plot_dataset(plot_data: dict, epoch: int, results_path: str) -
                     text_data += f"{k}: {plot_data[key][k][indices[i]]}\n"
                 axs[i, j].text(0.1, 0.5, text_data, fontsize=18, ha='left', va='center', transform=axs[i, j].transAxes)
 
-            axs[i, j].axis('off')
+            # border colors
+            for spine in axs[i, j].spines.values():
+                spine.set_edgecolor('#000000')
+                spine.set_linewidth(2)
+
+            # Remove ticks from x and y axes
+            axs[i, j].tick_params(axis='both',          # Changes apply to both x and y axes
+                                  which='both',         # Affects both major and minor ticks
+                                  left=False,           # Remove left ticks
+                                  right=False,          # Remove right ticks
+                                  bottom=False,         # Remove bottom ticks
+                                  top=False,            # Remove top ticks
+                                  labelleft=False,      # Remove labels on the left
+                                  labelbottom=False)    # Remove labels on the bottom
 
     plt.tight_layout()
     plt.subplots_adjust(left=0.05, right=0.95, top=0.95, bottom=0.05)

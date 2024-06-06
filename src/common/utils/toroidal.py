@@ -12,6 +12,7 @@ class ToroidalConv2d(nn.Module):
         x = self.conv2d(x)
         return x
 
+    # TODO: This works but it's not the most efficient way to do it
     def __add_toroidal_padding(self, x):
         if self.padding  <= 0:
             return x
@@ -21,13 +22,12 @@ class ToroidalConv2d(nn.Module):
 
         return x
 
-
     # def __add_toroidal_padding(self, x):
     #     if self.padding <= 0:
     #         return x
 
     #     B, C, H, W = x.shape
-    #     pad = self.padding
+    #     pad        = self.padding
 
     #     # Create an empty tensor with the new shape
     #     padded_x = torch.empty((B, C, H + 2*pad, W + 2*pad), device=x.device, dtype=x.dtype)
@@ -35,13 +35,14 @@ class ToroidalConv2d(nn.Module):
     #     # Center
     #     padded_x[:, :, pad:pad+H, pad:pad+W] = x
 
-    #     # Left and right
-    #     padded_x[:, :, pad:pad+H, :pad] = x[:, :, :, -pad:]
-    #     padded_x[:, :, pad:pad+H, pad+W:] = x[:, :, :, :pad]
+    #     # Wrap edges
+    #     # Horizontal wrap (left-right)
+    #     padded_x[:, :, pad:pad+H, :pad]   = x[:, :, :, -pad:]  # left wrap
+    #     padded_x[:, :, pad:pad+H, pad+W:] = x[:, :, :, :pad]  # right wrap
 
-    #     # Top and bottom
-    #     padded_x[:, :, :pad, :] = padded_x[:, :, H:H+pad, :]
-    #     padded_x[:, :, pad+H:, :] = padded_x[:, :, pad:2*pad, :]
+    #     # Vertical wrap (top-bottom) with horizontal edges already wrapped
+    #     padded_x[:, :, :pad, :]   = padded_x[:, :, -2*pad:-pad, :]  # top wrap
+    #     padded_x[:, :, pad+H:, :] = padded_x[:, :, pad:2*pad, :]  # bottom wrap
 
     #     return padded_x
 
