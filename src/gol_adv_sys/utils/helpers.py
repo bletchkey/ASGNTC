@@ -54,7 +54,7 @@ def test_models_DCGAN(model_g: torch.nn.Module,
         model_p.eval()
         generated_config_fixed = model_g(fixed_noise)
         data["generated"]      = generated_config_fixed
-        data["initial"]   = get_initial_config(generated_config, init_config_initial_type)
+        data["initial"]   = get_initial_config(generated_config_fixed, init_config_initial_type)
         sim_results       = simulate_config(config=data["initial"], topology=topology,
                                             steps=NUM_SIM_STEPS, device=device)
 
@@ -113,8 +113,8 @@ def test_models(model_g: torch.nn.Module, model_p: torch.nn.Module,
     with torch.no_grad():
         model_g.eval()
         model_p.eval()
-
-        generated_config_fixed = model_g(fixed_input)
+        input_noise = get_dirichlet_input_noise(ADV_BATCH_SIZE, device)
+        generated_config_fixed = model_g(input_noise)
         data["generated"]      = generated_config_fixed
         data["initial"]        = generated_config_fixed
 
@@ -436,7 +436,7 @@ def generate_new_training_batches(model_g: torch.nn.Module,
         generated_tensor = torch.cat([config[CONFIG_GENERATED] for config in configs], dim=0)
         target_tensor    = torch.cat([config[target_type] for config in configs], dim=0)
 
-        return generated_tensor, target_tensor
+    return generated_tensor, target_tensor
 
 
 def get_generated_config(model_g: torch.nn.Module,
