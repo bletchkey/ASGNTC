@@ -35,7 +35,7 @@ from src.common.model_manager  import ModelManager
 
 from src.common.utils.losses   import WeightedMSELoss, AdversarialGoLLoss
 
-from src.common.utils.helpers  import get_elapsed_time_str
+from src.common.utils.helpers  import get_elapsed_time_str, get_latest_checkpoint_path
 
 from src.gol_adv_sys.utils.helpers import generate_new_batches, \
                                           generate_new_training_batches, \
@@ -116,6 +116,14 @@ class TrainingAdversarial(TrainingBase):
                                       type=PREDICTOR,
                                       device_manager=self.device_manager)
 
+        # Load the latest checkpoint of the predictor model
+
+        model_name = f"Baseline_Toroidal_{self.config_type_pred_target.capitalize()}"
+        pretrained_model_path = TRAINED_MODELS_DIR / "predictors" / model_name
+        checkpoint_path = get_latest_checkpoint_path(pretrained_model_path)
+        checkpoint = torch.load(pretrained_model_path / "checkpoints" / checkpoint_path)
+
+        self.predictor.model.load_state_dict(checkpoint[CHECKPOINT_MODEL_STATE_DICT_KEY])
 
         self.train_dataloader = None
 

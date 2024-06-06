@@ -63,9 +63,8 @@ def train_adversarial():
     # train_adv = TrainingAdversarial(model_p=Predictor_Baseline(TOPOLOGY_TOROIDAL),
     #                                 model_g=Generator_ResGen(32))
 
-    train_adv = TrainingAdversarial(model_p=Predictor_ResNet(TOPOLOGY_TOROIDAL, 5, 32),
+    train_adv = TrainingAdversarial(model_p=Predictor_Baseline(TOPOLOGY_TOROIDAL),
                                     model_g=Generator_ResGen(32))
-
 
     train_adv.run()
 

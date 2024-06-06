@@ -22,6 +22,26 @@ DATASET_N_SIM_STEPS = 1000
 DATASET_NAME = "gol_dataset"
 
 
+### SIMULATION PARAMETERS ###############################################################
+
+# Size of the grid
+GRID_SIZE = 32
+
+# Max number of steps to run the simulation
+NUM_MAX_SIM_STEPS = 1000
+
+# Number of living cells in the initial configuration
+NUM_LIVING_CELLS_INITIAL = 32
+
+# Threshold for the value of the cells in the generated configurations
+THRESHOLD_CELL_VALUE = 0.5
+
+# Half step for the targets
+TARGET_EASY_HALF_STEP   = 2
+TARGET_MEDIUM_HALF_STEP = 8
+TARGET_HARD_HALF_STEP   = 100
+
+
 ### PREDICTOR TRAINING PARAMETERS ###################################################
 
 # Number of training epochs
@@ -69,6 +89,8 @@ NUM_BATCHES_GEN_EVAL = NUM_CONFIGS_GEN_EVAL // ADV_BATCH_SIZE
 # Dirichlet alpha parameter - used for the Dirichlet distribution to generate the input for G
 DIRICHLET_ALPHA = 0.005
 
+# Number of steps to run the simulation for the generated configurations
+NUM_SIM_STEPS = 1000
 
 ### TRAINING GENERAL ##############################################################
 
@@ -119,29 +141,6 @@ G_ADAMW_WEIGHT_DECAY = 0.01
 P_SGD_LR           = 0.01
 P_SGD_MOMENTUM     = 0.9
 P_SGD_WEIGHT_DECAY = 1e-4
-
-
-### SIMULATION PARAMETERS ###############################################################
-
-# Size of the grid
-GRID_SIZE = 32
-
-# Number of steps to run the simulation
-NUM_SIM_STEPS = 20
-
-# Max number of steps to run the simulation
-NUM_MAX_SIM_STEPS = 1000
-
-# Number of living cells in the initial configuration
-NUM_LIVING_CELLS_INITIAL = 32
-
-# Threshold for the value of the cells in the generated configurations
-THRESHOLD_CELL_VALUE = 0.5
-
-# Half step for the targets
-TARGET_EASY_HALF_STEP   = 2
-TARGET_MEDIUM_HALF_STEP = 8
-TARGET_HARD_HALF_STEP   = 100
 
 
 # NAMING CONVENTIONS #############################################################
