@@ -39,7 +39,7 @@ from src.common.utils.helpers  import get_elapsed_time_str
 
 from src.gol_adv_sys.utils.helpers import generate_new_batches, \
                                           generate_new_training_batches, \
-                                          test_models, test_models_DCGAN, \
+                                          test_models, \
                                           save_progress_plot, get_config_from_batch,\
                                           get_config_from_training_batch, \
                                           get_dirichlet_input_noise
@@ -67,7 +67,7 @@ class TrainingAdversarial(TrainingBase):
         generator (ModelManager): An instance of ModelManager for the generator model.
         predictor (ModelManager): An instance of ModelManager for the predictor model.
         data_loader (torch.utils.data.DataLoader): The dataloader for the training session.
-        fixed_noise (torch.Tensor): The fixed noise used for generating configurations.
+        fixed_input_noise (torch.Tensor): The fixed noise given as input to the generator model.
         properties_g (dict): A dictionary containing properties of the generator model.
         path_log_file (str): The path to the log file for the training session.
 
@@ -84,6 +84,8 @@ class TrainingAdversarial(TrainingBase):
         self.simulation_topology      = TOPOLOGY_TOROIDAL
         self.config_type_pred_target  = CONFIG_TARGET_EASY
         self.init_config_initial_type = INIT_CONFIG_INITIAL_SIGN
+        self.fixed_input_noise        = get_dirichlet_input_noise(ADV_BATCH_SIZE,
+                                                                  self.device_manager.default_device)
 
         self.n_times_trained_p = 0
         self.n_times_trained_g = 0
@@ -117,7 +119,6 @@ class TrainingAdversarial(TrainingBase):
 
         self.train_dataloader = None
 
-        self.fixed_noise   = get_dirichlet_input_noise(ADV_BATCH_SIZE, self.device_manager.default_device)
         self.properties_g  = {"enabled": True, "can_train": True}
         self.path_log_file = self.__init_log_file()
 
@@ -486,7 +487,7 @@ class TrainingAdversarial(TrainingBase):
                             self.predictor.model,
                             self.simulation_topology,
                             self.init_config_initial_type,
-                            self.fixed_noise,
+                            self.fixed_input_noise,
                             self.config_type_pred_target,
                             self.device_manager.default_device)
 

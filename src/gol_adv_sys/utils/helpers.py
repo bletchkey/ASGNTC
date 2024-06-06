@@ -79,9 +79,13 @@ def test_models_DCGAN(model_g: torch.nn.Module,
     return data
 
 
-def test_models(model_g: torch.nn.Module, model_p: torch.nn.Module,
-                topology: str, init_config_initial_type: str,
-                fixed_input: torch.Tensor, target_config: str, device: torch.device) -> dict:
+def test_models(model_g: torch.nn.Module,
+                model_p: torch.nn.Module,
+                topology: str,
+                init_config_initial_type: str,
+                fixed_input: torch.Tensor,
+                target_config: str,
+                device: torch.device) -> dict:
     """
     Function to test the models
 
@@ -113,10 +117,9 @@ def test_models(model_g: torch.nn.Module, model_p: torch.nn.Module,
     with torch.no_grad():
         model_g.eval()
         model_p.eval()
-        input_noise = get_dirichlet_input_noise(ADV_BATCH_SIZE, device)
-        generated_config_fixed = model_g(input_noise)
+        generated_config_fixed = model_g(fixed_input)
         data["generated"]      = generated_config_fixed
-        data["initial"]        = generated_config_fixed
+        data["initial"]        = get_initial_config(generated_config_fixed, init_config_initial_type)
 
         sim_results = simulate_config(config=data["initial"],
                                       topology=topology,
@@ -126,7 +129,7 @@ def test_models(model_g: torch.nn.Module, model_p: torch.nn.Module,
         data["final"]     = sim_results["final"]
         data["simulated"] = sim_results["simulated"]
         data["target"]    = sim_results["all_targets"][target_config]["config"]
-        data["predicted"] = model_p(data["initial"])
+        data["predicted"] = model_p(data["generated"])
         data["metadata"]  = {
             "n_cells_initial":   sim_results["n_cells_initial"],
             "n_cells_simulated": sim_results["n_cells_simulated"],
@@ -149,8 +152,8 @@ def save_progress_plot(plot_data: dict, iteration: int, results_path: str) -> No
     Function to save the progress plot
 
     Args:
-        plot_data (dict): The dictionary containing the data to plot
-        iteration (int): The current iteration
+        plot_data (dict)  : The dictionary containing the data to plot
+        iteration (int)   : The current iteration
         results_path (str): The path to where the results will be saved
 
     """
