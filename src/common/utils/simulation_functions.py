@@ -39,8 +39,8 @@ def basic_simulation_config(config: torch.Tensor, topology: str, steps: int, dev
 
 
 def adv_training_simulate_config(config: torch.Tensor, topology: str,
-                        steps: int, target_type: str,
-                        device: torch.device) -> torch.Tensor:
+                                 steps: int, target_type: str,
+                                 device: torch.device) -> torch.Tensor:
     """
     Simulates a configuration for a given number of steps using a specified topology.
 
@@ -233,35 +233,51 @@ def __calculate_specific_target(configs: list, target_type: str, device: torch.d
     """
     Function for calculating a specific target from the simulated configurations
 
+    Args:
+        configs (list): List of simulated configurations, each with shape (batch_size, channels, height, width).
+        target_type (str): The type of target to generate.
+        device (torch.device): The computing device (CPU or GPU).
+
+    Returns:
+        torch.Tensor: The aggregated target tensor.
+
     """
     if target_type not in [CONFIG_TARGET_EASY, CONFIG_TARGET_MEDIUM, CONFIG_TARGET_HARD]:
         raise ValueError(f"Target type {target_type} not supported")
 
-
     steps = len(configs)
+    batch_size, channels, height, width = configs[0].shape
 
     half_step = TARGET_EASY_HALF_STEP if target_type == CONFIG_TARGET_EASY else \
                 TARGET_MEDIUM_HALF_STEP if target_type == CONFIG_TARGET_MEDIUM else \
                 TARGET_HARD_HALF_STEP
 
-
     eps = __calculate_eps(half_step=half_step)
 
     correction_factor = eps / (1 - ((1 - eps) ** steps))
 
-    step_indices = torch.arange(steps, dtype=torch.float32, device=device)
-    decay_rates  = torch.pow(1 - eps, step_indices)
+    decay_rates = torch.pow(1 - eps, torch.arange(steps, dtype=torch.float32, device=device))
     decay_tensor = decay_rates.view(1, steps, 1, 1, 1)
 
-    target  = torch.stack(configs, dim=0)
-    target  = target.permute(1, 0, 2, 3, 4)
-    target *= decay_tensor
-    target  = target.sum(dim=0)
-    target *= correction_factor
-    target  = torch.clamp(target, min=0, max=1)
+    # Stack the configurations along the batch dimension
+    stacked_configs = torch.stack(configs, dim=0)
+
+    # Permute the dimensions to (batch_size, steps, channels, height, width)
+    stacked_configs = stacked_configs.permute(1, 0, 2, 3, 4)
+
+    # Multiply each configuration by the corresponding decay rate
+    weighted_configs = stacked_configs * decay_tensor
+
+    # Sum along the steps dimension
+    summed_configs = weighted_configs.sum(dim=1)
+
+    # Multiply by the correction factor
+    corrected_target = summed_configs * correction_factor
+
+    # Clamp the values to [0, 1]
+    target = torch.clamp(corrected_target, min=0, max=1)
 
     return target
-
 
 def __calculate_targets(configs: list, stable_config: torch.Tensor, device: torch.device) -> dict:
     """

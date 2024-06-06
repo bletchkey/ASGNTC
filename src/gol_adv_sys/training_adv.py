@@ -20,7 +20,8 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 
-from torch.utils.data import DataLoader
+from torch.utils.data import DataLoader, TensorDataset, ConcatDataset
+
 
 import datetime
 
@@ -65,9 +66,9 @@ class TrainingAdversarial(TrainingBase):
         n_times_trained_g (int): The number of times the generator model has been trained.
         generator (ModelManager): An instance of ModelManager for the generator model.
         predictor (ModelManager): An instance of ModelManager for the predictor model.
+        data_loader (torch.utils.data.DataLoader): The dataloader for the training session.
         fixed_noise (torch.Tensor): The fixed noise used for generating configurations.
         properties_g (dict): A dictionary containing properties of the generator model.
-        data_tensor (torch.Tensor): Auxiliary tensor used for creating the dataloader.
         path_log_file (str): The path to the log file for the training session.
 
     """
@@ -118,7 +119,6 @@ class TrainingAdversarial(TrainingBase):
 
         self.fixed_noise   = get_dirichlet_input_noise(ADV_BATCH_SIZE, self.device_manager.default_device)
         self.properties_g  = {"enabled": True, "can_train": True}
-        self.data_tensor   = None
         self.path_log_file = self.__init_log_file()
 
 
@@ -196,106 +196,6 @@ class TrainingAdversarial(TrainingBase):
             self.device_manager.clear_resources()
 
 
-    def __log_training_step(self, step) -> None:
-        """
-        Log the progress of the training session inside each iteration.
-
-        Args:
-            step (int): The current step in the iteration.
-
-        """
-        str_step_time = f"{get_elapsed_time_str(self.step_times_secs[self.current_iteration][step])}"
-        str_step      = f"{step+1}/{NUM_TRAINING_STEPS}"
-        str_err_p     = f"{self.losses[PREDICTOR][-1]}" if len(self.losses[PREDICTOR]) > 0 else "N/A"
-        str_err_g     = f"{self.losses[GENERATOR][-1]}" if len(self.losses[GENERATOR]) > 0 else "N/A"
-
-
-        with open(self.path_log_file, "a") as log:
-
-            log.write(f"{str_step_time} | Step: {str_step}, Loss P: {str_err_p}, Loss G: {str_err_g}\n")
-            log.flush()
-
-
-    def __log_training_iteration(self) -> None:
-        """
-        Log the progress of the training session at the end of each iteration.
-
-        """
-
-        with open(self.path_log_file, "a") as log:
-            log.write(f"\nElapsed time: {get_elapsed_time_str(self.step_times_secs[self.current_iteration])}\n")
-
-            if self.n_times_trained_p > 0:
-                log.write(f"Average loss P: {self.__get_loss_avg_p_last_iteration()}\n")
-
-            if self.n_times_trained_g > 0:
-                log.write(f"Average loss G: {self.__get_loss_avg_g_last_iteration()}\n")
-
-            if self.current_iteration + 1 == NUM_ITERATIONS:
-                 log.write(f"\n\nTraining ended at {datetime.datetime.now().strftime('%d/%m/%Y %H:%M:%S')}\n")
-                 log.write(f"Number of times P was trained: {self.n_times_trained_p}\n")
-                 log.write(f"Number of times G was trained: {self.n_times_trained_g}\n")
-
-            log.flush()
-
-
-    def __init_log_file(self) -> str:
-        """
-        Create a log file for the training session and write the initial specifications.
-
-        Returns:
-            path (str): The path to the log file.
-
-        """
-
-        path = self.folders.logs_folder / FILE_NAME_TRAINING_PROGRESS
-
-        seed_info = ("Random seed" if self.__seed_type["random"] else
-                     "Fixed seed" if self.__seed_type["fixed"] else
-                     "Unknown seed")
-
-        balanced_gpu_info = (f"Number of balanced GPU: {self.device_manager.n_balanced_gpus}\n"
-                             if self.device_manager.balanced_gpu_indices else "")
-
-        topology_info = ("Topology: toroidal" if self.simulation_topology == TOPOLOGY_TOROIDAL else
-                         "Topology: flat" if self.simulation_topology == TOPOLOGY_FLAT else
-                         "Topology: unknown")
-
-        generator_info = ""
-        if self.properties_g["enabled"]:
-            generator_info += (f"Optimizer G: {self.generator.optimizer.__class__.__name__}\n"
-                               f"Criterion G: {self.generator.criterion.__class__.__name__}\n")
-
-        log_contents = (
-            f"Training session started at {self.__date.strftime('%d/%m/%Y %H:%M:%S')}\n"
-            f"{seed_info}: {self.__seed}\n"
-            f"Default device: {self.device_manager.default_device}\n"
-            f"{balanced_gpu_info}\n"
-            f"Training specs:\n"
-            f"Batch size: {ADV_BATCH_SIZE}\n"
-            f"Iterations: {NUM_ITERATIONS}\n"
-            f"Number of training steps in each iteration: {NUM_TRAINING_STEPS}\n"
-            f"Number of batches generated in each iteration: {NUM_BATCHES} ({NUM_CONFIGS} configs)\n"
-            f"Max number of generated batches in dataset: {NUM_MAX_BATCHES} ({NUM_MAX_CONFIGS} configs)\n"
-            f"\nSimulation specs:\n"
-            f"Grid size: {GRID_SIZE}\n"
-            f"Simulation steps: {NUM_SIM_STEPS}\n"
-            f"{topology_info}\n"
-            f"\nPredicting config type: {self.config_type_pred_target}\n"
-            f"\nModel specs:\n"
-            f"Optimizer P: {self.predictor.optimizer.__class__.__name__}\n"
-            f"Criterion P: {self.predictor.criterion.__class__.__name__}\n"
-            f"{generator_info}"
-            f"\nTraining progress: \n\n\n"
-        )
-
-        with open(path, "w") as log_file:
-            log_file.write(log_contents.strip())
-            log_file.flush()
-
-        return path
-
-
     def __get_train_dataloader(self) -> DataLoader:
         """
         Get the dataloader for the current iteration.
@@ -312,30 +212,122 @@ class TrainingAdversarial(TrainingBase):
 
         """
 
-        data = generate_new_training_batches(self.generator.model,
+        generated, target = generate_new_training_batches(self.generator.model,
                                              NUM_BATCHES,
                                              self.simulation_topology,
                                              self.config_type_pred_target,
                                              self.init_config_initial_type,
                                              self.device_manager.default_device)
 
-        if self.train_dataloader is None:
-            self.train_dataloader = DataLoader(data, batch_size=ADV_BATCH_SIZE, shuffle=True)
+        if self.train_dataloader == None:
+            self.train_dataloader = DataLoader(TensorDataset(generated, target), batch_size=ADV_BATCH_SIZE, shuffle=True)
+
         else:
-            future_total_size = len(self.train_dataloader.dataset) + len(data)
+            new_dataset = TensorDataset(generated, target)
+            combined_dataset = ConcatDataset([self.train_dataloader.dataset, new_dataset])
+            self.train_dataloader = DataLoader(combined_dataset, batch_size=ADV_BATCH_SIZE, shuffle=True)
 
-            if future_total_size >= NUM_MAX_BATCHES * ADV_BATCH_SIZE:
 
-                n_batches_to_drop = future_total_size // ADV_BATCH_SIZE - NUM_MAX_BATCHES
+    def __warmup_predictor(self) -> None:
 
-                for _ in range(n_batches_to_drop):
-                    self.train_dataloader.dataset.tensors = (self.train_dataloader.dataset.tensors[0][1:],)
+        logging.debug(f"Warmup of the predictor model started")
 
-            self.train_dataloader.dataset.tensors = (torch.cat([self.train_dataloader.dataset.tensors[0], data]),)
+        self.predictor.model.train()
 
-        logging.debug(f"Dataloader updated, batches in dataloader: {len(self.train_dataloader)}/{NUM_MAX_BATCHES}")
+        generated, target = self.__get_new_training_batches(NUM_BATCHES)
 
-        return self.train_dataloader
+        dataset = TensorDataset(generated, target)
+
+        # Create the dataloader from the tensor
+        dataloader_warmup = DataLoader(dataset, batch_size=ADV_BATCH_SIZE, shuffle=True)
+
+        warmup_values = np.linspace(WARMUP_INITIAL_LR, WARMUP_TARGET_LR, len(dataloader_warmup))
+
+
+        for batch_count, (generated, target) in enumerate(dataloader_warmup, start=1):
+
+            self.predictor.set_learning_rate(warmup_values[batch_count-1])
+
+            logging.debug(f"Warmup phase => Predictor learning rate: {self.predictor.get_learning_rate()}")
+
+            self.predictor.optimizer.zero_grad()
+
+            predicted = self.predictor.model(generated.detach())
+            errP      = self.predictor.criterion(predicted, target.detach())
+
+            errP.backward()
+            self.predictor.optimizer.step()
+
+
+    def __train_predictor(self) -> float:
+        """
+        Function for training the predictor model.
+
+        Returns:
+            loss (float): The loss of the predictor model.
+
+        """
+
+        loss = 0
+
+        logging.debug(f"Training predictor")
+        self.predictor.model.train()
+
+        for batch_count, (generated, target) in enumerate(self.train_dataloader, start=1):
+
+            self.predictor.optimizer.zero_grad()
+
+            predicted = self.predictor.model(generated.detach())
+            errP      = self.predictor.criterion(predicted, target.detach())
+
+            errP.backward()
+            self.predictor.optimizer.step()
+
+            loss += errP.item()
+            running_avg_loss = loss / batch_count
+
+        self.n_times_trained_p += 1
+
+        self.losses[PREDICTOR].append(running_avg_loss)
+
+        return loss
+
+
+    def __train_generator(self) -> float:
+        """
+        Function for training the generator model.
+
+        Returns:
+            loss (float): The loss of the generator model.
+
+        """
+
+        loss = 0
+
+        logging.debug(f"Training generator")
+        self.generator.model.train()
+
+        for batch_count in range(1, NUM_BATCHES+1):
+
+            self.generator.optimizer.zero_grad()
+
+            generated, target = self.__get_new_training_batches(1)
+
+            predicted = self.predictor.model(generated)
+            errG      = self.generator.criterion(predicted, target)
+
+            errG.backward()
+
+            self.generator.optimizer.step()
+
+            loss += errG.item()
+            running_avg_loss = loss / batch_count
+
+        self.n_times_trained_g += 1
+
+        self.losses[GENERATOR].append(running_avg_loss)
+
+        return loss
 
 
     def __get_new_batches(self, n_batches) -> Tuple[torch.Tensor, list]:
@@ -357,7 +349,7 @@ class TrainingAdversarial(TrainingBase):
                                      self.device_manager.default_device)
 
 
-    def __get_new_training_batches(self, n_batches) -> Tuple[torch.Tensor, list]:
+    def __get_new_training_batches(self, n_batches) -> Tuple[torch.Tensor, torch.Tensor]:
         """
         Generate new configurations using the generator model for adversarial training.
 
@@ -399,118 +391,6 @@ class TrainingAdversarial(TrainingBase):
         """
 
         return get_config_from_training_batch(batch, type, self.device_manager.default_device)
-
-
-    def __warmup_predictor(self) -> None:
-
-        logging.debug(f"Warmup of the predictor model started")
-
-        self.predictor.model.train()
-
-        data = self.__get_new_training_batches(NUM_BATCHES)
-
-        # Create the dataloader from the tensor
-        dataloader_warmup = DataLoader(data, batch_size=ADV_BATCH_SIZE, shuffle=True)
-
-        warmup_values = np.linspace(WARMUP_INITIAL_LR, WARMUP_TARGET_LR, len(dataloader_warmup))
-
-
-        for batch_count, batch in enumerate(dataloader_warmup, start=1):
-
-            self.predictor.set_learning_rate(warmup_values[batch_count-1])
-
-            logging.debug(f"Warmup phase => Predictor learning rate: {self.predictor.get_learning_rate()}")
-
-            self.predictor.optimizer.zero_grad()
-
-            config_input  = self.__get_config_type_from_training_batch(batch, CONFIG_GENERATED).detach()
-            target_config = self.__get_config_type_from_training_batch(batch, self.config_type_pred_target).detach()
-
-            predicted = self.predictor.model(config_input)
-            errP      = self.predictor.criterion(predicted, target_config)
-
-            errP.backward()
-            self.predictor.optimizer.step()
-
-
-    def __train_predictor(self) -> float:
-        """
-        Function for training the predictor model.
-
-        Returns:
-            loss (float): The loss of the predictor model.
-
-        """
-
-        loss = 0
-
-        logging.debug(f"Training predictor")
-        self.predictor.model.train()
-
-        for batch_count, batch in enumerate(self.train_dataloader, start=1):
-
-            self.predictor.optimizer.zero_grad()
-
-            batch = batch.to(self.device_manager.default_device)
-
-            config_input  = self.__get_config_type_from_training_batch(batch, CONFIG_GENERATED).detach()
-            target_config = self.__get_config_type_from_training_batch(batch, self.config_type_pred_target).detach()
-
-            predicted = self.predictor.model(config_input)
-            errP      = self.predictor.criterion(predicted, target_config)
-
-            errP.backward()
-            self.predictor.optimizer.step()
-
-            loss += errP.item()
-            running_avg_loss = loss / batch_count
-
-        self.n_times_trained_p += 1
-
-        self.losses[PREDICTOR].append(running_avg_loss)
-
-        return loss
-
-
-    def __train_generator(self) -> float:
-        """
-        Function for training the generator model.
-
-        Returns:
-            loss (float): The loss of the generator model.
-
-        """
-
-        loss = 0
-
-        logging.debug(f"Training generator")
-        self.generator.model.train()
-
-        for batch_count in range(1, NUM_BATCHES+1):
-
-            self.generator.optimizer.zero_grad()
-
-            batch = self.__get_new_training_batches(1)
-
-            config_input  = self.__get_config_type_from_training_batch(batch, CONFIG_GENERATED)
-            target_config = self.__get_config_type_from_training_batch(batch, self.config_type_pred_target)
-
-
-            predicted = self.predictor.model(config_input)
-            errG      = self.generator.criterion(predicted, target_config)
-
-            errG.backward()
-
-            self.generator.optimizer.step()
-
-            loss += errG.item()
-            running_avg_loss = loss / batch_count
-
-        self.n_times_trained_g += 1
-
-        self.losses[GENERATOR].append(running_avg_loss)
-
-        return loss
 
 
     def __get_loss_avg_p(self, on_last_n_losses) -> float:
@@ -718,4 +598,104 @@ class TrainingAdversarial(TrainingBase):
             torch.cuda.manual_seed(self.__seed)
         except Exception as e:
             logging.error(f"Error initializing the seed: {e}")
+
+
+    def __log_training_step(self, step) -> None:
+        """
+        Log the progress of the training session inside each iteration.
+
+        Args:
+            step (int): The current step in the iteration.
+
+        """
+        str_step_time = f"{get_elapsed_time_str(self.step_times_secs[self.current_iteration][step])}"
+        str_step      = f"{step+1}/{NUM_TRAINING_STEPS}"
+        str_err_p     = f"{self.losses[PREDICTOR][-1]}" if len(self.losses[PREDICTOR]) > 0 else "N/A"
+        str_err_g     = f"{self.losses[GENERATOR][-1]}" if len(self.losses[GENERATOR]) > 0 else "N/A"
+
+
+        with open(self.path_log_file, "a") as log:
+
+            log.write(f"{str_step_time} | Step: {str_step}, Loss P: {str_err_p}, Loss G: {str_err_g}\n")
+            log.flush()
+
+
+    def __log_training_iteration(self) -> None:
+        """
+        Log the progress of the training session at the end of each iteration.
+
+        """
+
+        with open(self.path_log_file, "a") as log:
+            log.write(f"\nElapsed time: {get_elapsed_time_str(self.step_times_secs[self.current_iteration])}\n")
+
+            if self.n_times_trained_p > 0:
+                log.write(f"Average loss P: {self.__get_loss_avg_p_last_iteration()}\n")
+
+            if self.n_times_trained_g > 0:
+                log.write(f"Average loss G: {self.__get_loss_avg_g_last_iteration()}\n")
+
+            if self.current_iteration + 1 == NUM_ITERATIONS:
+                 log.write(f"\n\nTraining ended at {datetime.datetime.now().strftime('%d/%m/%Y %H:%M:%S')}\n")
+                 log.write(f"Number of times P was trained: {self.n_times_trained_p}\n")
+                 log.write(f"Number of times G was trained: {self.n_times_trained_g}\n")
+
+            log.flush()
+
+
+    def __init_log_file(self) -> str:
+        """
+        Create a log file for the training session and write the initial specifications.
+
+        Returns:
+            path (str): The path to the log file.
+
+        """
+
+        path = self.folders.logs_folder / FILE_NAME_TRAINING_PROGRESS
+
+        seed_info = ("Random seed" if self.__seed_type["random"] else
+                     "Fixed seed" if self.__seed_type["fixed"] else
+                     "Unknown seed")
+
+        balanced_gpu_info = (f"Number of balanced GPU: {self.device_manager.n_balanced_gpus}\n"
+                             if self.device_manager.balanced_gpu_indices else "")
+
+        topology_info = ("Topology: toroidal" if self.simulation_topology == TOPOLOGY_TOROIDAL else
+                         "Topology: flat" if self.simulation_topology == TOPOLOGY_FLAT else
+                         "Topology: unknown")
+
+        generator_info = ""
+        if self.properties_g["enabled"]:
+            generator_info += (f"Optimizer G: {self.generator.optimizer.__class__.__name__}\n"
+                               f"Criterion G: {self.generator.criterion.__class__.__name__}\n")
+
+        log_contents = (
+            f"Training session started at {self.__date.strftime('%d/%m/%Y %H:%M:%S')}\n"
+            f"{seed_info}: {self.__seed}\n"
+            f"Default device: {self.device_manager.default_device}\n"
+            f"{balanced_gpu_info}\n"
+            f"Training specs:\n"
+            f"Batch size: {ADV_BATCH_SIZE}\n"
+            f"Iterations: {NUM_ITERATIONS}\n"
+            f"Number of training steps in each iteration: {NUM_TRAINING_STEPS}\n"
+            f"Number of batches generated in each iteration: {NUM_BATCHES} ({NUM_CONFIGS} configs)\n"
+            f"Max number of generated batches in dataset: {NUM_MAX_BATCHES} ({NUM_MAX_CONFIGS} configs)\n"
+            f"\nSimulation specs:\n"
+            f"Grid size: {GRID_SIZE}\n"
+            f"Simulation steps: {NUM_SIM_STEPS}\n"
+            f"{topology_info}\n"
+            f"\nPredicting config type: {self.config_type_pred_target}\n"
+            f"\nModel specs:\n"
+            f"Optimizer P: {self.predictor.optimizer.__class__.__name__}\n"
+            f"Criterion P: {self.predictor.criterion.__class__.__name__}\n"
+            f"{generator_info}"
+            f"\nTraining progress: \n\n\n"
+        )
+
+        with open(path, "w") as log_file:
+            log_file.write(log_contents.strip())
+            log_file.flush()
+
+        return path
 

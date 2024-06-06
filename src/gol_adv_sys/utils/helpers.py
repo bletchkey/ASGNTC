@@ -429,20 +429,14 @@ def generate_new_training_batches(model_g: torch.nn.Module,
                                                           device=device)
 
         configs.append({
-            CONFIG_GENERATED     : generated_config,
-            target_type          : target
+            CONFIG_GENERATED : generated_config,
+            target_type      : target
         })
 
-    # TODO: check errors
+        generated_tensor = torch.cat([config[CONFIG_GENERATED] for config in configs], dim=0)
+        target_tensor    = torch.cat([config[target_type] for config in configs], dim=0)
 
-    generated_tensors = [torch.stack([config[key] for config in configs], dim=0) for key in configs[0].keys()]
-
-    data = torch.cat(generated_tensors, dim=1)
-
-    # Shuffle the data
-    data = data[torch.randperm(data.size(0))]
-
-    return data
+        return generated_tensor, target_tensor
 
 
 def get_generated_config(model_g: torch.nn.Module,
