@@ -413,35 +413,37 @@ def generate_new_training_batches(model_g: torch.nn.Module,
                                   topology: str,
                                   target_type: str,
                                   init_config_initial_type: str,
-                                  device: torch.device) -> torch.Tensor:
+                                  device: torch.device) -> Tuple[torch.Tensor, torch.Tensor]:
 
-    configs = []
+    # Preallocate tensors based on the total size needed
+    total_data_count = n_batches * ADV_BATCH_SIZE
+    data_size        = (NUM_CHANNELS_GRID, GRID_SIZE, GRID_SIZE)
+    generated_tensor = torch.zeros((total_data_count, *data_size), device=device)
+    target_tensor    = torch.zeros((total_data_count, *data_size), device=device)
 
+    index = 0
     for _ in range(n_batches):
         generated_config = get_generated_config(model_g, device)
 
         with torch.no_grad():
             initial_config = get_initial_config(generated_config, init_config_initial_type)
-            target         = adv_training_simulate_config(config=initial_config,
-                                                          topology=topology,
-                                                          steps=NUM_SIM_STEPS,
-                                                          target_type=target_type,
-                                                          device=device)
+            target = adv_training_simulate_config(config=initial_config,
+                                                  topology=topology,
+                                                  steps=NUM_SIM_STEPS,
+                                                  target_type=target_type,
+                                                  device=device)
 
-        configs.append({
-            CONFIG_GENERATED : generated_config,
-            target_type      : target
-        })
-
-        generated_tensor = torch.cat([config[CONFIG_GENERATED] for config in configs], dim=0)
-        target_tensor    = torch.cat([config[target_type] for config in configs], dim=0)
+        # Insert the generated data into the preallocated tensor
+        generated_tensor[index:index + ADV_BATCH_SIZE] = generated_config
+        target_tensor[index:index + ADV_BATCH_SIZE]    = target
+        index += ADV_BATCH_SIZE
 
     return generated_tensor, target_tensor
 
 
 def get_generated_config(model_g: torch.nn.Module,
                          device: torch.device,
-                         noise_vector: bool = False) -> Tuple[torch.Tensor, torch.Tensor]:
+                         noise_vector: bool = False) -> torch.Tensor:
 
     """
     Function to generate the initial configuration

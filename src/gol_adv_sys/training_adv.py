@@ -146,25 +146,25 @@ class TrainingAdversarial(TrainingBase):
 
         for iteration in range(NUM_ITERATIONS):
 
+            self.__get_train_dataloader()
+
             logging.info(f"Adversarial training iteration {iteration+1}/{NUM_ITERATIONS}")
 
             self.step_times_secs.append([])
             self.current_iteration = iteration
 
-            self.__get_train_dataloader()
-
             with open(self.path_log_file, "a") as log:
                 log_content = (
-                    f"Iteration: {iteration+1}/{NUM_ITERATIONS}\n"
+                    f"\n\nIteration: {iteration+1}/{NUM_ITERATIONS}\n"
                     f"Number of generated configurations in the dataset: {len(self.train_dataloader) * ADV_BATCH_SIZE}\n"
                 )
 
-                if len(self.complexity_stable_targets) > 0:
-                    log_content += (
-                        f"Average complexity of the stable targets on the last "
-                        f"{NUM_BATCHES * ADV_BATCH_SIZE} generated configurations: "
-                        f"{100*self.complexity_stable_targets[-1]:.1f}/100\n\n"
-                    )
+                # if len(self.complexity_stable_targets) > 0:
+                #     log_content += (
+                #         f"Average complexity of the stable targets on the last "
+                #         f"{NUM_BATCHES * ADV_BATCH_SIZE} generated configurations: "
+                #         f"{100*self.complexity_stable_targets[-1]:.1f}/100\n\n"
+                #     )
 
                 log.write(log_content)
                 log.flush()
@@ -213,7 +213,6 @@ class TrainingAdversarial(TrainingBase):
 
         if self.train_dataloader == None:
             self.train_dataloader = DataLoader(TensorDataset(generated, target), batch_size=ADV_BATCH_SIZE, shuffle=True)
-
         else:
             new_dataset           = TensorDataset(generated, target)
             combined_dataset      = ConcatDataset([self.train_dataloader.dataset, new_dataset])
@@ -246,39 +245,50 @@ class TrainingAdversarial(TrainingBase):
             errP.backward()
             self.predictor.optimizer.step()
 
+        logging.debug(f"Warmup phase => ended")
 
-    def __train_predictor(self) -> float:
+
+    def __train_predictor(self, num_epochs: int=5) -> float:
         """
         Function for training the predictor model.
 
+        Args:
+            num_epochs (int): Number of times to iterate over the training dataset.
+
         Returns:
-            loss (float): The loss of the predictor model.
+            float: The average loss of the predictor model after all epochs.
 
         """
 
-        loss = 0
+        total_loss = 0
 
-        logging.debug(f"Training predictor")
-        self.predictor.model.train()
+        for epoch in range(num_epochs):
+            epoch_loss = 0
 
-        for batch_count, (generated, target) in enumerate(self.train_dataloader, start=1):
+            logging.debug(f"Training predictor - Epoch {epoch+1}")
+            self.predictor.model.train()
 
-            self.predictor.optimizer.zero_grad()
+            for batch_count, (generated, target) in enumerate(self.train_dataloader, start=1):
 
-            predicted = self.predictor.model(generated.detach())
-            errP      = self.predictor.criterion(predicted, target.detach())
+                self.predictor.optimizer.zero_grad()
 
-            errP.backward()
-            self.predictor.optimizer.step()
+                predicted = self.predictor.model(generated.detach())
+                errP = self.predictor.criterion(predicted, target.detach())
 
-            loss += errP.item()
-            running_avg_loss = loss / batch_count
+                errP.backward()
+                self.predictor.optimizer.step()
+
+                epoch_loss += errP.item()
+
+            avg_epoch_loss = epoch_loss / len(self.train_dataloader)
+            self.losses[PREDICTOR].append(avg_epoch_loss)
+            total_loss += epoch_loss
+
+            logging.debug(f"Completed Epoch {epoch+1}: Average Loss {avg_epoch_loss}")
 
         self.n_times_trained_p += 1
 
-        self.losses[PREDICTOR].append(running_avg_loss)
-
-        return loss
+        return total_loss / num_epochs
 
 
     def __train_generator(self) -> float:
@@ -299,7 +309,7 @@ class TrainingAdversarial(TrainingBase):
 
             self.generator.optimizer.zero_grad()
 
-            generated, target = self.__get_new_training_batches(1)
+            generated, target = self.__get_new_training_batches(n_batches=1)
 
             predicted = self.predictor.model(generated)
             errG      = self.generator.criterion(predicted, target)

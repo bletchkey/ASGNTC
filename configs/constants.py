@@ -45,10 +45,10 @@ NUM_ITERATIONS = 200
 NUM_TRAINING_STEPS = 4
 
 # Batch size during training
-ADV_BATCH_SIZE = 64
+ADV_BATCH_SIZE = 32
 
 # Number of batches to generate at each epoch
-NUM_BATCHES = 128
+NUM_BATCHES = 64
 
 # Max number of batches in the dataloader
 NUM_MAX_BATCHES = 16*NUM_BATCHES
