@@ -9,6 +9,7 @@ When training the generator and predictor models, the training is done using the
 import numpy as np
 
 import os
+import gc
 import random
 import time
 from pathlib import Path
@@ -35,9 +36,12 @@ from src.common.utils.losses   import WeightedMSELoss, AdversarialGoLLoss
 
 from src.common.utils.helpers  import get_elapsed_time_str
 
-from src.gol_adv_sys.utils.helpers import get_data_tensor, generate_new_batches, \
+from src.gol_adv_sys.utils.helpers import generate_new_batches, \
+                                          generate_new_training_batches, \
                                           test_models, test_models_DCGAN, \
-                                          save_progress_plot, get_config_from_batch
+                                          save_progress_plot, get_config_from_batch,\
+                                          get_config_from_training_batch, \
+                                          get_dirichlet_input_noise
 
 
 class TrainingAdversarial(TrainingBase):
@@ -110,12 +114,11 @@ class TrainingAdversarial(TrainingBase):
                                       device_manager=self.device_manager)
 
 
-        self.fixed_noise  = torch.randn(ADV_BATCH_SIZE, LATENT_VEC_SIZE, 1, 1, device=self.device_manager.default_device)
+        self.train_dataloader = None
 
-        self.properties_g = {"enabled": True, "can_train": True}
-
-        self.data_tensor  = None
-
+        self.fixed_noise   = get_dirichlet_input_noise(ADV_BATCH_SIZE, self.device_manager.default_device)
+        self.properties_g  = {"enabled": True, "can_train": True}
+        self.data_tensor   = None
         self.path_log_file = self.__init_log_file()
 
 
@@ -186,7 +189,7 @@ class TrainingAdversarial(TrainingBase):
             self.__can_g_train()
 
             # Test and save models
-            data = self.__test_models()
+            data = self.__test_iteration_progress()
             self.__save_progress_plot(data)
             self.__save_models()
 
@@ -309,17 +312,26 @@ class TrainingAdversarial(TrainingBase):
 
         """
 
-        data = get_data_tensor(self.data_tensor,
-                               self.generator.model,
-                               self.simulation_topology,
-                               self.init_config_initial_type,
-                               self.device_manager.default_device)
+        data = generate_new_training_batches(self.generator.model,
+                                             NUM_BATCHES,
+                                             self.simulation_topology,
+                                             self.config_type_pred_target,
+                                             self.init_config_initial_type,
+                                             self.device_manager.default_device)
 
-        self.data_tensor = data
-        # self.complexity_stable_targets.append(avg_stable_target_complexity)
+        if self.train_dataloader is None:
+            self.train_dataloader = DataLoader(data, batch_size=ADV_BATCH_SIZE, shuffle=True)
+        else:
+            future_total_size = len(self.train_dataloader.dataset) + len(data)
 
-        # Create the dataloader from the tensor
-        self.train_dataloader = DataLoader(self.data_tensor, batch_size=ADV_BATCH_SIZE, shuffle=True)
+            if future_total_size >= NUM_MAX_BATCHES * ADV_BATCH_SIZE:
+
+                n_batches_to_drop = future_total_size // ADV_BATCH_SIZE - NUM_MAX_BATCHES
+
+                for _ in range(n_batches_to_drop):
+                    self.train_dataloader.dataset.tensors = (self.train_dataloader.dataset.tensors[0][1:],)
+
+            self.train_dataloader.dataset.tensors = (torch.cat([self.train_dataloader.dataset.tensors[0], data]),)
 
         logging.debug(f"Dataloader updated, batches in dataloader: {len(self.train_dataloader)}/{NUM_MAX_BATCHES}")
 
@@ -335,7 +347,6 @@ class TrainingAdversarial(TrainingBase):
 
         Returns:
             new_configs (list): A list of dictionaries containing information about the generated configurations.
-            probabilities (list): A list of the probabilities associated with the generated configurations.
 
         """
 
@@ -344,6 +355,26 @@ class TrainingAdversarial(TrainingBase):
                                      self.simulation_topology,
                                      self.init_config_initial_type,
                                      self.device_manager.default_device)
+
+
+    def __get_new_training_batches(self, n_batches) -> Tuple[torch.Tensor, list]:
+        """
+        Generate new configurations using the generator model for adversarial training.
+
+        Args:
+            n_batches (int): The number of batches to generate.
+
+        Returns:
+            new_configs (list): A list of dictionaries containing information about the generated configurations.
+
+        """
+
+        return  generate_new_training_batches(self.generator.model,
+                                              n_batches,
+                                              self.simulation_topology,
+                                              self.config_type_pred_target,
+                                              self.init_config_initial_type,
+                                              self.device_manager.default_device)
 
 
     def __get_config_type(self, batch, type) -> torch.Tensor:
@@ -358,18 +389,25 @@ class TrainingAdversarial(TrainingBase):
         return get_config_from_batch(batch, type, self.device_manager.default_device)
 
 
+    def __get_config_type_from_training_batch(self, batch, type) -> torch.Tensor:
+        """
+        Function to get a batch of the specified configuration type from the training batch.
+
+        Returns:
+            config (torch.Tensor): The configurations.
+
+        """
+
+        return get_config_from_training_batch(batch, type, self.device_manager.default_device)
+
+
     def __warmup_predictor(self) -> None:
 
         logging.debug(f"Warmup of the predictor model started")
 
         self.predictor.model.train()
 
-        data = get_data_tensor(None,
-                               self.generator.model,
-                               self.simulation_topology,
-                               self.init_config_initial_type,
-                               self.device_manager.default_device)
-
+        data = self.__get_new_training_batches(NUM_BATCHES)
 
         # Create the dataloader from the tensor
         dataloader_warmup = DataLoader(data, batch_size=ADV_BATCH_SIZE, shuffle=True)
@@ -385,8 +423,8 @@ class TrainingAdversarial(TrainingBase):
 
             self.predictor.optimizer.zero_grad()
 
-            config_input  = self.__get_config_type(batch, CONFIG_GENERATED).detach()
-            target_config = self.__get_config_type(batch, self.config_type_pred_target).detach()
+            config_input  = self.__get_config_type_from_training_batch(batch, CONFIG_GENERATED).detach()
+            target_config = self.__get_config_type_from_training_batch(batch, self.config_type_pred_target).detach()
 
             predicted = self.predictor.model(config_input)
             errP      = self.predictor.criterion(predicted, target_config)
@@ -415,8 +453,8 @@ class TrainingAdversarial(TrainingBase):
 
             batch = batch.to(self.device_manager.default_device)
 
-            config_input  = self.__get_config_type(batch, CONFIG_GENERATED).detach()
-            target_config = self.__get_config_type(batch, self.config_type_pred_target).detach()
+            config_input  = self.__get_config_type_from_training_batch(batch, CONFIG_GENERATED).detach()
+            target_config = self.__get_config_type_from_training_batch(batch, self.config_type_pred_target).detach()
 
             predicted = self.predictor.model(config_input)
             errP      = self.predictor.criterion(predicted, target_config)
@@ -452,10 +490,10 @@ class TrainingAdversarial(TrainingBase):
 
             self.generator.optimizer.zero_grad()
 
-            batch = self.__get_new_batches(1)
+            batch = self.__get_new_training_batches(1)
 
-            config_input  = self.__get_config_type(batch, CONFIG_GENERATED)
-            target_config = self.__get_config_type(batch, self.config_type_pred_target)
+            config_input  = self.__get_config_type_from_training_batch(batch, CONFIG_GENERATED)
+            target_config = self.__get_config_type_from_training_batch(batch, self.config_type_pred_target)
 
 
             predicted = self.predictor.model(config_input)
@@ -556,7 +594,7 @@ class TrainingAdversarial(TrainingBase):
         return self.__get_loss_avg_g(NUM_TRAINING_STEPS)
 
 
-    def __test_models(self) -> dict:
+    def __test_iteration_progress(self) -> dict:
         """
         Function for testing the models.
         The models are tested on the fixed noise.
@@ -567,9 +605,13 @@ class TrainingAdversarial(TrainingBase):
 
         """
 
-        return test_models_DCGAN(self.generator.model, self.predictor.model, self.simulation_topology,
-                                 self.fixed_noise, self.config_type_pred_target, self.init_config_initial_type,
-                                 self.device_manager.default_device)
+        return test_models(self.generator.model,
+                            self.predictor.model,
+                            self.simulation_topology,
+                            self.init_config_initial_type,
+                            self.fixed_noise,
+                            self.config_type_pred_target,
+                            self.device_manager.default_device)
 
 
     def __save_progress_plot(self, data) -> None:

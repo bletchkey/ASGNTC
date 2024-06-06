@@ -38,6 +38,55 @@ def basic_simulation_config(config: torch.Tensor, topology: str, steps: int, dev
     return sim_configs
 
 
+def adv_training_simulate_config(config: torch.Tensor, topology: str,
+                        steps: int, target_type: str,
+                        device: torch.device) -> torch.Tensor:
+    """
+    Simulates a configuration for a given number of steps using a specified topology.
+
+    Args:
+        config (torch.Tensor): The initial configuration.
+        topology (str): The topology type, either "toroidal" or "flat".
+        steps (int): The number of simulation steps to perform.
+        device (torch.device): The computing device (CPU or GPU).
+
+    Returns:
+        torch.Tensor: The target configurations
+
+    """
+
+    # Mapping of topology types to their corresponding simulation functions
+    simulation_functions = {
+        TOPOLOGY_TOROIDAL: __simulate_config_toroidal,
+        TOPOLOGY_FLAT    : __simulate_config_flat
+    }
+
+    # Retrieve the appropriate simulation function based on the provided topology
+    _simulation_function = simulation_functions.get(topology)
+    if _simulation_function is None:
+        raise ValueError(f"Topology {topology} not supported")
+
+    # Define the kernel for counting neighbors
+    # Since the configuration is binary, we retrieve the number of living neighbors cells
+    kernel = torch.ones((1, 1, 3, 3), device=device)
+    kernel[:, :, 1, 1] = 0  # Set the center to 0 to exclude self
+
+    if target_type == CONFIG_TARGET_STABLE:
+        final_config, stable_config, period, transient_phase = calculate_final_configuration(sim_configs,
+                                                                                             _simulation_function,
+                                                                                             kernel, device)
+    else:
+        # Simulate the configuration for the given number of steps
+        sim_configs = []
+        for _ in range(steps):
+            config = _simulation_function(config, kernel, device)
+            sim_configs.append(config)
+
+        target = __calculate_specific_target(sim_configs, target_type, device)
+
+    return target if target_type != CONFIG_TARGET_STABLE else stable_config
+
+
 def simulate_config(config: torch.Tensor, topology: str, steps: int,
                     device: torch.device) -> dict:
     """
@@ -178,6 +227,40 @@ def calculate_final_configuration(config_batch: torch.Tensor, simulation_functio
 
 
     return final_config, stable_config, period, transient_phase
+
+
+def __calculate_specific_target(configs: list, target_type: str, device: torch.device) -> torch.Tensor:
+    """
+    Function for calculating a specific target from the simulated configurations
+
+    """
+    if target_type not in [CONFIG_TARGET_EASY, CONFIG_TARGET_MEDIUM, CONFIG_TARGET_HARD]:
+        raise ValueError(f"Target type {target_type} not supported")
+
+
+    steps = len(configs)
+
+    half_step = TARGET_EASY_HALF_STEP if target_type == CONFIG_TARGET_EASY else \
+                TARGET_MEDIUM_HALF_STEP if target_type == CONFIG_TARGET_MEDIUM else \
+                TARGET_HARD_HALF_STEP
+
+
+    eps = __calculate_eps(half_step=half_step)
+
+    correction_factor = eps / (1 - ((1 - eps) ** steps))
+
+    step_indices = torch.arange(steps, dtype=torch.float32, device=device)
+    decay_rates  = torch.pow(1 - eps, step_indices)
+    decay_tensor = decay_rates.view(1, steps, 1, 1, 1)
+
+    target  = torch.stack(configs, dim=0)
+    target  = target.permute(1, 0, 2, 3, 4)
+    target *= decay_tensor
+    target  = target.sum(dim=0)
+    target *= correction_factor
+    target  = torch.clamp(target, min=0, max=1)
+
+    return target
 
 
 def __calculate_targets(configs: list, stable_config: torch.Tensor, device: torch.device) -> dict:

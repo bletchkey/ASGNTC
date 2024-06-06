@@ -2,6 +2,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import logging
 import torch
+from torch.utils.data import DataLoader, TensorDataset
 import torch.distributions as dist
 from typing import Tuple
 from pathlib import Path
@@ -9,7 +10,7 @@ from pathlib import Path
 from configs.constants        import *
 from src.common.utils.helpers import export_figures_to_pdf
 
-from src.common.utils.simulation_functions import simulate_config
+from src.common.utils.simulation_functions import simulate_config, adv_training_simulate_config
 from src.common.utils.scores               import calculate_stable_target_complexity
 
 
@@ -51,10 +52,8 @@ def test_models_DCGAN(model_g: torch.nn.Module,
     with torch.no_grad():
         model_g.eval()
         model_p.eval()
-        # generated_config_fixed = model_g(fixed_noise)
-        # data["generated"]      = generated_config_fixed
-        generated_config  = get_generated_config(model_g, device)
-        data["generated"] = generated_config
+        generated_config_fixed = model_g(fixed_noise)
+        data["generated"]      = generated_config_fixed
         data["initial"]   = get_initial_config(generated_config, init_config_initial_type)
         sim_results       = simulate_config(config=data["initial"], topology=topology,
                                             steps=NUM_SIM_STEPS, device=device)
@@ -115,11 +114,14 @@ def test_models(model_g: torch.nn.Module, model_p: torch.nn.Module,
         model_g.eval()
         model_p.eval()
 
-        generated_config_fixed, _ = model_g(fixed_input)
-        data["generated"] = generated_config_fixed
-        data["initial"]   = generated_config_fixed
-        sim_results = simulate_config(config=data["initial"], topology=topology,
-                                      steps=NUM_SIM_STEPS, device=device)
+        generated_config_fixed = model_g(fixed_input)
+        data["generated"]      = generated_config_fixed
+        data["initial"]        = generated_config_fixed
+
+        sim_results = simulate_config(config=data["initial"],
+                                      topology=topology,
+                                      steps=NUM_SIM_STEPS,
+                                      device=device)
 
         data["final"]     = sim_results["final"]
         data["simulated"] = sim_results["simulated"]
@@ -259,6 +261,42 @@ def get_config_from_batch(batch: torch.Tensor, type: str, device: torch.device) 
     return batch[:, config_index, :, :, :].to(device)
 
 
+def get_config_from_training_batch(batch: torch.Tensor, type: str, device: torch.device) -> torch.Tensor:
+    """
+    Function to get a batch of a certain type of configuration from the training batch
+
+    Args:
+        batch (torch.Tensor): The batch containing the configurations
+        type (str): The type of configuration to retrieve
+        device (torch.device): The device to use for computation
+
+    Returns:
+        torch.Tensor: The configuration specified by the type
+
+    """
+    # Ensure the batch has the expected dimensions (5D tensor)
+    if batch.dim() != 5:
+        raise RuntimeError(f"Expected batch to have 5 dimensions, got {batch.dim()}")
+
+    # Mapping from type to index in the batch
+    config_indices = {
+        CONFIG_GENERATED     : 0,
+        CONFIG_TARGET_EASY   : 1,
+        CONFIG_TARGET_MEDIUM : 1,
+        CONFIG_TARGET_HARD   : 1,
+        CONFIG_TARGET_STABLE : 1
+    }
+
+    # Validate and retrieve the configuration index
+    if type not in config_indices:
+        raise ValueError(f"Invalid type: {type}. Valid types are {list(config_indices.keys())}")
+
+    config_index = config_indices[type]
+
+    # Extract and return the configuration
+    return batch[:, config_index, :, :, :].to(device)
+
+
 def get_data_tensor(data_tensor: torch.Tensor,
                     model_g: torch.nn.Module,
                     topology: str,
@@ -284,7 +322,6 @@ def get_data_tensor(data_tensor: torch.Tensor,
     """
 
     new_configs = generate_new_batches(model_g, NUM_BATCHES, topology, init_config_initial_type, device)
-    new_configs = new_configs.to("cpu")
 
     # Calculate the average complexity of the stable targets
 
@@ -306,7 +343,7 @@ def get_data_tensor(data_tensor: torch.Tensor,
         else:
             data_tensor = torch.cat([data_tensor, new_configs], dim=0)
 
-    data_tensor = data_tensor.to("cpu")
+    data_tensor = data_tensor
 
     return data_tensor
 
@@ -371,6 +408,43 @@ def generate_new_batches(model_g: torch.nn.Module,
     return data
 
 
+def generate_new_training_batches(model_g: torch.nn.Module,
+                                  n_batches: int,
+                                  topology: str,
+                                  target_type: str,
+                                  init_config_initial_type: str,
+                                  device: torch.device) -> torch.Tensor:
+
+    configs = []
+
+    for _ in range(n_batches):
+        generated_config = get_generated_config(model_g, device)
+
+        with torch.no_grad():
+            initial_config = get_initial_config(generated_config, init_config_initial_type)
+            target         = adv_training_simulate_config(config=initial_config,
+                                                          topology=topology,
+                                                          steps=NUM_SIM_STEPS,
+                                                          target_type=target_type,
+                                                          device=device)
+
+        configs.append({
+            CONFIG_GENERATED     : generated_config,
+            target_type          : target
+        })
+
+    # TODO: check errors
+
+    generated_tensors = [torch.stack([config[key] for config in configs], dim=0) for key in configs[0].keys()]
+
+    data = torch.cat(generated_tensors, dim=1)
+
+    # Shuffle the data
+    data = data[torch.randperm(data.size(0))]
+
+    return data
+
+
 def get_generated_config(model_g: torch.nn.Module,
                          device: torch.device,
                          noise_vector: bool = False) -> Tuple[torch.Tensor, torch.Tensor]:
@@ -394,12 +468,28 @@ def get_generated_config(model_g: torch.nn.Module,
 
         return generated_config
 
-    concentration = torch.ones([GRID_SIZE, GRID_SIZE], device=device) * DIRICHLET_ALPHA
-    input_config  = dist.Dirichlet(concentration).sample((ADV_BATCH_SIZE, NUM_CHANNELS_GRID))
-
+    input_config     = get_dirichlet_input_noise(ADV_BATCH_SIZE, device)
     generated_config = model_g(input_config)
 
     return generated_config
+
+
+def get_dirichlet_input_noise(batch_size: int, device: torch.device) -> torch.Tensor:
+    """
+    Function to generate the input noise for the generator model
+
+    Args:
+        batch_size (int): The batch size
+        device (torch.device): The device used for computation
+
+    Returns:
+        torch.Tensor: The input noise for the generator model
+
+    """
+    concentration = torch.ones([GRID_SIZE, GRID_SIZE], device=device) * DIRICHLET_ALPHA
+    input_config  = dist.Dirichlet(concentration).sample((batch_size, NUM_CHANNELS_GRID))
+
+    return input_config
 
 
 def get_initial_config(config: torch.Tensor,

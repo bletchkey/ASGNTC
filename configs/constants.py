@@ -41,8 +41,11 @@ WARMUP_TARGET_LR   = 0.01
 # Number of training epochs
 NUM_ITERATIONS = 200
 
+# Number of steps for training with a certain dataset in an epoch
+NUM_TRAINING_STEPS = 4
+
 # Batch size during training
-ADV_BATCH_SIZE = 64
+ADV_BATCH_SIZE = 32
 
 # Number of batches to generate at each epoch
 NUM_BATCHES = 64
@@ -56,9 +59,6 @@ NUM_CONFIGS = NUM_BATCHES * ADV_BATCH_SIZE
 # Max number of configurations in the dataloader
 NUM_MAX_CONFIGS = NUM_MAX_BATCHES * ADV_BATCH_SIZE
 
-# Number of steps for training with a certain dataset in an epoch
-NUM_TRAINING_STEPS = 5
-
 # Average loss of P threshold before training G
 THRESHOLD_AVG_LOSS_P = 0.05
 
@@ -67,7 +67,7 @@ NUM_CONFIGS_GEN_EVAL = 8192
 NUM_BATCHES_GEN_EVAL = NUM_CONFIGS_GEN_EVAL // ADV_BATCH_SIZE
 
 # Dirichlet alpha parameter - used for the Dirichlet distribution to generate the input for G
-DIRICHLET_ALPHA = 0.001
+DIRICHLET_ALPHA = 0.005
 
 
 ### TRAINING GENERAL ##############################################################
