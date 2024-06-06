@@ -42,7 +42,7 @@ WARMUP_TARGET_LR   = 0.01
 NUM_ITERATIONS = 200
 
 # Number of steps for training with a certain dataset in an epoch
-NUM_TRAINING_STEPS = 4
+NUM_TRAINING_STEPS = 5
 
 # Batch size during training
 ADV_BATCH_SIZE = 32

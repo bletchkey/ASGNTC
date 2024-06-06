@@ -14,76 +14,11 @@ from src.common.utils.simulation_functions import simulate_config, adv_training_
 from src.common.utils.scores               import calculate_stable_target_complexity
 
 
-def test_models_DCGAN(model_g: torch.nn.Module,
-                      model_p: torch.nn.Module,
-                      topology: str,
-                      fixed_noise: torch.Tensor,
-                      target_config: str,
-                      init_config_initial_type: str,
-                      device: torch.device) -> dict:
-    """
-    Function to test the models
-
-    Args:
-        model_g (torch.nn.Module): The generator model
-        model_p (torch.nn.Module): The predictor model
-        topology (str): The topology to use for simulating the configurations
-        fixed_noise (torch.Tensor): The fixed noise to use for testing the generator model
-        target_config (str): The type of configuration to predict (tipically the target configuration)
-        init_config_initial_type (str): The type of initilization for the initial configuration to use.
-        device (torch.device): The device used for computation
-
-    Returns:
-        dict: The dictionary containing the test results
-
-    """
-
-    data = {
-        "generated": None,
-        "initial": None,
-        "final": None,
-        "simulated": None,
-        "target": None,
-        "predicted": None,
-        "metadata" : None
-    }
-
-    # Test the models on the fixed noise
-    with torch.no_grad():
-        model_g.eval()
-        model_p.eval()
-        generated_config_fixed = model_g(fixed_noise)
-        data["generated"]      = generated_config_fixed
-        data["initial"]   = get_initial_config(generated_config_fixed, init_config_initial_type)
-        sim_results       = simulate_config(config=data["initial"], topology=topology,
-                                            steps=NUM_SIM_STEPS, device=device)
-
-        data["final"]     = sim_results["final"]
-        data["simulated"] = sim_results["simulated"]
-        data["target"]    = sim_results["all_targets"][target_config]["config"]
-        data["predicted"] = model_p(data["generated"])
-        data["metadata"]  = {
-            "n_cells_initial":   sim_results["n_cells_initial"],
-            "n_cells_simulated": sim_results["n_cells_simulated"],
-            "n_cells_final":     sim_results["n_cells_final"],
-            "transient_phase":   sim_results["transient_phase"],
-            "period":            sim_results["period"],
-            "target_minmum":     sim_results["all_targets"][target_config]["minimum"],
-            "target_maximum":    sim_results["all_targets"][target_config]["maximum"],
-            "target_q1":         sim_results["all_targets"][target_config]["q1"],
-            "target_q2":         sim_results["all_targets"][target_config]["q2"],
-            "target_q3":         sim_results["all_targets"][target_config]["q3"],
-            "target_name":       target_config
-        }
-
-    return data
-
-
 def test_models(model_g: torch.nn.Module,
                 model_p: torch.nn.Module,
                 topology: str,
                 init_config_initial_type: str,
-                fixed_input: torch.Tensor,
+                fixed_input_noise: torch.Tensor,
                 target_config: str,
                 device: torch.device) -> dict:
     """
@@ -104,11 +39,12 @@ def test_models(model_g: torch.nn.Module,
     """
 
     data = {
+        "noise"    : None,
         "generated": None,
-        "initial": None,
-        "final": None,
+        "initial"  : None,
+        "final"    : None,
         "simulated": None,
-        "target": None,
+        "target"   : None,
         "predicted": None,
         "metadata" : None
     }
@@ -117,7 +53,7 @@ def test_models(model_g: torch.nn.Module,
     with torch.no_grad():
         model_g.eval()
         model_p.eval()
-        generated_config_fixed = model_g(fixed_input)
+        generated_config_fixed = model_g(fixed_input_noise)
         data["generated"]      = generated_config_fixed
         data["initial"]        = get_initial_config(generated_config_fixed, init_config_initial_type)
 
@@ -125,23 +61,23 @@ def test_models(model_g: torch.nn.Module,
                                       topology=topology,
                                       steps=NUM_SIM_STEPS,
                                       device=device)
-
+        data["noise"]     = fixed_input_noise
         data["final"]     = sim_results["final"]
         data["simulated"] = sim_results["simulated"]
         data["target"]    = sim_results["all_targets"][target_config]["config"]
         data["predicted"] = model_p(data["generated"])
         data["metadata"]  = {
-            "n_cells_initial":   sim_results["n_cells_initial"],
+            "n_cells_initial"  : sim_results["n_cells_initial"],
             "n_cells_simulated": sim_results["n_cells_simulated"],
-            "n_cells_final":     sim_results["n_cells_final"],
-            "transient_phase":   sim_results["transient_phase"],
-            "period":            sim_results["period"],
-            "target_minmum":     sim_results["all_targets"][target_config]["minimum"],
-            "target_maximum":    sim_results["all_targets"][target_config]["maximum"],
-            "target_q1":         sim_results["all_targets"][target_config]["q1"],
-            "target_q2":         sim_results["all_targets"][target_config]["q2"],
-            "target_q3":         sim_results["all_targets"][target_config]["q3"],
-            "target_name":       target_config
+            "n_cells_final"    : sim_results["n_cells_final"],
+            "transient_phase"  : sim_results["transient_phase"],
+            "period"           : sim_results["period"],
+            "target_min"       : sim_results["all_targets"][target_config]["minimum"],
+            "target_max"       : sim_results["all_targets"][target_config]["maximum"],
+            "target_q1"        : sim_results["all_targets"][target_config]["q1"],
+            "target_q2"        : sim_results["all_targets"][target_config]["q2"],
+            "target_q3"        : sim_results["all_targets"][target_config]["q3"],
+            "target_name"      : target_config
         }
 
     return data
@@ -169,6 +105,7 @@ def save_progress_plot(plot_data: dict, iteration: int, results_path: str) -> No
             plot_data[key] = plot_data[key].detach().cpu().numpy().squeeze()
         titles.append(key)
 
+
     current_iteration = iteration+1
 
     # Get 4 equally spaced indices
@@ -177,8 +114,6 @@ def save_progress_plot(plot_data: dict, iteration: int, results_path: str) -> No
     # Create figure and subplots
     fig, axs = plt.subplots(len(indices), len(plot_data), figsize=(len(indices)*len(plot_data), len(indices)*4))
 
-    plt.suptitle(f"Iteration {current_iteration}", fontsize=32)
-
     # Plot each data in a subplot
     for i in range(len(indices)):
         for j, key in enumerate(plot_data.keys()):
@@ -186,11 +121,8 @@ def save_progress_plot(plot_data: dict, iteration: int, results_path: str) -> No
             if key != "metadata":
                 axs[i, j].imshow(plot_data[key][indices[i]], cmap='gray', vmin=vmin, vmax=vmax)
 
-                for spine in axs[i, j].spines.values():
-                    spine.set_edgecolor('black')
-                    spine.set_linewidth(1)
-
             if key == "metadata":
+                axs[i, j].set_title(titles[j], fontsize=12, fontweight='bold')
                 text_data = ""
                 for k in plot_data[key].keys():
                     if k.startswith("n_cells"):
@@ -202,26 +134,41 @@ def save_progress_plot(plot_data: dict, iteration: int, results_path: str) -> No
                         continue
                     else:
                         text_data += f"{k}: {plot_data[key][k][indices[i]]}\n"
+
                 axs[i, j].text(0.1, 0.5, text_data, fontsize=18, ha='left', va='center', transform=axs[i, j].transAxes)
-                if i == 0:
-                    axs[i, j].set_title(titles[j])
+                axs[i, j].axis('off')
 
+            elif key == "noise":
+                axs[i, j].set_title(titles[j] + f" - Dirchlet alpha: {DIRICHLET_ALPHA}", fontsize=12, fontweight='bold')
             elif key == "initial":
-                axs[i, j].set_title(titles[j] + f" - {plot_data['metadata']['n_cells_initial'][indices[i]].item()} cells")
+                axs[i, j].set_title(titles[j] + f" - {plot_data['metadata']['n_cells_initial'][indices[i]].item()} cells", fontsize=12, fontweight='bold')
             elif key == "simulated":
-                axs[i, j].set_title(titles[j] + f" - {NUM_SIM_STEPS} steps - {plot_data['metadata']['n_cells_simulated'][indices[i]].item()} cells")
+                axs[i, j].set_title(titles[j] + f" - {NUM_SIM_STEPS} steps - {plot_data['metadata']['n_cells_simulated'][indices[i]].item()} cells", fontsize=12, fontweight='bold')
             elif key == "final":
-                axs[i, j].set_title(titles[j] + f" - {plot_data['metadata']['n_cells_final'][indices[i]].item()} cells")
+                axs[i, j].set_title(titles[j] + f" - {plot_data['metadata']['n_cells_final'][indices[i]].item()} cells", fontsize=12, fontweight='bold')
             elif key == "target":
-                axs[i, j].set_title(titles[j] + f" - {plot_data['metadata']['target_name']} ")
+                axs[i, j].set_title(titles[j] + f" - {plot_data['metadata']['target_name']}", fontsize=12, fontweight='bold')
             else:
-                axs[i, j].set_title(titles[j])
+                axs[i, j].set_title(titles[j], fontsize=12, fontweight='bold')
 
-            axs[i, j].axis('off')
+            # border colors
+            for spine in axs[i, j].spines.values():
+                spine.set_edgecolor('#000000')
+                spine.set_linewidth(2)
+
+            # Remove ticks from x and y axes
+            axs[i, j].tick_params(axis='both',          # Changes apply to both x and y axes
+                                  which='both',         # Affects both major and minor ticks
+                                  left=False,           # Remove left ticks
+                                  right=False,          # Remove right ticks
+                                  bottom=False,         # Remove bottom ticks
+                                  top=False,            # Remove top ticks
+                                  labelleft=False,      # Remove labels on the left
+                                  labelbottom=False)    # Remove labels on the bottom
 
     plt.tight_layout(rect=[0, 0.03, 1, 0.95])
 
-    pdf_path = Path(results_path, f"inter_{current_iteration}.pdf")
+    pdf_path = Path(results_path, f"iteration_{current_iteration}.pdf")
     export_figures_to_pdf(pdf_path, fig)
 
 
@@ -570,4 +517,150 @@ def __initialize_config_sign(config: torch.Tensor) -> torch.Tensor:
 
     """
     return 0.5 + 0.5 * torch.sign(config)
+
+
+# -------------- DCGAN ----------------
+
+
+def test_models_DCGAN(model_g: torch.nn.Module,
+                      model_p: torch.nn.Module,
+                      topology: str,
+                      fixed_noise: torch.Tensor,
+                      target_config: str,
+                      init_config_initial_type: str,
+                      device: torch.device) -> dict:
+    """
+    Function to test the models
+
+    Args:
+        model_g (torch.nn.Module): The generator model
+        model_p (torch.nn.Module): The predictor model
+        topology (str): The topology to use for simulating the configurations
+        fixed_noise (torch.Tensor): The fixed noise to use for testing the generator model
+        target_config (str): The type of configuration to predict (tipically the target configuration)
+        init_config_initial_type (str): The type of initilization for the initial configuration to use.
+        device (torch.device): The device used for computation
+
+    Returns:
+        dict: The dictionary containing the test results
+
+    """
+
+    data = {
+        "generated": None,
+        "initial": None,
+        "final": None,
+        "simulated": None,
+        "target": None,
+        "predicted": None,
+        "metadata" : None
+    }
+
+    # Test the models on the fixed noise
+    with torch.no_grad():
+        model_g.eval()
+        model_p.eval()
+        generated_config_fixed = model_g(fixed_noise)
+        data["generated"]      = generated_config_fixed
+        data["initial"]   = get_initial_config(generated_config_fixed, init_config_initial_type)
+        sim_results       = simulate_config(config=data["initial"], topology=topology,
+                                            steps=NUM_SIM_STEPS, device=device)
+
+        data["final"]     = sim_results["final"]
+        data["simulated"] = sim_results["simulated"]
+        data["target"]    = sim_results["all_targets"][target_config]["config"]
+        data["predicted"] = model_p(data["generated"])
+        data["metadata"]  = {
+            "n_cells_initial":   sim_results["n_cells_initial"],
+            "n_cells_simulated": sim_results["n_cells_simulated"],
+            "n_cells_final":     sim_results["n_cells_final"],
+            "transient_phase":   sim_results["transient_phase"],
+            "period":            sim_results["period"],
+            "target_minmum":     sim_results["all_targets"][target_config]["minimum"],
+            "target_maximum":    sim_results["all_targets"][target_config]["maximum"],
+            "target_q1":         sim_results["all_targets"][target_config]["q1"],
+            "target_q2":         sim_results["all_targets"][target_config]["q2"],
+            "target_q3":         sim_results["all_targets"][target_config]["q3"],
+            "target_name":       target_config
+        }
+
+    return data
+
+
+def save_progress_plot_DCGAN(plot_data: dict, iteration: int, results_path: str) -> None:
+    """
+    Function to save the progress plot
+
+    Args:
+        plot_data (dict)  : The dictionary containing the data to plot
+        iteration (int)   : The current iteration
+        results_path (str): The path to where the results will be saved
+
+    """
+
+    vmin = 0
+    vmax = 1
+
+    titles = []
+
+    # Convert to NumPy
+    for key in plot_data.keys():
+        if isinstance(plot_data[key], torch.Tensor):
+            plot_data[key] = plot_data[key].detach().cpu().numpy().squeeze()
+        titles.append(key)
+
+    current_iteration = iteration+1
+
+    # Get 4 equally spaced indices
+    indices = np.linspace(0, ADV_BATCH_SIZE-1, 4).astype(int)
+
+    # Create figure and subplots
+    fig, axs = plt.subplots(len(indices), len(plot_data), figsize=(len(indices)*len(plot_data), len(indices)*4))
+
+    plt.suptitle(f"Iteration {current_iteration}", fontsize=32)
+
+    # Plot each data in a subplot
+    for i in range(len(indices)):
+        for j, key in enumerate(plot_data.keys()):
+
+            if key != "metadata":
+                axs[i, j].imshow(plot_data[key][indices[i]], cmap='gray', vmin=vmin, vmax=vmax)
+
+                for spine in axs[i, j].spines.values():
+                    spine.set_edgecolor('black')
+                    spine.set_linewidth(1)
+
+            if key == "metadata":
+                text_data = ""
+                for k in plot_data[key].keys():
+                    if k.startswith("n_cells"):
+                        continue
+                    elif k.startswith("target") and k != "target_name":
+                        value = plot_data[key][k][indices[i]]
+                        text_data += f"{k}: {value:.4f}\n"
+                    elif k == "target_name":
+                        continue
+                    else:
+                        text_data += f"{k}: {plot_data[key][k][indices[i]]}\n"
+                axs[i, j].text(0.1, 0.5, text_data, fontsize=18, ha='left', va='center', transform=axs[i, j].transAxes)
+                if i == 0:
+                    axs[i, j].set_title(titles[j])
+
+            elif key == "initial":
+                axs[i, j].set_title(titles[j] + f" - {plot_data['metadata']['n_cells_initial'][indices[i]].item()} cells")
+            elif key == "simulated":
+                axs[i, j].set_title(titles[j] + f" - {NUM_SIM_STEPS} steps - {plot_data['metadata']['n_cells_simulated'][indices[i]].item()} cells")
+            elif key == "final":
+                axs[i, j].set_title(titles[j] + f" - {plot_data['metadata']['n_cells_final'][indices[i]].item()} cells")
+            elif key == "target":
+                axs[i, j].set_title(titles[j] + f" - {plot_data['metadata']['target_name']} ")
+            else:
+                axs[i, j].set_title(titles[j])
+
+            axs[i, j].axis('off')
+
+    plt.tight_layout(rect=[0, 0.03, 1, 0.95])
+
+    pdf_path = Path(results_path, f"inter_{current_iteration}.pdf")
+    export_figures_to_pdf(pdf_path, fig)
 
