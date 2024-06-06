@@ -68,7 +68,7 @@ NUM_TRAINING_STEPS = 5
 ADV_BATCH_SIZE = 32
 
 # Number of batches to generate at each epoch
-NUM_BATCHES = 64
+NUM_BATCHES = 256
 
 # Max number of batches in the dataloader
 NUM_MAX_BATCHES = 16*NUM_BATCHES

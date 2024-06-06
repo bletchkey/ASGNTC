@@ -20,7 +20,8 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 
-from torch.utils.data import DataLoader, TensorDataset, ConcatDataset
+from torch.utils.data import DataLoader, TensorDataset,\
+                             ConcatDataset, Subset
 
 
 import datetime
@@ -116,14 +117,14 @@ class TrainingAdversarial(TrainingBase):
                                       type=PREDICTOR,
                                       device_manager=self.device_manager)
 
-        # Load the latest checkpoint of the predictor model
+        # # Load the latest checkpoint of the predictor model
 
-        model_name = f"Baseline_Toroidal_{self.config_type_pred_target.capitalize()}"
-        pretrained_model_path = TRAINED_MODELS_DIR / "predictors" / model_name
-        checkpoint_path = get_latest_checkpoint_path(pretrained_model_path)
-        checkpoint = torch.load(pretrained_model_path / "checkpoints" / checkpoint_path)
+        # model_name = f"Baseline_Toroidal_{self.config_type_pred_target.capitalize()}"
+        # pretrained_model_path = TRAINED_MODELS_DIR / "predictors" / model_name
+        # checkpoint_path = get_latest_checkpoint_path(pretrained_model_path)
+        # checkpoint = torch.load(pretrained_model_path / "checkpoints" / checkpoint_path)
 
-        self.predictor.model.load_state_dict(checkpoint[CHECKPOINT_MODEL_STATE_DICT_KEY])
+        # self.predictor.model.load_state_dict(checkpoint[CHECKPOINT_MODEL_STATE_DICT_KEY])
 
         self.train_dataloader = None
 
@@ -155,7 +156,7 @@ class TrainingAdversarial(TrainingBase):
 
         for iteration in range(NUM_ITERATIONS):
 
-            self.__get_train_dataloader()
+            self.__update_dataloader()
 
             logging.info(f"Adversarial training iteration {iteration+1}/{NUM_ITERATIONS}")
 
@@ -205,7 +206,7 @@ class TrainingAdversarial(TrainingBase):
             self.device_manager.clear_resources()
 
 
-    def __get_train_dataloader(self) -> DataLoader:
+    def __update_dataloader(self) -> None:
         """
         Get the dataloader for the current iteration.
 
@@ -220,12 +221,22 @@ class TrainingAdversarial(TrainingBase):
 
         generated, target = self.__get_new_training_batches(NUM_BATCHES)
 
-        if self.train_dataloader == None:
+        if self.train_dataloader is None:
             self.train_dataloader = DataLoader(TensorDataset(generated, target), batch_size=ADV_BATCH_SIZE, shuffle=True)
         else:
-            new_dataset           = TensorDataset(generated, target)
-            combined_dataset      = ConcatDataset([self.train_dataloader.dataset, new_dataset])
-            self.train_dataloader = DataLoader(combined_dataset, batch_size=ADV_BATCH_SIZE, shuffle=True)
+            new_dataset      = TensorDataset(generated, target)
+            combined_dataset = ConcatDataset([self.train_dataloader.dataset, new_dataset])
+
+            total_batches = len(combined_dataset) // ADV_BATCH_SIZE
+            if total_batches > NUM_MAX_BATCHES:
+
+                excess_batches  = total_batches - NUM_MAX_BATCHES
+                start_idx       = excess_batches * ADV_BATCH_SIZE
+                trimmed_dataset = Subset(combined_dataset, range(start_idx, len(combined_dataset)))
+
+                self.train_dataloader = DataLoader(trimmed_dataset, batch_size=ADV_BATCH_SIZE, shuffle=True)
+            else:
+                self.train_dataloader = DataLoader(combined_dataset, batch_size=ADV_BATCH_SIZE, shuffle=True)
 
 
     def __warmup_predictor(self) -> None:
