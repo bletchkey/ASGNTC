@@ -199,7 +199,7 @@ class TrainingAdversarial(TrainingBase):
             self.__can_g_train()
 
             # Test and save models
-            data = self.__test_iteration_progress()
+            data = self.__test_iteration_progress(predictor_device=self.predictor.device)
             self.__save_progress_plot(data)
             self.__save_models()
 
@@ -490,7 +490,7 @@ class TrainingAdversarial(TrainingBase):
         return self.__get_loss_avg_g(NUM_TRAINING_STEPS)
 
 
-    def __test_iteration_progress(self) -> dict:
+    def __test_iteration_progress(self, predictor_device) -> dict:
         """
         Function for testing the models.
         The models are tested on the fixed noise.
@@ -502,12 +502,12 @@ class TrainingAdversarial(TrainingBase):
         """
 
         return test_models(self.generator.model,
-                            self.predictor.model,
-                            self.simulation_topology,
-                            self.init_config_initial_type,
-                            self.fixed_input_noise,
-                            self.config_type_pred_target,
-                            self.device_manager.default_device)
+                           self.predictor.model,
+                           self.simulation_topology,
+                           self.init_config_initial_type,
+                           self.fixed_input_noise,
+                           self.config_type_pred_target,
+                           predictor_device)
 
 
     def __save_progress_plot(self, data) -> None:

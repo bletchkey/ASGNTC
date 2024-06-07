@@ -20,7 +20,7 @@ def test_models(model_g: torch.nn.Module,
                 init_config_initial_type: str,
                 fixed_input_noise: torch.Tensor,
                 target_config: str,
-                device: torch.device) -> dict:
+                predictor_device: torch.device) -> dict:
     """
     Function to test the models
 
@@ -60,12 +60,12 @@ def test_models(model_g: torch.nn.Module,
         sim_results = simulate_config(config=data["initial"],
                                       topology=topology,
                                       steps=NUM_SIM_STEPS,
-                                      device=device)
+                                      device=model_g.device)
         data["noise"]     = fixed_input_noise
         data["final"]     = sim_results["final"]
         data["simulated"] = sim_results["simulated"]
         data["target"]    = sim_results["all_targets"][target_config]["config"]
-        data["predicted"] = model_p(data["generated"])
+        data["predicted"] = model_p(data["generated"].to(predictor_device))
         data["metadata"]  = {
             "n_cells_initial"  : sim_results["n_cells_initial"],
             "n_cells_simulated": sim_results["n_cells_simulated"],
