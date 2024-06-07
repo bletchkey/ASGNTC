@@ -199,7 +199,8 @@ class TrainingAdversarial(TrainingBase):
             self.__can_g_train()
 
             # Test and save models
-            data = self.__test_iteration_progress(predictor_device=self.predictor.device)
+            data = self.__test_iteration_progress(predictor_device=self.predictor.device,
+                                                  generator_device=self.generator.device)
             self.__save_progress_plot(data)
             self.__save_models()
 
@@ -507,7 +508,8 @@ class TrainingAdversarial(TrainingBase):
                            self.init_config_initial_type,
                            self.fixed_input_noise,
                            self.config_type_pred_target,
-                           predictor_device)
+                           predictor_device,
+                           generator_device)
 
 
     def __save_progress_plot(self, data) -> None:
