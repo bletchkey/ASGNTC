@@ -98,6 +98,15 @@ class TrainingAdversarial(TrainingBase):
         self.losses            = {GENERATOR: [], PREDICTOR: []}
         self.lr_each_iteration = {PREDICTOR: [], GENERATOR: []}
 
+        self.predictor = ModelManager(model=model_p,
+                                      optimizer=optim.SGD(model_p.parameters(),
+                                                    lr=P_SGD_LR,
+                                                    momentum=P_SGD_MOMENTUM,
+                                                    weight_decay=P_SGD_WEIGHT_DECAY),
+                                      criterion = AdversarialGoLLoss(model_type=PREDICTOR),
+                                      type=PREDICTOR,
+                                      device=self.device_manager.secondary_device)
+
         self.generator = ModelManager(model=model_g,
                                       optimizer=optim.AdamW(model_g.parameters(),
                                                     lr=G_ADAMW_LR,
@@ -106,16 +115,7 @@ class TrainingAdversarial(TrainingBase):
                                                     weight_decay=G_ADAMW_WEIGHT_DECAY),
                                       criterion = AdversarialGoLLoss(model_type=GENERATOR),
                                       type= GENERATOR,
-                                      device_manager=self.device_manager)
-
-        self.predictor = ModelManager(model=model_p,
-                                      optimizer=optim.SGD(model_p.parameters(),
-                                                    lr=P_SGD_LR,
-                                                    momentum=P_SGD_MOMENTUM,
-                                                    weight_decay=P_SGD_WEIGHT_DECAY),
-                                      criterion = AdversarialGoLLoss(model_type=PREDICTOR),
-                                      type=PREDICTOR,
-                                      device_manager=self.device_manager)
+                                      device=self.device_manager.default_device)
 
         # # Load the latest checkpoint of the predictor model
 
@@ -219,7 +219,7 @@ class TrainingAdversarial(TrainingBase):
 
         """
 
-        generated, target = self.__get_new_training_batches(NUM_BATCHES)
+        generated, target = self.__get_new_training_batches(NUM_BATCHES, self.generator.device)
 
         if self.train_dataloader is None:
             self.train_dataloader = DataLoader(TensorDataset(generated, target), batch_size=ADV_BATCH_SIZE, shuffle=True)
@@ -245,7 +245,7 @@ class TrainingAdversarial(TrainingBase):
 
         self.predictor.model.train()
 
-        generated, target = self.__get_new_training_batches(NUM_BATCHES)
+        generated, target = self.__get_new_training_batches(NUM_BATCHES, self.generator.device)
         dataset           = TensorDataset(generated, target)
         dataloader_warmup = DataLoader(dataset, batch_size=ADV_BATCH_SIZE, shuffle=True)
 
@@ -259,8 +259,8 @@ class TrainingAdversarial(TrainingBase):
 
             self.predictor.optimizer.zero_grad()
 
-            predicted = self.predictor.model(generated.detach())
-            errP      = self.predictor.criterion(predicted, target.detach())
+            predicted = self.predictor.model(generated.detach().to(self.predictor.device))
+            errP      = self.predictor.criterion(predicted, target.detach().to(self.predictor.device))
 
             errP.backward()
             self.predictor.optimizer.step()
@@ -292,8 +292,8 @@ class TrainingAdversarial(TrainingBase):
 
                 self.predictor.optimizer.zero_grad()
 
-                predicted = self.predictor.model(generated.detach())
-                errP = self.predictor.criterion(predicted, target.detach())
+                predicted = self.predictor.model(generated.detach().to(self.predictor.device))
+                errP = self.predictor.criterion(predicted, target.detach().to(self.predictor.device))
 
                 errP.backward()
                 self.predictor.optimizer.step()
@@ -329,10 +329,9 @@ class TrainingAdversarial(TrainingBase):
 
             self.generator.optimizer.zero_grad()
 
-            generated, target = self.__get_new_training_batches(n_batches=1)
-
-            predicted = self.predictor.model(generated)
-            errG      = self.generator.criterion(predicted, target)
+            generated, target = self.__get_new_training_batches(n_batches=1, device=self.generator.device)
+            predicted = self.predictor.model(generated.to(self.predictor.device))
+            errG      = self.generator.criterion(predicted, target.to(self.predictor.device))
 
             errG.backward()
             self.generator.optimizer.step()
@@ -366,7 +365,7 @@ class TrainingAdversarial(TrainingBase):
                                      self.device_manager.default_device)
 
 
-    def __get_new_training_batches(self, n_batches) -> Tuple[torch.Tensor, torch.Tensor]:
+    def __get_new_training_batches(self, n_batches, device) -> Tuple[torch.Tensor, torch.Tensor]:
         """
         Generate new configurations using the generator model for adversarial training.
 
@@ -383,7 +382,7 @@ class TrainingAdversarial(TrainingBase):
                                               self.simulation_topology,
                                               self.config_type_pred_target,
                                               self.init_config_initial_type,
-                                              self.device_manager.default_device)
+                                              device)
 
 
     def __get_config_type(self, batch, type) -> torch.Tensor:

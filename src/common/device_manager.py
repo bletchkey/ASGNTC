@@ -29,6 +29,7 @@ class DeviceManager:
         self.__default_device       = self.__get_default_device()
         self.__balanced_gpu_indices = self.__get_balanced_gpu_indices()
         self.__n_balanced_gpus      = len(self.__balanced_gpu_indices)
+        self.__secondary_device     = self.__get_secondary_device()
 
 
     @property
@@ -38,8 +39,13 @@ class DeviceManager:
 
     @property
     def default_device(self) -> torch.device:
-        """Returns the default device selected for training."""
+        """Returns the default device"""
         return self.__default_device
+
+    @property
+    def secondary_device(self) -> torch.device:
+        """Returns the secondary device"""
+        return self.__secondary_device
 
     @property
     def balanced_gpu_indices(self) -> list:
@@ -129,6 +135,23 @@ class DeviceManager:
         torch.cuda.set_device(selected_device)
 
         return torch.device(selected_device)
+
+
+    def __get_secondary_device(self) -> torch.device:
+        """
+        Determines the secondary device
+
+        Returns:
+            torch.device: The secondary device selected for training operations.
+        """
+
+        if not torch.cuda.is_available() or self.__n_gpus <= 1:
+            return torch.device("cpu")
+
+        gpus = self.__get_all_gpus_free_memory()
+        gpus.pop(self.__default_device.index)
+
+        return torch.device(max(gpus, key=gpus.get))
 
 
     def __benchmark_gpu(self, device):
@@ -228,6 +251,7 @@ class DeviceManager:
         balanced_gpus = []
 
         for i in range(self.__n_gpus):
+
             if i == default_device_index:
                 continue
 

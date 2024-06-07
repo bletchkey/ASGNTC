@@ -68,10 +68,10 @@ NUM_TRAINING_STEPS = 5
 ADV_BATCH_SIZE = 32
 
 # Number of batches to generate at each epoch
-NUM_BATCHES = 256
+NUM_BATCHES = 64
 
 # Max number of batches in the dataloader
-NUM_MAX_BATCHES = 16*NUM_BATCHES
+NUM_MAX_BATCHES = 32*NUM_BATCHES
 
 # Number of new configurations to generate at each epoch
 NUM_CONFIGS = NUM_BATCHES * ADV_BATCH_SIZE

@@ -4,7 +4,6 @@ import torch.optim as optim
 
 from typing import Union, Callable
 
-from src.common.device_manager import DeviceManager
 from configs.constants import *
 
 
@@ -17,26 +16,22 @@ class ModelManager:
         optimizer (optim.Optimizer): The optimizer to be used for training.
         criterion (Union[nn.Module, Callable]): The loss function to be used for training.
         type (str): The type of the model (Predictor or Generator).
-        device_manager (DeviceManager): The device manager.
+        device (torch.device): The device to be used for training.
 
     """
+
     def __init__(self, model: nn.Module, optimizer: optim.Optimizer,
                  criterion: Union[nn.Module, Callable],
-                 type: str,
-                 device_manager: DeviceManager):
+                 type: str, device) -> None:
 
-        self.__model = model
+        self.__model     = model
         self.__optimizer = optimizer
         self.__criterion = criterion
+        self.__type      = type
+        self.__device    = device
 
-        self.__device_manager = device_manager
-        self.__model.to(self.__device_manager.default_device)
+        self.__model.to(device)
 
-        self.__type = type
-
-        # TODO: Implement distributed training with DataParallel (not necessary for now)
-        # if self.__device_manager.n_balanced_gpus > 0:
-        #     self.__model = nn.DataParallel(self.model, device_ids=self.__device_manager.balanced_gpu_indices)
 
     @property
     def model(self) -> nn.Module:
@@ -59,6 +54,10 @@ class ModelManager:
         """Returns the type of the model."""
         return self.__type
 
+    @property
+    def device(self) -> torch.device:
+        """Returns the device."""
+        return self.__device
 
     def save(self, path: str) -> None:
         """
