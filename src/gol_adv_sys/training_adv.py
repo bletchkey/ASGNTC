@@ -491,7 +491,9 @@ class TrainingAdversarial(TrainingBase):
         return self.__get_loss_avg_g(NUM_TRAINING_STEPS)
 
 
-    def __test_iteration_progress(self, predictor_device) -> dict:
+    def __test_iteration_progress(self,
+                                  predictor_device,
+                                  generator_device) -> dict:
         """
         Function for testing the models.
         The models are tested on the fixed noise.
