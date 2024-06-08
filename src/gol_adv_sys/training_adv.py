@@ -316,7 +316,8 @@ class TrainingAdversarial(TrainingBase):
         logging.debug(f"Training generator")
         self.generator.model.train()
 
-        for batch_count in range(1, NUM_BATCHES+1):
+        n =  NUM_BATCHES*10
+        for batch_count in range(1, n+1):
 
             self.generator.optimizer.zero_grad()
 
