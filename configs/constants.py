@@ -68,10 +68,10 @@ NUM_TRAINING_STEPS = 5
 ADV_BATCH_SIZE = 32
 
 # Number of batches to generate at each epoch
-NUM_BATCHES = 64
+NUM_BATCHES = 128
 
 # Max number of batches in the dataloader
-NUM_MAX_BATCHES = 32*NUM_BATCHES
+NUM_MAX_BATCHES = 8*NUM_BATCHES
 
 # Number of new configurations to generate at each epoch
 NUM_CONFIGS = NUM_BATCHES * ADV_BATCH_SIZE
@@ -87,10 +87,10 @@ NUM_CONFIGS_GEN_EVAL = 8192
 NUM_BATCHES_GEN_EVAL = NUM_CONFIGS_GEN_EVAL // ADV_BATCH_SIZE
 
 # Dirichlet alpha parameter - used for the Dirichlet distribution to generate the input for G
-DIRICHLET_ALPHA = 0.005
+DIRICHLET_ALPHA = 0.1
 
 # Number of steps to run the simulation for the generated configurations
-NUM_SIM_STEPS = 1000
+NUM_SIM_STEPS = 50
 
 ### TRAINING GENERAL ##############################################################
 

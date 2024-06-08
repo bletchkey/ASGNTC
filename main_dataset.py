@@ -165,16 +165,6 @@ def plot_dataset_infos(saving_path: Path, dataset_type: str):
     ax4.set_xlabel("Period Length")
     ax4.set_ylabel("Count")
 
-    frequency = dataset_manager.get_frequency_of_n_cells_initial(dataset_type)
-
-    ax5 = fig.add_subplot(gs[2, :])
-    ax5.set_xlabel("Number of Initial Living Cells")
-    ax5.set_ylabel("Configurations count")
-    ax5.bar(frequency.keys(), frequency.values(), color='#3330a1')
-
-    pdf_path = Path(saving_path) / f"{dataset_type}_infos.pdf"
-    export_figures_to_pdf(pdf_path, fig)
-
 
 def plot_samples():
 
@@ -214,11 +204,51 @@ def plot_infos():
         print(f"Dataset {type}: infos plotted.")
 
 
+def plot_dataset_stats():
+
+    dataset_manager  = DatasetManager()
+
+    transient_phase_infos = dataset_manager.get_infos_transient_phase_per_n_initial_cells_combined()
+    period_infos          = dataset_manager.get_infos_period_per_n_initial_cells_combined()
+
+    tp_avg = transient_phase_infos["avg"]
+    p_avg = period_infos["avg"]
+
+    cells_tp      = sorted(tp_avg.keys())
+    tp_avg_values = [tp_avg[n] for n in cells_tp]
+    cells_p       = sorted(p_avg.keys())
+    p_avg_values  = [p_avg[n] for n in cells_p]
+
+
+    # Create subplots
+    fig, axs = plt.subplots(2, 1, figsize=(10, 12))  # Two subplots in one column
+
+    # Plot transient phase data
+    axs[0].plot(cells_tp, tp_avg_values, marker='o', linestyle='-', color='b')
+    axs[0].set_title('Average Transient Phase per Initial Cell Count')
+    axs[0].set_xlabel('Number of Initial Cells')
+    axs[0].set_ylabel('Average Transient Phase')
+    axs[0].grid(True)
+
+    # Plot period data
+    axs[1].plot(cells_p, p_avg_values, marker='o', linestyle='-', color='r')
+    axs[1].set_title('Average Period per Initial Cell Count')
+    axs[1].set_xlabel('Number of Initial Cells')
+    axs[1].set_ylabel('Average Period')
+    axs[1].grid(True)
+
+    # Adjust layout
+    plt.tight_layout()
+
+    pdf_path = OUTPUTS_DIR / "dataset_stats.pdf"
+    export_figures_to_pdf(pdf_path, fig)
+
+
 def main():
     setup_base_directory()
     setup_logging(path= CONFIG_DIR / "logging_dataset.json")
 
-    # plot_infos()
+    plot_dataset_stats()
 
 
 if __name__ == "__main__":

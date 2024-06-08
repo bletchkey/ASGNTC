@@ -503,6 +503,86 @@ class DatasetManager():
         return ConcatDataset([dataset_train, dataset_validation, dataset_test])
 
 
+    def get_combined_dataset_transient_phases(self) -> torch.Tensor:
+        """
+        Returns the transient phases for the combined dataset.
+
+        """
+        transient_phases = torch.tensor([])
+        for dataset_type in self.dataset_types:
+           transient_phases.stack(self.get_transient_phases(dataset_type))
+
+        return transient_phases
+
+
+    def get_combined_dataset_periods(self) -> torch.Tensor:
+        """
+        Returns the periods for the combined dataset.
+
+        """
+        periods = torch.tensor([])
+        for dataset_type in self.dataset_types:
+            periods.stack(self.get_periods(dataset_type))
+
+        return periods
+
+
+    def get_infos_transient_phase_per_n_initial_cells_combined(self) -> dict:
+        """
+        Calculates the average, max and min transient phase for each initial cell count in the combined dataset.
+
+        """
+        counts = {}
+
+        for dataset_type in self.dataset_types:
+            metadata = self.get_metadata(dataset_type)
+
+            for meta in metadata:
+                initial_cells   = meta[META_N_CELLS_INITIAL]
+                transient_phase = meta[META_TRANSIENT_PHASE]
+
+                if initial_cells in counts:
+                    counts[initial_cells].append(transient_phase)
+                else:
+                    counts[initial_cells] = [transient_phase]
+
+        avg_tp_in_cells = {k: np.mean(v) for k, v in counts.items()}
+        max_tp_in_cells = {k: np.max(v) for k, v in counts.items()}
+        min_tp_in_cells = {k: np.min(v) for k, v in counts.items()}
+
+        infos = {"avg": avg_tp_in_cells, "max": max_tp_in_cells, "min": min_tp_in_cells}
+
+        return infos
+
+
+    def get_infos_period_per_n_initial_cells_combined(self) -> dict:
+        """
+        Calculates the average, max and min period for each initial cell count in the combined dataset.
+
+        """
+        counts = {}
+
+        for dataset_type in self.dataset_types:
+            metadata = self.get_metadata(dataset_type)
+
+            for meta in metadata:
+                initial_cells = meta[META_N_CELLS_INITIAL]
+                period = meta[META_PERIOD]
+
+                if initial_cells in counts:
+                    counts[initial_cells].append(period)
+                else:
+                    counts[initial_cells] = [period]
+
+        avg_period_in_cells = {k: np.mean(v) for k, v in counts.items()}
+        max_period_in_cells = {k: np.max(v) for k, v in counts.items()}
+        min_period_in_cells = {k: np.min(v) for k, v in counts.items()}
+
+        infos = {"avg": avg_period_in_cells, "max": max_period_in_cells, "min": min_period_in_cells}
+
+        return infos
+
+
     def get_record_from_id(self, id: int) -> dict:
         """
         Search for a record with the given ID in the datasets and return it as a dictionary.

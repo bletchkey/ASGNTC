@@ -82,11 +82,9 @@ class TrainingAdversarial(TrainingBase):
         self.folders        = FolderManager(TRAINING_TYPE_ADVERSARIAL, self.__date)
         self.device_manager = DeviceManager()
 
-        self.simulation_topology      = TOPOLOGY_TOROIDAL
+        self.simulation_topology      = TOPOLOGY_FLAT
         self.config_type_pred_target  = CONFIG_TARGET_EASY
         self.init_config_initial_type = INIT_CONFIG_INITIAL_SIGN
-        self.fixed_input_noise        = get_dirichlet_input_noise(ADV_BATCH_SIZE,
-                                                                  self.device_manager.default_device)
 
         self.n_times_trained_p = 0
         self.n_times_trained_g = 0
@@ -105,7 +103,7 @@ class TrainingAdversarial(TrainingBase):
                                                     weight_decay=P_SGD_WEIGHT_DECAY),
                                       criterion = AdversarialGoLLoss(model_type=PREDICTOR),
                                       type=PREDICTOR,
-                                      device=self.device_manager.secondary_device)
+                                      device=self.device_manager.default_device)
 
         self.generator = ModelManager(model=model_g,
                                       optimizer=optim.AdamW(model_g.parameters(),
@@ -115,18 +113,11 @@ class TrainingAdversarial(TrainingBase):
                                                     weight_decay=G_ADAMW_WEIGHT_DECAY),
                                       criterion = AdversarialGoLLoss(model_type=GENERATOR),
                                       type= GENERATOR,
-                                      device=self.device_manager.default_device)
-
-        # # Load the latest checkpoint of the predictor model
-
-        # model_name = f"Baseline_Toroidal_{self.config_type_pred_target.capitalize()}"
-        # pretrained_model_path = TRAINED_MODELS_DIR / "predictors" / model_name
-        # checkpoint_path = get_latest_checkpoint_path(pretrained_model_path)
-        # checkpoint = torch.load(pretrained_model_path / "checkpoints" / checkpoint_path)
-
-        # self.predictor.model.load_state_dict(checkpoint[CHECKPOINT_MODEL_STATE_DICT_KEY])
+                                      device=self.device_manager.secondary_device)
 
         self.train_dataloader = None
+
+        self.fixed_input_noise = get_dirichlet_input_noise(ADV_BATCH_SIZE, device=self.generator.device)
 
         self.properties_g  = {"enabled": True, "can_train": True}
         self.path_log_file = self.__init_log_file()
@@ -168,13 +159,6 @@ class TrainingAdversarial(TrainingBase):
                     f"\n\nIteration: {iteration+1}/{NUM_ITERATIONS}\n"
                     f"Number of generated configurations in the dataset: {len(self.train_dataloader) * ADV_BATCH_SIZE}\n"
                 )
-
-                # if len(self.complexity_stable_targets) > 0:
-                #     log_content += (
-                #         f"Average complexity of the stable targets on the last "
-                #         f"{NUM_BATCHES * ADV_BATCH_SIZE} generated configurations: "
-                #         f"{100*self.complexity_stable_targets[-1]:.1f}/100\n\n"
-                #     )
 
                 log.write(log_content)
                 log.flush()
@@ -220,7 +204,10 @@ class TrainingAdversarial(TrainingBase):
 
         """
 
-        generated, target = self.__get_new_training_batches(NUM_BATCHES, self.generator.device)
+        generated, target = self.__get_new_training_batches(NUM_BATCHES, device=self.generator.device)
+
+        generated = generated.to('cpu')
+        target    = target.to('cpu')
 
         if self.train_dataloader is None:
             self.train_dataloader = DataLoader(TensorDataset(generated, target), batch_size=ADV_BATCH_SIZE, shuffle=True)
@@ -239,6 +226,9 @@ class TrainingAdversarial(TrainingBase):
             else:
                 self.train_dataloader = DataLoader(combined_dataset, batch_size=ADV_BATCH_SIZE, shuffle=True)
 
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
+
 
     def __warmup_predictor(self) -> None:
 
@@ -246,7 +236,7 @@ class TrainingAdversarial(TrainingBase):
 
         self.predictor.model.train()
 
-        generated, target = self.__get_new_training_batches(NUM_BATCHES, self.generator.device)
+        generated, target = self.__get_new_training_batches(NUM_BATCHES, device=self.generator.device)
         dataset           = TensorDataset(generated, target)
         dataloader_warmup = DataLoader(dataset, batch_size=ADV_BATCH_SIZE, shuffle=True)
 
@@ -718,4 +708,18 @@ class TrainingAdversarial(TrainingBase):
             log_file.flush()
 
         return path
+
+
+    def check_tensors_device(self):
+        """
+        Check the device of the tensors in the memory.
+
+        """
+
+        for obj in gc.get_objects():
+            try:
+                if torch.is_tensor(obj) or (hasattr(obj, 'data') and torch.is_tensor(obj.data)):
+                    print(type(obj), obj.size(), obj.device)
+            except:
+                pass
 
