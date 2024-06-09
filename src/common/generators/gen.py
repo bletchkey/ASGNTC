@@ -5,7 +5,7 @@ from configs.constants import *
 
 from src.common.utils.toroidal import ToroidalConv2d
 
-# TEST
+
 class Gen(nn.Module):
     def __init__(self, topology, num_hidden):
         super().__init__()
@@ -31,6 +31,16 @@ class Gen(nn.Module):
         )
         self.batch_norm_1  = nn.BatchNorm2d(num_hidden)
 
+        self.conv_2 = nn.Sequential(
+            *(
+                [ToroidalConv2d(nn.Conv2d(num_hidden, num_hidden, kernel_size=3, stride=1, padding=0))]
+                if self.topology == TOPOLOGY_TOROIDAL
+                else [nn.Conv2d(num_hidden, num_hidden, kernel_size=3, stride=1, padding=1)]
+            )
+        )
+        self.batch_norm_2 = nn.BatchNorm2d(num_hidden)
+
+
         self.out_conv = nn.Conv2d(num_hidden, NUM_CHANNELS_GRID, kernel_size=1, stride=1, padding=0)
 
         self.relu = nn.ReLU()
@@ -43,6 +53,10 @@ class Gen(nn.Module):
 
         x = self.conv_1(x)
         x = self.batch_norm_1(x)
+        x = self.relu(x)
+
+        x = self.conv_2(x)
+        x = self.batch_norm_2(x)
         x = self.relu(x)
 
         x = self.out_conv(x)

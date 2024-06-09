@@ -38,8 +38,10 @@ def basic_simulation_config(config: torch.Tensor, topology: str, steps: int, dev
     return sim_configs
 
 
-def adv_training_simulate_config(config: torch.Tensor, topology: str,
-                                 steps: int, target_type: str,
+def adv_training_simulate_config(config: torch.Tensor,
+                                 topology: str,
+                                 steps: int,
+                                 target_type: str,
                                  device: torch.device) -> torch.Tensor:
     """
     Simulates a configuration for a given number of steps using a specified topology.
@@ -72,9 +74,10 @@ def adv_training_simulate_config(config: torch.Tensor, topology: str,
     kernel[:, :, 1, 1] = 0  # Set the center to 0 to exclude self
 
     if target_type == CONFIG_TARGET_STABLE:
-        final_config, stable_config, period, transient_phase = calculate_final_configuration(sim_configs,
+        final_config, stable_config, period, transient_phase = calculate_final_configuration(config,
                                                                                              _simulation_function,
-                                                                                             kernel, device)
+                                                                                             kernel,
+                                                                                             device)
     else:
         # Simulate the configuration for the given number of steps
         sim_configs = []
@@ -162,8 +165,10 @@ def simulate_config(config: torch.Tensor, topology: str, steps: int,
     return results
 
 
-def calculate_final_configuration(config_batch: torch.Tensor, simulation_function,
-                                  kernel: torch.Tensor, device: torch.device) -> Tuple[torch.Tensor,
+def calculate_final_configuration(config_batch: torch.Tensor,
+                                  simulation_function,
+                                  kernel: torch.Tensor,
+                                  device: torch.device) -> Tuple[torch.Tensor,
                                                                                        torch.Tensor,
                                                                                        torch.Tensor]:
     """

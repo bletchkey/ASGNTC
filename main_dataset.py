@@ -6,7 +6,7 @@ import numpy as np
 import seaborn as sns
 import matplotlib.pyplot as plt
 from matplotlib.gridspec import GridSpec
-from matplotlib.ticker import MaxNLocator
+from matplotlib.ticker import MaxNLocator, LogLocator
 import torch
 
 from src.common.utils.helpers import export_figures_to_pdf
@@ -219,23 +219,54 @@ def plot_dataset_stats():
     cells_p       = sorted(p_avg.keys())
     p_avg_values  = [p_avg[n] for n in cells_p]
 
+    # Calculate CDF data
+    tp_sorted_values = np.sort(tp_avg_values)
+    p_sorted_values  = np.sort(p_avg_values)
+
+    n_tp = len(tp_avg_values)
+    n_p  = len(p_avg_values)
+
+    n_tp_ecdf_values = np.arange(1, n_tp+1) / n_tp
+    n_p_ecdf_values  = np.arange(1, n_p+1) / n_p
+
 
     # Create subplots
-    fig, axs = plt.subplots(2, 1, figsize=(10, 12))  # Two subplots in one column
+    fig, axs = plt.subplots(2, 2, figsize=(12, 12))
 
     # Plot transient phase data
-    axs[0].plot(cells_tp, tp_avg_values, marker='o', linestyle='-', color='b')
-    axs[0].set_title('Average Transient Phase per Initial Cell Count')
-    axs[0].set_xlabel('Number of Initial Cells')
-    axs[0].set_ylabel('Average Transient Phase')
-    axs[0].grid(True)
+    axs[0,0].scatter(cells_tp, tp_avg_values, marker='x', color='#095c32', s=3)
+    axs[0,0].set_title('Average transient phase per initial cell count', fontsize=12, fontweight='bold')
+    axs[0,0].set_xlabel('number of initial cells')
+    axs[0,0].set_ylabel('average transient phase')
+    axs[0,0].set_xlim([0, GRID_SIZE**2])
+    specific_ticks = [0, 100, 200, 300, 400, 500, 600, 700, 800, 900, 1024]
+    axs[0,0].set_xticks(specific_ticks)
+    axs[0,0].grid(True)
+
+    # Plot ECDF transient phase data
+    axs[0,1].plot(tp_sorted_values, n_tp_ecdf_values, color='#095c32', linestyle='--')
+    axs[0,1].set_title('ECDF - average transient phase', fontsize=12, fontweight='bold')
+    axs[0,1].set_xlabel('average transient phase')
+    axs[0,1].set_ylabel('probability')
+    axs[0,1].grid(True, which="both", ls="--")
 
     # Plot period data
-    axs[1].plot(cells_p, p_avg_values, marker='o', linestyle='-', color='r')
-    axs[1].set_title('Average Period per Initial Cell Count')
-    axs[1].set_xlabel('Number of Initial Cells')
-    axs[1].set_ylabel('Average Period')
-    axs[1].grid(True)
+    axs[1,0].scatter(cells_p, p_avg_values, marker='x', color='#5c0958', s=3)
+    axs[1,0].set_title('Average period per initial cell count', fontsize=12, fontweight='bold')
+    axs[1,0].set_xlabel('number of initial cells')
+    axs[1,0].set_ylabel('average period')
+    axs[1,0].set_xlim([0, GRID_SIZE**2])
+    specific_ticks = [0, 100, 200, 300, 400, 500, 600, 700, 800, 900, 1024]
+    axs[1,0].set_xticks(specific_ticks)
+    axs[1,0].grid(True)
+
+    # Plot ECDF period data
+    axs[1,1].plot(p_sorted_values, n_p_ecdf_values, color='#5c0958', linestyle='--')
+    axs[1,1].set_title('ECDF - average period', fontsize=12, fontweight='bold')
+    axs[1,1].set_xlabel('average period')
+    axs[1,1].set_ylabel('probability')
+    axs[1,1].grid(True, which="both", ls="--")
+
 
     # Adjust layout
     plt.tight_layout()

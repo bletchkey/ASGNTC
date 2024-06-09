@@ -80,7 +80,9 @@ class TrainingAdversarial(TrainingBase):
         self.__initialize_seed()
 
         self.folders        = FolderManager(TRAINING_TYPE_ADVERSARIAL, self.__date)
+
         self.device_manager = DeviceManager()
+        self.device_manager.set_default_device("cpu")
 
         self.simulation_topology      = TOPOLOGY_FLAT
         self.config_type_pred_target  = CONFIG_TARGET_EASY
@@ -93,7 +95,7 @@ class TrainingAdversarial(TrainingBase):
 
         self.complexity_stable_targets= []
 
-        self.losses            = {GENERATOR: [], PREDICTOR: []}
+        self.losses            = {PREDICTOR: [], GENERATOR: []}
         self.lr_each_iteration = {PREDICTOR: [], GENERATOR: []}
 
         self.predictor = ModelManager(model=model_p,
@@ -103,7 +105,7 @@ class TrainingAdversarial(TrainingBase):
                                                     weight_decay=P_SGD_WEIGHT_DECAY),
                                       criterion = AdversarialGoLLoss(model_type=PREDICTOR),
                                       type=PREDICTOR,
-                                      device=self.device_manager.default_device)
+                                      device=self.device_manager.secondary_device)
 
         self.generator = ModelManager(model=model_g,
                                       optimizer=optim.AdamW(model_g.parameters(),
@@ -113,7 +115,7 @@ class TrainingAdversarial(TrainingBase):
                                                     weight_decay=G_ADAMW_WEIGHT_DECAY),
                                       criterion = AdversarialGoLLoss(model_type=GENERATOR),
                                       type= GENERATOR,
-                                      device=self.device_manager.secondary_device)
+                                      device=self.device_manager.primary_device)
 
         self.train_dataloader = None
 
@@ -146,6 +148,9 @@ class TrainingAdversarial(TrainingBase):
         self.__warmup_predictor()
 
         for iteration in range(NUM_ITERATIONS):
+
+            print("devices - check")
+            self.__check_tensors_device()
 
             self.__update_dataloader()
 
@@ -206,8 +211,10 @@ class TrainingAdversarial(TrainingBase):
 
         generated, target = self.__get_new_training_batches(NUM_BATCHES, device=self.generator.device)
 
-        generated = generated.to('cpu')
-        target    = target.to('cpu')
+        print(self.generator.device.type)
+        if self.generator.device.type != "cpu":
+            generated = generated.to("cpu")
+            target    = target.to("cpu")
 
         if self.train_dataloader is None:
             self.train_dataloader = DataLoader(TensorDataset(generated, target), batch_size=ADV_BATCH_SIZE, shuffle=True)
@@ -228,6 +235,9 @@ class TrainingAdversarial(TrainingBase):
 
         if torch.cuda.is_available():
             torch.cuda.empty_cache()
+
+        del generated, target
+        gc.collect()
 
 
     def __warmup_predictor(self) -> None:
@@ -316,7 +326,7 @@ class TrainingAdversarial(TrainingBase):
         logging.debug(f"Training generator")
         self.generator.model.train()
 
-        n =  NUM_BATCHES*10
+        n = len(self.train_dataloader)
         for batch_count in range(1, n+1):
 
             self.generator.optimizer.zero_grad()
@@ -711,7 +721,7 @@ class TrainingAdversarial(TrainingBase):
         return path
 
 
-    def check_tensors_device(self):
+    def __check_tensors_device(self):
         """
         Check the device of the tensors in the memory.
 

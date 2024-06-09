@@ -8,7 +8,7 @@ import traceback
 
 from configs.constants import *
 
-from src.common.device_manager        import DeviceManager
+from src.common.device_manager             import DeviceManager
 
 from src.gol_adv_sys.utils.helpers         import get_generated_config, \
                                                   get_initial_config

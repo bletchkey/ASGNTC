@@ -29,6 +29,7 @@ class DeviceManager:
         self.__default_device       = self.__get_default_device()
         self.__balanced_gpu_indices = self.__get_balanced_gpu_indices()
         self.__n_balanced_gpus      = len(self.__balanced_gpu_indices)
+        self.__primary_device       = self.__get_primary_device()
         self.__secondary_device     = self.__get_secondary_device()
 
 
@@ -41,6 +42,11 @@ class DeviceManager:
     def default_device(self) -> torch.device:
         """Returns the default device"""
         return self.__default_device
+
+    @property
+    def primary_device(self) -> torch.device:
+        """Returns the primary device"""
+        return self.__primary_device
 
     @property
     def secondary_device(self) -> torch.device:
@@ -65,22 +71,37 @@ class DeviceManager:
 
         """
 
-        if torch.cuda.is_available():
-            device           = self.__default_device
-            allocated_memory = torch.cuda.memory_allocated(device)
-            reserved_memory  = torch.cuda.memory_reserved(device)
-            logging.debug(f"Allocated memory on {device}: {allocated_memory / (1024**3):.2f} GB")
-            logging.debug(f"Reserved memory on {device}: {reserved_memory / (1024**3):.2f} GB")
+        if torch.cuda.is_available:
 
-            if allocated_memory / reserved_memory > threshold:
-                logging.debug(f"Clearing CUDA cache on {device}")
-                torch.cuda.empty_cache()
-
+            for i in range(self.__n_gpus):
+                torch.cuda.set_device(i)
+                device           = torch.device(i)
                 allocated_memory = torch.cuda.memory_allocated(device)
                 reserved_memory  = torch.cuda.memory_reserved(device)
-
                 logging.debug(f"Allocated memory on {device}: {allocated_memory / (1024**3):.2f} GB")
                 logging.debug(f"Reserved memory on {device}: {reserved_memory / (1024**3):.2f} GB")
+
+                if allocated_memory / reserved_memory > threshold:
+                    logging.debug(f"Clearing CUDA cache on {device}")
+                    torch.cuda.empty_cache()
+
+                    allocated_memory = torch.cuda.memory_allocated(device)
+                    reserved_memory  = torch.cuda.memory_reserved(device)
+
+                    logging.debug(f"Allocated memory on {device}: {allocated_memory / (1024**3):.2f} GB")
+                    logging.debug(f"Reserved memory on {device}: {reserved_memory / (1024**3):.2f} GB")
+
+
+    def set_default_device(self, device):
+        """
+        Function to set the default device for training.
+
+        Args:
+            device (torch.device): The device to set as the default device.
+
+        """
+
+        self.__default_device = torch.device(device)
 
 
     def __query_gpu_memory(self):
@@ -135,6 +156,20 @@ class DeviceManager:
         torch.cuda.set_device(selected_device)
 
         return torch.device(selected_device)
+
+
+    def __get_primary_device(self) -> torch.device:
+        """
+        Determines the primary device
+
+        Returns:
+            torch.device: The primary device selected for training operations.
+        """
+
+        if not torch.cuda.is_available():
+            return torch.device("cpu")
+
+        return torch.device(self.__default_device.index)
 
 
     def __get_secondary_device(self) -> torch.device:
