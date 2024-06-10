@@ -497,8 +497,8 @@ def __apply_conway_rules(config: torch.Tensor, neighbors: torch.Tensor) -> torch
         The new configuration after applying the rules.
 
     """
-    birth = (neighbors == 3) & (config == 0)
-    survive = ((neighbors == 2) | (neighbors == 3)) & (config == 1)
+    birth      = (neighbors == 3) & (config == 0)
+    survive    = ((neighbors == 2) | (neighbors == 3)) & (config == 1)
     new_config = birth | survive
 
     return new_config.float()

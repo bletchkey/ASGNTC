@@ -65,7 +65,7 @@ NUM_ITERATIONS = 200
 NUM_TRAINING_STEPS = 5
 
 # Batch size during training
-ADV_BATCH_SIZE = 32
+ADV_BATCH_SIZE = 128
 
 # Number of batches to generate at each epoch
 NUM_BATCHES = 128
@@ -90,7 +90,7 @@ NUM_BATCHES_GEN_EVAL = NUM_CONFIGS_GEN_EVAL // ADV_BATCH_SIZE
 DIRICHLET_ALPHA = 0.1
 
 # Number of steps to run the simulation for the generated configurations
-NUM_SIM_STEPS = 50
+NUM_SIM_STEPS = 20
 
 ### TRAINING GENERAL ##############################################################
 

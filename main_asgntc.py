@@ -60,11 +60,9 @@ def evaluate_generator():
 
 
 def train_adversarial():
-    # train_adv = TrainingAdversarial(model_p=Predictor_Baseline(TOPOLOGY_TOROIDAL),
-    #                                 model_g=Generator_Gen(TOPOLOGY_TOROIDAL,32)
 
-    train_adv = TrainingAdversarial(model_p=Predictor_ResNet(TOPOLOGY_FLAT, 2, 32),
-                                    model_g=Generator_Gen(TOPOLOGY_FLAT, 32))
+    train_adv = TrainingAdversarial(model_p=Predictor_ResNet(TOPOLOGY_TOROIDAL, 2, 32),
+                                    model_g=Generator_Gen(TOPOLOGY_TOROIDAL, 32))
 
     train_adv.run()
 

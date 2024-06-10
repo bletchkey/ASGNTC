@@ -82,9 +82,7 @@ class TrainingAdversarial(TrainingBase):
         self.folders        = FolderManager(TRAINING_TYPE_ADVERSARIAL, self.__date)
 
         self.device_manager = DeviceManager()
-        self.device_manager.set_default_device("cpu")
 
-        self.simulation_topology      = TOPOLOGY_FLAT
         self.config_type_pred_target  = CONFIG_TARGET_EASY
         self.init_config_initial_type = INIT_CONFIG_INITIAL_SIGN
 
@@ -98,6 +96,11 @@ class TrainingAdversarial(TrainingBase):
         self.losses            = {PREDICTOR: [], GENERATOR: []}
         self.lr_each_iteration = {PREDICTOR: [], GENERATOR: []}
 
+        if model_p.topology != model_g.topology:
+            raise ValueError("The topology of the predictor and generator models must be the same.")
+
+        self.simulation_topology = model_p.topology
+
         self.predictor = ModelManager(model=model_p,
                                       optimizer=optim.SGD(model_p.parameters(),
                                                     lr=P_SGD_LR,
@@ -105,7 +108,7 @@ class TrainingAdversarial(TrainingBase):
                                                     weight_decay=P_SGD_WEIGHT_DECAY),
                                       criterion = AdversarialGoLLoss(model_type=PREDICTOR),
                                       type=PREDICTOR,
-                                      device=self.device_manager.secondary_device)
+                                      device=self.device_manager.primary_device)
 
         self.generator = ModelManager(model=model_g,
                                       optimizer=optim.AdamW(model_g.parameters(),
@@ -148,9 +151,6 @@ class TrainingAdversarial(TrainingBase):
         self.__warmup_predictor()
 
         for iteration in range(NUM_ITERATIONS):
-
-            print("devices - check")
-            self.__check_tensors_device()
 
             self.__update_dataloader()
 
@@ -211,32 +211,32 @@ class TrainingAdversarial(TrainingBase):
 
         generated, target = self.__get_new_training_batches(NUM_BATCHES, device=self.generator.device)
 
-        print(self.generator.device.type)
-        if self.generator.device.type != "cpu":
-            generated = generated.to("cpu")
-            target    = target.to("cpu")
+        # Move tensors to CPU and detach
+        generated_cpu = generated.detach().to("cpu")
+        target_cpu = target.detach().to("cpu")
+
+        # Clear GPU memory
+        del generated, target
+        torch.cuda.empty_cache()
+        gc.collect()
 
         if self.train_dataloader is None:
-            self.train_dataloader = DataLoader(TensorDataset(generated, target), batch_size=ADV_BATCH_SIZE, shuffle=True)
+            self.train_dataloader = DataLoader(TensorDataset(generated_cpu, target_cpu), batch_size=ADV_BATCH_SIZE, shuffle=True)
         else:
-            new_dataset      = TensorDataset(generated, target)
+            new_dataset = TensorDataset(generated_cpu, target_cpu)
             combined_dataset = ConcatDataset([self.train_dataloader.dataset, new_dataset])
 
             total_batches = len(combined_dataset) // ADV_BATCH_SIZE
             if total_batches > NUM_MAX_BATCHES:
-
-                excess_batches  = total_batches - NUM_MAX_BATCHES
-                start_idx       = excess_batches * ADV_BATCH_SIZE
+                excess_batches = total_batches - NUM_MAX_BATCHES
+                start_idx = excess_batches * ADV_BATCH_SIZE
                 trimmed_dataset = Subset(combined_dataset, range(start_idx, len(combined_dataset)))
 
                 self.train_dataloader = DataLoader(trimmed_dataset, batch_size=ADV_BATCH_SIZE, shuffle=True)
             else:
                 self.train_dataloader = DataLoader(combined_dataset, batch_size=ADV_BATCH_SIZE, shuffle=True)
 
-        if torch.cuda.is_available():
-            torch.cuda.empty_cache()
-
-        del generated, target
+        # Additional garbage collection
         gc.collect()
 
 
@@ -293,8 +293,8 @@ class TrainingAdversarial(TrainingBase):
 
                 self.predictor.optimizer.zero_grad()
 
-                predicted = self.predictor.model(generated.detach().to(self.predictor.device))
-                errP = self.predictor.criterion(predicted, target.detach().to(self.predictor.device))
+                predicted = self.predictor.model(generated.to(self.predictor.device))
+                errP = self.predictor.criterion(predicted, target.to(self.predictor.device))
 
                 errP.backward()
                 self.predictor.optimizer.step()
@@ -727,10 +727,12 @@ class TrainingAdversarial(TrainingBase):
 
         """
 
+        logging.debug("Checking tensors device")
         for obj in gc.get_objects():
             try:
                 if torch.is_tensor(obj) or (hasattr(obj, 'data') and torch.is_tensor(obj.data)):
-                    print(type(obj), obj.size(), obj.device)
+                    logging.debug(f"Tensor: {type(obj)}, {obj.size()}, {obj.device}")
+
             except:
                 pass
 

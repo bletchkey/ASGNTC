@@ -81,7 +81,7 @@ class DeviceManager:
                 logging.debug(f"Allocated memory on {device}: {allocated_memory / (1024**3):.2f} GB")
                 logging.debug(f"Reserved memory on {device}: {reserved_memory / (1024**3):.2f} GB")
 
-                if allocated_memory / reserved_memory > threshold:
+                if reserved_memory > 0 and allocated_memory / reserved_memory > threshold:
                     logging.debug(f"Clearing CUDA cache on {device}")
                     torch.cuda.empty_cache()
 
