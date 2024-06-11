@@ -36,6 +36,9 @@ from src.common.model_manager  import ModelManager
 
 from src.common.utils.losses   import WeightedMSELoss, AdversarialGoLLoss
 
+from src.common.generators.binarygen import BinaryGenerator
+from src.common.generators.gen       import Gen
+
 from src.common.utils.scores               import prediction_score
 from src.common.utils.simulation_functions import simulate_config
 from src.common.utils.helpers              import get_elapsed_time_str, get_latest_checkpoint_path
@@ -88,7 +91,6 @@ class TrainingAdversarial(TrainingBase):
         self.device_manager = DeviceManager()
 
         self.config_type_pred_target  = CONFIG_TARGET_EASY
-        self.init_config_initial_type = INIT_CONFIG_INITIAL_SIGN
 
         self.n_times_trained_p = 0
         self.n_times_trained_g = 0
@@ -126,6 +128,16 @@ class TrainingAdversarial(TrainingBase):
 
         self.p_num_epochs     = 5
         self.train_dataloader = None
+
+        self.init_config_initial_type = None
+
+        if isinstance(self.generator.model, BinaryGenerator):
+            self.init_config_initial_type = INIT_CONFIG_INTIAL_THRESHOLD
+        elif isinstance(self.generator.model, Gen):
+            self.init_config_initial_type = INIT_CONFIG_INITIAL_SIGN
+        else:
+            self.init_config_initial_type = INIT_CONFIG_INITIAL_SIGN
+
 
         self.fixed_input_noise = get_dirichlet_input_noise(ADV_BATCH_SIZE, device=self.generator.device)
 
