@@ -81,7 +81,10 @@ class TrainingAdversarial(TrainingBase):
 
     """
 
-    def __init__(self, model_p=None, model_g=None) -> None:
+    def __init__(self,
+                 model_p=None,
+                 model_g=None,
+                 target:str=None) -> None:
         self.__date = datetime.datetime.now()
 
         self.__initialize_seed()
@@ -90,7 +93,12 @@ class TrainingAdversarial(TrainingBase):
 
         self.device_manager = DeviceManager()
 
-        self.config_type_pred_target  = CONFIG_TARGET_EASY
+        self.config_type_pred_target = None
+
+        if target in [CONFIG_TARGET_EASY, CONFIG_TARGET_MEDIUM, CONFIG_TARGET_HARD, CONFIG_TARGET_STABLE]:
+            self.config_type_pred_target = target
+        else:
+            raise ValueError("The target type selected is not valid.")
 
         self.n_times_trained_p = 0
         self.n_times_trained_g = 0
