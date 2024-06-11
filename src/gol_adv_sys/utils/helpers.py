@@ -196,8 +196,8 @@ def save_progress_graph(stats: dict,
     fig, axs = plt.subplots(2, 2, figsize=(16, 10))
 
     # Plot the number of cells initial and final
-    axs[0, 0].plot(n_cells_initial, label="Initial Cells", color="#366926", linestyle=":", marker="o", linewidth=0.8)
-    axs[0, 0].plot(n_cells_final, label="Final Cells", color="8a1c37", linestyle=":", marker="x")
+    axs[0, 0].plot(n_cells_initial, label="Initial Cells", color="#366926", linestyle=":", marker="x", linewidth=0.8)
+    axs[0, 0].plot(n_cells_final, label="Final Cells", color="#821631", linestyle=":", marker="x")
     axs[0, 0].set_title("Number of cells in the initial and final configurations", fontsize=14, fontweight='bold')
     axs[0, 0].set_xlabel("Iterations", fontsize=12)
     axs[0, 0].set_ylabel("Number of Cells", fontsize=12)
@@ -205,7 +205,7 @@ def save_progress_graph(stats: dict,
     axs[0, 0].grid(True)
 
     # Plot the prediction score
-    axs[0, 1].plot(prediction_score, label="Prediction Score", color="385BA8", linestyle=":", marker="s")
+    axs[0, 1].plot(prediction_score, label="Prediction Score", color="#385BA8", linestyle=":", marker="x")
     axs[0, 1].set_title("Prediction Scores", fontsize=14, fontweight='bold')
     axs[0, 1].set_xlabel("Iterations", fontsize=12)
     axs[0, 1].set_ylabel("Score", fontsize=12)
@@ -214,7 +214,7 @@ def save_progress_graph(stats: dict,
     axs[0, 1].grid(True)
 
     # Plot the period
-    axs[1, 0].plot(period, label="Period", color="512275", linestyle=":", marker="d")
+    axs[1, 0].plot(period, label="Period", color="#512275", linestyle=":", marker="x")
     axs[1, 0].set_title("Periods", fontsize=14, fontweight='bold')
     axs[1, 0].set_xlabel("Iterations", fontsize=12)
     axs[1, 0].set_ylabel("Period Length", fontsize=12)
@@ -222,7 +222,7 @@ def save_progress_graph(stats: dict,
     axs[1, 0].grid(True)
 
     # Plot the transient phase
-    axs[1, 1].plot(transient_phase, label="Transient Phase", color="ad6d2d", linestyle=":", marker="^")
+    axs[1, 1].plot(transient_phase, label="Transient Phase", color="#ad6d2d", linestyle=":", marker="x")
     axs[1, 1].set_title("Transient Phases", fontsize=14, fontweight='bold')
     axs[1, 1].set_xlabel("Iterations", fontsize=12)
     axs[1, 1].set_ylabel("Transient Phase Length", fontsize=12)
