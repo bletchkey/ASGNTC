@@ -25,13 +25,13 @@ DATASET_NAME = "gol_dataset"
 ### SIMULATION PARAMETERS ###############################################################
 
 # Size of the grid
-GRID_SIZE = 32
+GRID_SIZE = 16
 
 # Max number of steps to run the simulation
 NUM_MAX_SIM_STEPS = 1000
 
 # Number of living cells in the initial configuration
-NUM_LIVING_CELLS_INITIAL = 32
+NUM_LIVING_CELLS_INITIAL = 16
 
 # Threshold for the value of the cells in the generated configurations
 THRESHOLD_CELL_VALUE = 0.5
@@ -40,20 +40,6 @@ THRESHOLD_CELL_VALUE = 0.5
 TARGET_EASY_HALF_STEP   = 2
 TARGET_MEDIUM_HALF_STEP = 8
 TARGET_HARD_HALF_STEP   = 100
-
-
-### PREDICTOR TRAINING PARAMETERS ###################################################
-
-# Number of training epochs
-P_NUM_EPOCHS = 100
-
-# Batch size during training
-P_BATCH_SIZE = 64
-
-# Warmup phase parameters
-WARMUP_TOTAL_STEPS = (int(DATASET_N_TOTAL_CONFIGS * DATASET_TRAIN_RATIO) // P_BATCH_SIZE)
-WARMUP_INITIAL_LR  = 1e-6
-WARMUP_TARGET_LR   = 0.01
 
 
 ### ADVERSARIAL TRAINING PARAMETERS #################################################
@@ -65,10 +51,10 @@ NUM_ITERATIONS = 200
 NUM_TRAINING_STEPS = 5
 
 # Batch size during training
-ADV_BATCH_SIZE = 128
+ADV_BATCH_SIZE = 64
 
 # Number of batches to generate at each epoch
-NUM_BATCHES = 128
+NUM_BATCHES = 64
 
 # Max number of batches in the dataloader
 NUM_MAX_BATCHES = 16*NUM_BATCHES
@@ -87,10 +73,25 @@ NUM_CONFIGS_GEN_EVAL = 8192
 NUM_BATCHES_GEN_EVAL = NUM_CONFIGS_GEN_EVAL // ADV_BATCH_SIZE
 
 # Dirichlet alpha parameter - used for the Dirichlet distribution to generate the input for G
-DIRICHLET_ALPHA = 0.1
+DIRICHLET_ALPHA = 0.5
 
 # Number of steps to run the simulation for the generated configurations
 NUM_SIM_STEPS = 1000
+
+
+### PREDICTOR TRAINING PARAMETERS ###################################################
+
+# Number of training epochs
+P_NUM_EPOCHS = 100
+
+# Batch size during training
+P_BATCH_SIZE = 64
+
+# Warmup phase parameters
+WARMUP_TOTAL_STEPS = (int(DATASET_N_TOTAL_CONFIGS * DATASET_TRAIN_RATIO) // P_BATCH_SIZE)
+WARMUP_INITIAL_LR  = 1e-6
+WARMUP_TARGET_LR   = 0.01
+
 
 ### TRAINING GENERAL ##############################################################
 
@@ -219,10 +220,10 @@ META_STABLE_Q3  = "stable_q3"
 NUM_CHANNELS_GRID = 1
 
 # Size of feature maps in the generator
-NUM_GENERATOR_FEATURES = 32
+NUM_GENERATOR_FEATURES = GRID_SIZE
 
 # Size of feature maps in the predictor
-NUM_PREDICTOR_FEATURES = 32
+NUM_PREDICTOR_FEATURES = GRID_SIZE
 
 # Size of z latent vector
 LATENT_VEC_SIZE = 10

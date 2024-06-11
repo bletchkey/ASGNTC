@@ -10,7 +10,7 @@ from src.common.predictors.resnet_attention import ResNetAttention
 
 def Predictor_Baseline(topology):
     num_resBlocks = 10
-    num_hidden    = 32
+    num_hidden    = NUM_PREDICTOR_FEATURES
     model = ResNet(topology, num_resBlocks, num_hidden)
     logging.debug(model)
 

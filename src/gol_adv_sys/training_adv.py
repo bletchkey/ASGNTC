@@ -87,7 +87,7 @@ class TrainingAdversarial(TrainingBase):
 
         self.device_manager = DeviceManager()
 
-        self.config_type_pred_target  = CONFIG_TARGET_MEDIUM
+        self.config_type_pred_target  = CONFIG_TARGET_EASY
         self.init_config_initial_type = INIT_CONFIG_INITIAL_SIGN
 
         self.n_times_trained_p = 0
@@ -226,7 +226,7 @@ class TrainingAdversarial(TrainingBase):
 
         """
 
-        chunk     = 64
+        chunk     = 32
         times     = NUM_BATCHES // chunk
         remaining = NUM_BATCHES % chunk
 
@@ -612,7 +612,7 @@ class TrainingAdversarial(TrainingBase):
             self.progress_stats["n_cells_final"].append(n_final_cells)
             self.progress_stats["period"].append(period)
             self.progress_stats["transient_phase"].append(transient_phase)
-            self.progress_stats["prediction_score"].append(p_score)
+            self.progress_stats["prediction_score"].append(p_score*100)
 
             save_progress_graph(self.progress_stats, self.folders.base_folder)
 

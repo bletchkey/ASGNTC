@@ -149,13 +149,13 @@ class Gen(nn.Module):
 
 #         self.num_hidden = num_hidden
 
-#         self.in_conv  = ToroidalConv2d(nn.Conv2d(NUM_CHANNELS_GRID, 32, kernel_size=3, stride=1, padding=0))
-#         self.in_batch_norm  = nn.BatchNorm2d(32)
+#         self.in_conv  = ToroidalConv2d(nn.Conv2d(NUM_CHANNELS_GRID, NUM_GENERATOR_FEATURES, kernel_size=3, stride=1, padding=0))
+#         self.in_batch_norm  = nn.BatchNorm2d(NUM_GENERATOR_FEATURES)
 
-#         self.conv_1  = ToroidalConv2d(nn.Conv2d(32, 32, kernel_size=3, stride=1, padding=0))
-#         self.batch_norm_1  = nn.BatchNorm2d(32)
+#         self.conv_1  = ToroidalConv2d(nn.Conv2d(NUM_GENERATOR_FEATURES, NUM_GENERATOR_FEATURES, kernel_size=3, stride=1, padding=0))
+#         self.batch_norm_1  = nn.BatchNorm2d(NUM_GENERATOR_FEATURES)
 
-#         self.out_conv = nn.Conv2d(32, NUM_CHANNELS_GRID, kernel_size=1, stride=1, padding=0)
+#         self.out_conv = nn.Conv2d(NUM_GENERATOR_FEATURES, NUM_CHANNELS_GRID, kernel_size=1, stride=1, padding=0)
 
 #         self.relu = nn.ReLU()
 
@@ -188,7 +188,7 @@ class Gen(nn.Module):
 
 #         self.num_hidden = num_hidden
 
-#         self.startBlock = ToroidalConv2d(nn.Conv2d(NUM_CHANNELS_GRID, 32, kernel_size=3, stride=1, padding=0))
+#         self.startBlock = ToroidalConv2d(nn.Conv2d(NUM_CHANNELS_GRID, NUM_GENERATOR_FEATURES, kernel_size=3, stride=1, padding=0))
 
 #         self.backBone = nn.Sequential(
 #             ToroidalConv2d(nn.Conv2d(num_hidden, num_hidden, kernel_size=3, stride=1, padding=0)),
@@ -204,7 +204,7 @@ class Gen(nn.Module):
 #             nn.BatchNorm2d(num_hidden),
 #             nn.ReLU())
 
-#         self.out_conv = nn.Conv2d(32, NUM_CHANNELS_GRID, kernel_size=1, stride=1, padding=0)
+#         self.out_conv = nn.Conv2d(NUM_GENERATOR_FEATURES, NUM_CHANNELS_GRID, kernel_size=1, stride=1, padding=0)
 
 #     def forward(self, x):
 
