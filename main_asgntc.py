@@ -16,7 +16,7 @@ from configs.paths     import CONFIG_DIR, OUTPUTS_DIR, TRAINED_MODELS_DIR
 
 from src.gol_adv_sys.training_adv import TrainingAdversarial
 from src.common.predictor         import Predictor_Baseline, Predictor_ResNet, Predictor_UNet
-from src.common.generator         import Generator_DCGAN, Generator_Gen
+from src.common.generator         import Generator_DCGAN, Generator_Gen, Generator_Baseline
 from src.gol_adv_sys.utils.eval   import get_generator_eval_stats
 from src.common.utils.helpers     import export_figures_to_pdf
 
@@ -61,8 +61,8 @@ def evaluate_generator():
 
 def train_adversarial():
 
-    train_adv = TrainingAdversarial(model_p=Predictor_ResNet(TOPOLOGY_TOROIDAL, 2, 32),
-                                    model_g=Generator_Gen(TOPOLOGY_TOROIDAL, 32))
+    train_adv = TrainingAdversarial(model_p=Predictor_Baseline(TOPOLOGY_TOROIDAL),
+                                    model_g=Generator_Baseline(TOPOLOGY_TOROIDAL))
 
     train_adv.run()
 

@@ -15,6 +15,13 @@ def Generator_DCGAN():
     return model
 
 
+def Generator_Baseline(topology):
+    model = Gen(topology, 32)
+    logging.debug(model)
+
+    return model
+
+
 def Generator_Gen(topology, num_hidden):
     model = Gen(topology, num_hidden)
     logging.debug(model)

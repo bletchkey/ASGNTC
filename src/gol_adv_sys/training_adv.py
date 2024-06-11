@@ -36,14 +36,18 @@ from src.common.model_manager  import ModelManager
 
 from src.common.utils.losses   import WeightedMSELoss, AdversarialGoLLoss
 
-from src.common.utils.helpers  import get_elapsed_time_str, get_latest_checkpoint_path
+from src.common.utils.scores               import prediction_score
+from src.common.utils.simulation_functions import simulate_config
+from src.common.utils.helpers              import get_elapsed_time_str, get_latest_checkpoint_path
 
 from src.gol_adv_sys.utils.helpers import generate_new_batches, \
                                           generate_new_training_batches, \
                                           test_models, \
                                           save_progress_plot, get_config_from_batch,\
+                                          save_progress_graph, \
                                           get_config_from_training_batch, \
-                                          get_dirichlet_input_noise
+                                          get_dirichlet_input_noise,\
+                                          get_initial_config
 
 
 class TrainingAdversarial(TrainingBase):
@@ -83,7 +87,7 @@ class TrainingAdversarial(TrainingBase):
 
         self.device_manager = DeviceManager()
 
-        self.config_type_pred_target  = CONFIG_TARGET_EASY
+        self.config_type_pred_target  = CONFIG_TARGET_MEDIUM
         self.init_config_initial_type = INIT_CONFIG_INITIAL_SIGN
 
         self.n_times_trained_p = 0
@@ -120,11 +124,19 @@ class TrainingAdversarial(TrainingBase):
                                       type= GENERATOR,
                                       device=self.device_manager.primary_device)
 
+        self.p_num_epochs     = 5
         self.train_dataloader = None
 
         self.fixed_input_noise = get_dirichlet_input_noise(ADV_BATCH_SIZE, device=self.generator.device)
 
         self.properties_g  = {"enabled": True, "can_train": True}
+
+        self.progress_stats ={"n_cells_initial"  : [],
+                              "n_cells_final"    : [],
+                              "period"           : [],
+                              "transient_phase"  : [],
+                              "prediction_score" : []}
+
         self.path_log_file = self.__init_log_file()
 
 
@@ -148,7 +160,11 @@ class TrainingAdversarial(TrainingBase):
 
         """
 
+        self.__update_dataloader()
         self.__warmup_predictor()
+
+        # Empty the dataloader
+        self.train_dataloader = None
 
         for iteration in range(NUM_ITERATIONS):
 
@@ -172,7 +188,7 @@ class TrainingAdversarial(TrainingBase):
 
                 step_start_time = time.time()
 
-                self.__train_predictor()
+                self.__train_predictor(self.p_num_epochs)
 
                 if self.properties_g["enabled"] and self.properties_g["can_train"]:
                     self.__train_generator()
@@ -191,6 +207,7 @@ class TrainingAdversarial(TrainingBase):
             data = self.__test_iteration_progress(predictor_device=self.predictor.device,
                                                   generator_device=self.generator.device)
             self.__save_progress_plot(data)
+            self.__save_progress_graph()
             self.__save_models()
 
             self.device_manager.clear_resources()
@@ -209,27 +226,54 @@ class TrainingAdversarial(TrainingBase):
 
         """
 
-        generated, target = self.__get_new_training_batches(NUM_BATCHES, device=self.generator.device)
+        chunk     = 64
+        times     = NUM_BATCHES // chunk
+        remaining = NUM_BATCHES % chunk
 
-        # Move tensors to CPU and detach
-        generated_cpu = generated.detach().to("cpu")
-        target_cpu = target.detach().to("cpu")
+        # Placeholder for concatenated datasets
+        new_datasets = []
 
-        # Clear GPU memory
-        del generated, target
-        torch.cuda.empty_cache()
-        gc.collect()
+        # Generate configurations in chunks
+        for _ in range(times):
+            generated, target = self.__get_new_training_batches(chunk, device=self.generator.device)
 
+            generated_cpu = generated.detach().cpu()
+            target_cpu    = target.detach().cpu()
+
+            new_datasets.append(TensorDataset(generated_cpu, target_cpu))
+
+            # Clear GPU memory
+            del generated, target
+            torch.cuda.empty_cache()
+            gc.collect()
+
+        # Handle remaining batches
+        if remaining > 0:
+            generated, target = self.__get_new_training_batches(remaining, device=self.generator.device)
+
+            generated_cpu = generated.detach().cpu()
+            target_cpu    = target.detach().cpu()
+
+            new_datasets.append(TensorDataset(generated_cpu, target_cpu))
+
+            # Clear GPU memory
+            del generated, target
+            torch.cuda.empty_cache()
+            gc.collect()
+
+        # Create or update dataloader
         if self.train_dataloader is None:
-            self.train_dataloader = DataLoader(TensorDataset(generated_cpu, target_cpu), batch_size=ADV_BATCH_SIZE, shuffle=True)
+            combined_dataset      = ConcatDataset(new_datasets)
+            self.train_dataloader = DataLoader(combined_dataset, batch_size=ADV_BATCH_SIZE, shuffle=True)
         else:
-            new_dataset = TensorDataset(generated_cpu, target_cpu)
-            combined_dataset = ConcatDataset([self.train_dataloader.dataset, new_dataset])
+            # Combine new datasets with the existing dataset
+            combined_dataset = ConcatDataset([self.train_dataloader.dataset] + new_datasets)
 
             total_batches = len(combined_dataset) // ADV_BATCH_SIZE
             if total_batches > NUM_MAX_BATCHES:
+                # Trim excess batches
                 excess_batches = total_batches - NUM_MAX_BATCHES
-                start_idx = excess_batches * ADV_BATCH_SIZE
+                start_idx      = excess_batches * ADV_BATCH_SIZE
                 trimmed_dataset = Subset(combined_dataset, range(start_idx, len(combined_dataset)))
 
                 self.train_dataloader = DataLoader(trimmed_dataset, batch_size=ADV_BATCH_SIZE, shuffle=True)
@@ -239,6 +283,8 @@ class TrainingAdversarial(TrainingBase):
         # Additional garbage collection
         gc.collect()
 
+        logging.debug(f"Updated dataloader with {NUM_BATCHES} new configurations")
+
 
     def __warmup_predictor(self) -> None:
 
@@ -246,13 +292,10 @@ class TrainingAdversarial(TrainingBase):
 
         self.predictor.model.train()
 
-        generated, target = self.__get_new_training_batches(NUM_BATCHES, device=self.generator.device)
-        dataset           = TensorDataset(generated, target)
-        dataloader_warmup = DataLoader(dataset, batch_size=ADV_BATCH_SIZE, shuffle=True)
 
-        warmup_values = np.linspace(WARMUP_INITIAL_LR, WARMUP_TARGET_LR, len(dataloader_warmup))
+        warmup_values = np.linspace(WARMUP_INITIAL_LR, WARMUP_TARGET_LR, len(self.train_dataloader))
 
-        for batch_count, (generated, target) in enumerate(dataloader_warmup, start=1):
+        for batch_count, (generated, target) in enumerate(self.train_dataloader, start=1):
 
             self.predictor.set_learning_rate(warmup_values[batch_count-1])
 
@@ -269,7 +312,7 @@ class TrainingAdversarial(TrainingBase):
         logging.debug(f"Warmup phase => ended")
 
 
-    def __train_predictor(self, num_epochs: int=5) -> float:
+    def __train_predictor(self, num_epochs: int) -> float:
         """
         Function for training the predictor model.
 
@@ -326,6 +369,8 @@ class TrainingAdversarial(TrainingBase):
         logging.debug(f"Training generator")
         self.generator.model.train()
 
+        # TODO: Check the right amount of batches to train the generator
+        # n = len(self.train_dataloader) * self.p_num_epochs
         n = len(self.train_dataloader)
         for batch_count in range(1, n+1):
 
@@ -528,6 +573,48 @@ class TrainingAdversarial(TrainingBase):
         """
 
         save_progress_plot(data, self.current_iteration, self.folders.results_folder)
+
+
+    def __save_progress_graph(self) -> None:
+        """
+        Function for showing the progress graph.
+        It shows the average number of cells in the initial and final configurations, the period and the transient phase
+        of the simulated configurations and the prediction score.
+
+        """
+
+        # Test the models on the fixed noise
+        with torch.no_grad():
+            self.generator.model.eval()
+            self.predictor.model.eval()
+
+            generated_config, target = self.__get_new_training_batches(1, self.generator.device)
+
+            initial_config   = get_initial_config(generated_config, self.init_config_initial_type)
+            predicted_config = self.predictor.model(generated_config.detach().to(self.predictor.device))
+
+            sim_results = simulate_config(config=initial_config,
+                                          topology=self.simulation_topology,
+                                          steps=NUM_SIM_STEPS,
+                                          device=self.generator.device)
+
+            p_score = prediction_score(predicted_config, target)
+
+            print(sim_results)
+
+            # get avgs
+            n_intial_cells = sim_results["n_cells_initial"].float().mean().item()
+            n_final_cells  = sim_results["n_cells_final"].float().mean().item()
+            period         = sim_results["period"].float().mean().item()
+            transient_phase= sim_results["transient_phase"].float().mean().item()
+
+            self.progress_stats["n_cells_initial"].append(n_intial_cells)
+            self.progress_stats["n_cells_final"].append(n_final_cells)
+            self.progress_stats["period"].append(period)
+            self.progress_stats["transient_phase"].append(transient_phase)
+            self.progress_stats["prediction_score"].append(p_score)
+
+            save_progress_graph(self.progress_stats, self.folders.base_folder)
 
 
     def __save_models(self) -> None:
