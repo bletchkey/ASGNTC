@@ -44,6 +44,7 @@ class BinaryGenerator(nn.Module):
         super(BinaryGenerator, self).__init__()
 
         self.temperature = temperature
+        self.num_hidden  = num_hidden
         self.topology    = topology
 
         self.conv1  = nn.Sequential(
@@ -90,7 +91,4 @@ class BinaryGenerator(nn.Module):
         str_network += f"{self.topology}"
 
         return str_network
-
-    def __repr__(self):
-        return (f"BinaryGenerator")
 

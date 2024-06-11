@@ -87,6 +87,3 @@ class Gen(nn.Module):
 
         return str_network
 
-    def __repr__(self):
-        return (f"Gen")
-
