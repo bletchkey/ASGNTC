@@ -186,47 +186,48 @@ def save_progress_graph(stats: dict,
     """
 
     # Extract stats
-    n_cells_initial = stats["n_cells_initial"]
-    n_cells_final = stats["n_cells_final"]
+    n_cells_initial  = stats["n_cells_initial"]
+    n_cells_final    = stats["n_cells_final"]
     prediction_score = stats["prediction_score"]
-    period = stats["period"]
-    transient_phase = stats["transient_phase"]
+    period           = stats["period"]
+    transient_phase  = stats["transient_phase"]
+    iterations       = stats["iterations"]
 
     # Create a figure with 2x2 subplots
-    fig, axs = plt.subplots(2, 2, figsize=(16, 10))
+    fig, axs = plt.subplots(2, 2, figsize=(8, 8))
 
     # Plot the number of cells initial and final
-    axs[0, 0].plot(n_cells_initial, label="Initial Cells", color="#366926", linestyle=":", marker="x", linewidth=0.8)
-    axs[0, 0].plot(n_cells_final, label="Final Cells", color="#821631", linestyle=":", marker="x")
-    axs[0, 0].set_title("Number of cells in the initial and final configurations", fontsize=14, fontweight='bold')
+    axs[0, 0].plot(iterations, n_cells_initial, label="Initial configuration", color="#366926", linestyle=":", marker="x", linewidth=1.5)
+    axs[0, 0].plot(iterations, n_cells_final, label="Final configuration", color="#821631", linestyle=":", marker="x", linewidth=1.5)
+    axs[0, 0].set_title("Number of cells", fontsize=14, fontweight='bold')
     axs[0, 0].set_xlabel("Iterations", fontsize=12)
     axs[0, 0].set_ylabel("Number of Cells", fontsize=12)
-    axs[0, 0].legend(loc='upper right')
+    axs[0, 0].legend(loc='upper left')
     axs[0, 0].grid(True)
 
     # Plot the prediction score
-    axs[0, 1].plot(prediction_score, label="Prediction Score", color="#385BA8", linestyle=":", marker="x")
+    axs[0, 1].plot(iterations, prediction_score, label="Prediction Score", color="#385BA8", linestyle=":", marker="x", linewidth=1.5)
     axs[0, 1].set_title("Prediction Scores", fontsize=14, fontweight='bold')
     axs[0, 1].set_xlabel("Iterations", fontsize=12)
-    axs[0, 1].set_ylabel("Score", fontsize=12)
+    axs[0, 1].set_ylabel("Score (%)", fontsize=12)
     axs[0, 1].set_ylim([0, 100])
-    axs[0, 1].legend(loc='upper right')
+    axs[0, 1].legend(loc='upper left')
     axs[0, 1].grid(True)
 
     # Plot the period
-    axs[1, 0].plot(period, label="Period", color="#512275", linestyle=":", marker="x")
+    axs[1, 0].plot(iterations, period, label="Period", color="#512275", linestyle=":", marker="x", linewidth=1.5)
     axs[1, 0].set_title("Periods", fontsize=14, fontweight='bold')
     axs[1, 0].set_xlabel("Iterations", fontsize=12)
     axs[1, 0].set_ylabel("Period Length", fontsize=12)
-    axs[1, 0].legend(loc='upper right')
+    axs[1, 0].legend(loc='upper left')
     axs[1, 0].grid(True)
 
     # Plot the transient phase
-    axs[1, 1].plot(transient_phase, label="Transient Phase", color="#ad6d2d", linestyle=":", marker="x")
+    axs[1, 1].plot(iterations, transient_phase, label="Transient Phase", color="#ad6d2d", linestyle=":", marker="x", linewidth=1.5)
     axs[1, 1].set_title("Transient Phases", fontsize=14, fontweight='bold')
     axs[1, 1].set_xlabel("Iterations", fontsize=12)
     axs[1, 1].set_ylabel("Transient Phase Length", fontsize=12)
-    axs[1, 1].legend(loc='upper right')
+    axs[1, 1].legend(loc='upper left')
     axs[1, 1].grid(True)
 
     # Adjust layout

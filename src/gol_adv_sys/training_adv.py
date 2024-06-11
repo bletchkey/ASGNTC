@@ -135,7 +135,8 @@ class TrainingAdversarial(TrainingBase):
                               "n_cells_final"    : [],
                               "period"           : [],
                               "transient_phase"  : [],
-                              "prediction_score" : []}
+                              "prediction_score" : [],
+                              "iterations"       : []}
 
         self.path_log_file = self.__init_log_file()
 
@@ -600,8 +601,6 @@ class TrainingAdversarial(TrainingBase):
 
             p_score = prediction_score(predicted_config, target)
 
-            print(sim_results)
-
             # get avgs
             n_intial_cells = sim_results["n_cells_initial"].float().mean().item()
             n_final_cells  = sim_results["n_cells_final"].float().mean().item()
@@ -613,6 +612,7 @@ class TrainingAdversarial(TrainingBase):
             self.progress_stats["period"].append(period)
             self.progress_stats["transient_phase"].append(transient_phase)
             self.progress_stats["prediction_score"].append(p_score*100)
+            self.progress_stats["iterations"].append(self.current_iteration+1)
 
             save_progress_graph(self.progress_stats, self.folders.base_folder)
 
