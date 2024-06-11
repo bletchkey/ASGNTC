@@ -781,30 +781,32 @@ class TrainingAdversarial(TrainingBase):
         balanced_gpu_info = (f"Number of balanced GPU: {self.device_manager.n_balanced_gpus}\n"
                              if self.device_manager.balanced_gpu_indices else "No balanced GPUs available")
 
-        topology_info = ("Topology           : TOROIDAL" if self.simulation_topology == TOPOLOGY_TOROIDAL else
-                         "Topology           : FLAT" if self.simulation_topology == TOPOLOGY_FLAT else
-                         "Topology           : unknown")
+        topology_info = ("Topology              : TOROIDAL" if self.simulation_topology == TOPOLOGY_TOROIDAL else
+                         "Topology              : FLAT" if self.simulation_topology == TOPOLOGY_FLAT else
+                         "Topology              : UNKNOWN")
 
         generator_info = ""
         if self.properties_g["enabled"]:
             generator_info += (f"Optimizer G: {self.generator.optimizer.__class__.__name__}\n"
                                f"Criterion G: {self.generator.criterion.__class__.__name__}\n"
+                               f"Name G     : {self.generator.model.name()}\n"
                                f"Device G   : {self.generator.device}")
 
         predictor_info = (f"Optimizer P: {self.predictor.optimizer.__class__.__name__}\n"
                           f"Criterion P: {self.predictor.criterion.__class__.__name__}\n"
+                          f"Name P     : {self.predictor.model.name()}\n"
                           f"Device P   : {self.predictor.device}")
 
 
         init_config_initial_type_info = ""
         if self.init_config_initial_type == INIT_CONFIG_INTIAL_THRESHOLD:
-            init_config_initial_type_info = "Initial config type: THRESHOLD"
+            init_config_initial_type_info = "Initialization initial: THRESHOLD"
         elif self.init_config_initial_type == INIT_CONFIG_INITIAL_SIGN:
-            init_config_initial_type_info = "Initial config type: SIGN"
+            init_config_initial_type_info = "Initialization initial: SIGN"
         elif self.init_config_initial_type == INIT_CONFIG_INITAL_N_CELLS:
-            init_config_initial_type_info = "Initial config type: N_CELLS"
+            init_config_initial_type_info = "Initialization initial: N_CELLS"
         else:
-            init_config_initial_type_info = "Initial config type: unknown"
+            init_config_initial_type_info = "Initialization initial: UNKNOWN"
 
         log_contents = (
             f"Training session started at {self.__date.strftime('%d/%m/%Y %H:%M:%S')}\n"
@@ -818,11 +820,11 @@ class TrainingAdversarial(TrainingBase):
             f"Number of batches generated in each iteration: {NUM_BATCHES} ({NUM_CONFIGS} configs)\n"
             f"Max number of generated batches in dataset   : {NUM_MAX_BATCHES} ({NUM_MAX_CONFIGS} configs)\n"
             f"\n----------SIMULATION----------\n"
-            f"Grid size          : {GRID_SIZE}\n"
-            f"Simulation steps   : {NUM_SIM_STEPS}\n"
+            f"Grid size             : {GRID_SIZE}\n"
             f"{topology_info}\n"
+            f"Simulation steps      : {NUM_SIM_STEPS}\n"
             f"{init_config_initial_type_info}\n"
-            f"Target             : {self.config_type_pred_target.upper()}\n"
+            f"Target                : {self.config_type_pred_target.upper()}\n"
             f"\n-----------PREDICTOR----------\n"
             f"{predictor_info}\n"
             f"\n-----------GENERATOR----------\n"
