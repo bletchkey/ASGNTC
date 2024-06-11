@@ -25,7 +25,7 @@ DATASET_NAME = "gol_dataset"
 ### SIMULATION PARAMETERS ###############################################################
 
 # Size of the grid
-GRID_SIZE = 16
+GRID_SIZE = 20
 
 # Max number of steps to run the simulation
 NUM_MAX_SIM_STEPS = 1000
@@ -48,10 +48,10 @@ TARGET_HARD_HALF_STEP   = 100
 NUM_ITERATIONS = 200
 
 # Number of steps for training with a certain dataset in an epoch
-NUM_TRAINING_STEPS = 5
+NUM_TRAINING_STEPS = 4
 
 # Batch size during training
-ADV_BATCH_SIZE = 64
+ADV_BATCH_SIZE = 128
 
 # Number of batches to generate at each epoch
 NUM_BATCHES = 64
@@ -73,7 +73,7 @@ NUM_CONFIGS_GEN_EVAL = 8192
 NUM_BATCHES_GEN_EVAL = NUM_CONFIGS_GEN_EVAL // ADV_BATCH_SIZE
 
 # Dirichlet alpha parameter - used for the Dirichlet distribution to generate the input for G
-DIRICHLET_ALPHA = 0.5
+DIRICHLET_ALPHA = 0.3
 
 # Number of steps to run the simulation for the generated configurations
 NUM_SIM_STEPS = 1000
