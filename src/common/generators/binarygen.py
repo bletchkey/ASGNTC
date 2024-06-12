@@ -71,6 +71,15 @@ class BinaryGenerator(nn.Module):
             )
         )
 
+        self._initialize_weights()
+
+    def _initialize_weights(self):
+        for m in self.modules():
+            if isinstance(m, nn.Conv2d):
+                nn.init.xavier_uniform_(m.weight)
+                if m.bias is not None:
+                    nn.init.constant_(m.bias, -0.1)  # Slight negative bias to discourage ones
+
     def forward(self, x):
         batch_size = x.size(0)
         x = F.relu(self.conv1(x))

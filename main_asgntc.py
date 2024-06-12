@@ -61,9 +61,12 @@ def evaluate_generator():
 
 def train_adversarial():
 
-    train_adv = TrainingAdversarial(model_p=Predictor_Baseline(TOPOLOGY_TOROIDAL),
-                                    model_g=Generator_Binary(TOPOLOGY_TOROIDAL,
-                                                             NUM_GENERATOR_FEATURES),
+    train_adv = TrainingAdversarial(model_p=Predictor_ResNet(topology=TOPOLOGY_TOROIDAL,
+                                                             num_resBlocks=4,
+                                                             num_hidden=NUM_PREDICTOR_FEATURES),
+
+                                    model_g=Generator_Binary(topology=TOPOLOGY_TOROIDAL,
+                                                            num_hidden=NUM_GENERATOR_FEATURES),
                                     target=CONFIG_TARGET_MEDIUM)
 
 

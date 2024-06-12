@@ -141,7 +141,7 @@ def save_progress_plot(plot_data: dict, iteration: int, results_path: str) -> No
                 axs[i, j].axis('off')
 
             elif key == "noise":
-                axs[i, j].set_title(titles[j] + f" - Dirchlet alpha: {DIRICHLET_ALPHA}", fontsize=12, fontweight='bold')
+                axs[i, j].set_title(titles[j] + f" - Dirichlet alpha: {DIRICHLET_ALPHA}", fontsize=12, fontweight='bold')
             elif key == "initial":
                 axs[i, j].set_title(titles[j] + f" - {plot_data['metadata']['n_cells_initial'][indices[i]].item()} cells", fontsize=12, fontweight='bold')
             elif key == "simulated":
@@ -197,36 +197,37 @@ def save_progress_graph(stats: dict,
     fig, axs = plt.subplots(2, 2, figsize=(8, 8))
 
     # Plot the number of cells initial and final
-    axs[0, 0].plot(iterations, n_cells_initial, label="Initial configuration", color="#366926", linestyle=":", marker="x", linewidth=1.5)
-    axs[0, 0].plot(iterations, n_cells_final, label="Final configuration", color="#821631", linestyle=":", marker="x", linewidth=1.5)
-    axs[0, 0].set_title("Number of cells", fontsize=14, fontweight='bold')
-    axs[0, 0].set_xlabel("Iterations", fontsize=12)
-    axs[0, 0].set_ylabel("Number of Cells", fontsize=12)
+    axs[0, 0].plot(iterations, n_cells_initial, label="Initial config", color="#366926", linestyle=":", marker="x", linewidth=1.5)
+    axs[0, 0].plot(iterations, n_cells_final, label="Final config", color="#821631", linestyle=":", marker="x", linewidth=1.5)
+    axs[0, 0].set_title("Number of cells", fontsize=12, fontweight='bold')
+    axs[0, 0].set_xlabel("iterations", fontsize=10)
+    axs[0, 0].set_ylabel("number of cells", fontsize=10)
     axs[0, 0].legend(loc='upper left')
     axs[0, 0].grid(True)
 
     # Plot the prediction score
-    axs[0, 1].plot(iterations, prediction_score, label="Prediction Score", color="#385BA8", linestyle=":", marker="x", linewidth=1.5)
-    axs[0, 1].set_title("Prediction Scores", fontsize=14, fontweight='bold')
-    axs[0, 1].set_xlabel("Iterations", fontsize=12)
-    axs[0, 1].set_ylabel("Score (%)", fontsize=12)
+    axs[0, 1].plot(iterations, prediction_score, label="Prediction score", color="#385BA8", linestyle=":", marker="x", linewidth=1.5)
+    axs[0, 1].set_title("Prediction scores", fontsize=12, fontweight='bold')
+    axs[0, 1].set_xlabel("iterations", fontsize=10)
+    axs[0, 1].set_ylabel("score (%)", fontsize=10)
     axs[0, 1].set_ylim([0, 100])
+    axs[0, 1].margins(y=0.05)
     axs[0, 1].legend(loc='upper left')
     axs[0, 1].grid(True)
 
     # Plot the period
     axs[1, 0].plot(iterations, period, label="Period", color="#512275", linestyle=":", marker="x", linewidth=1.5)
-    axs[1, 0].set_title("Periods", fontsize=14, fontweight='bold')
-    axs[1, 0].set_xlabel("Iterations", fontsize=12)
-    axs[1, 0].set_ylabel("Period Length", fontsize=12)
+    axs[1, 0].set_title("Periods", fontsize=12, fontweight='bold')
+    axs[1, 0].set_xlabel("iterations", fontsize=10)
+    axs[1, 0].set_ylabel("period length", fontsize=10)
     axs[1, 0].legend(loc='upper left')
     axs[1, 0].grid(True)
 
     # Plot the transient phase
-    axs[1, 1].plot(iterations, transient_phase, label="Transient Phase", color="#ad6d2d", linestyle=":", marker="x", linewidth=1.5)
-    axs[1, 1].set_title("Transient Phases", fontsize=14, fontweight='bold')
-    axs[1, 1].set_xlabel("Iterations", fontsize=12)
-    axs[1, 1].set_ylabel("Transient Phase Length", fontsize=12)
+    axs[1, 1].plot(iterations, transient_phase, label="Transient phase", color="#ad6d2d", linestyle=":", marker="x", linewidth=1.5)
+    axs[1, 1].set_title("Transient phases", fontsize=12, fontweight='bold')
+    axs[1, 1].set_xlabel("iterations", fontsize=10)
+    axs[1, 1].set_ylabel("transient phase length", fontsize=10)
     axs[1, 1].legend(loc='upper left')
     axs[1, 1].grid(True)
 

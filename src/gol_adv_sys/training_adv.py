@@ -391,8 +391,8 @@ class TrainingAdversarial(TrainingBase):
         self.generator.model.train()
 
         # TODO: Check the right amount of batches to train the generator
-        # n = len(self.train_dataloader) * self.p_num_epochs
-        n = len(self.train_dataloader)
+        n = len(self.train_dataloader) * self.p_num_epochs
+        # n = len(self.train_dataloader)
         for batch_count in range(1, n+1):
 
             self.generator.optimizer.zero_grad()
