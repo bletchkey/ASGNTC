@@ -99,47 +99,6 @@ def simulate_heart():
     plot_configs(results_flat, "flat")
 
 
-def playground():
-
-    # init_config = torch.zeros(1, 1, 32, 32, dtype=torch.float32)
-    # n_init_cells = 512
-    # indices = torch.randperm(32*32)[:n_init_cells]
-    # rows, cols = indices // 32, indices % 32
-    # init_config[0, 0, rows, cols] = 1
-
-    # pg = Playground()
-    # dataset_manager = DatasetManager()
-
-    # results = pg.simulate(init_config, steps=10)
-
-    # print(f"Stable min: {results[CONFIG_TARGET_STABLE].min()}")
-    # print(f"Stable max: {results[CONFIG_TARGET_STABLE].max()}")
-
-    # data = dataset_manager.get_record_from_id(200000)
-    # pg.plot_record_db(data)
-
-    pg = Playground()
-
-    # inital_config = pg.ulam_spiral(GRID_SIZE)
-    # inital_config = inital_config.unsqueeze(0).unsqueeze(0)
-    # results       = pg.simulate(inital_config, steps=1, topology=TOPOLOGY_TOROIDAL)
-    # pg.plot_record_sim(results)
-
-    config, prob = pg.generate_gambler(4)
-
-    for c in config:
-        print(c)
-        print(torch.argmax(c.view(-1)))
-        print(torch.sum(c.view(-1)))
-
-    print(f"Prob: {prob}")
-
-
-    config, prob = pg.generate_gambler(ADV_BATCH_SIZE)
-    results      = pg.simulate(config, steps=20, topology=TOPOLOGY_TOROIDAL)
-    pg.plot_record_sim(results)
-
-
 def simulate_configs():
 
     pg = Playground()
