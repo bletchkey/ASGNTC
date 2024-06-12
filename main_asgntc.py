@@ -15,7 +15,10 @@ from configs.constants import *
 from configs.paths     import CONFIG_DIR, OUTPUTS_DIR, TRAINED_MODELS_DIR
 
 from src.gol_adv_sys.training_adv import TrainingAdversarial
-from src.common.predictor         import Predictor_Baseline, Predictor_ResNet, Predictor_UNet
+
+from src.common.predictor         import Predictor_Baseline, Predictor_ResNet,\
+                                         Predictor_UNet, Predictor_LifeMotion
+
 from src.common.generator         import Generator_Gen, Generator_Baseline, Generator_Binary
 from src.gol_adv_sys.utils.eval   import get_generator_eval_stats
 from src.common.utils.helpers     import export_figures_to_pdf
@@ -61,20 +64,25 @@ def evaluate_generator():
 
 def train_adversarial():
 
-    train_adv = TrainingAdversarial(model_p=Predictor_ResNet(topology=TOPOLOGY_TOROIDAL,
-                                                             num_resBlocks=4,
-                                                             num_hidden=NUM_PREDICTOR_FEATURES),
-
-                                    model_g=Generator_Binary(topology=TOPOLOGY_TOROIDAL,
-                                                            num_hidden=NUM_GENERATOR_FEATURES),
-                                    target=CONFIG_TARGET_MEDIUM)
-
-
-    # train_adv = TrainingAdversarial(model_p=Predictor_ResNet(TOPOLOGY_TOROIDAL,
+    # train_adv = TrainingAdversarial(model_p=Predictor_ResNet(topology=TOPOLOGY_TOROIDAL,
     #                                                          num_resBlocks=4,
     #                                                          num_hidden=NUM_PREDICTOR_FEATURES),
-    #                                 model_g=Generator_Gen(TOPOLOGY_TOROIDAL,
-    #                                                       NUM_GENERATOR_FEATURES),
+
+    #                                 model_g=Generator_Binary(topology=TOPOLOGY_TOROIDAL,
+    #                                                         num_hidden=NUM_GENERATOR_FEATURES),
+    #                                 target=CONFIG_TARGET_MEDIUM)
+
+
+    train_adv = TrainingAdversarial(model_p=Predictor_Baseline(topology=TOPOLOGY_TOROIDAL),
+                                    model_g=Generator_Binary(topology=TOPOLOGY_TOROIDAL,
+                                                             num_hidden=NUM_GENERATOR_FEATURES),
+                                    target=CONFIG_TARGET_STABLE)
+
+
+    # train_adv = TrainingAdversarial(model_p=Predictor_LifeMotion(topology=TOPOLOGY_TOROIDAL,
+    #                                                              num_hidden=NUM_PREDICTOR_FEATURES),
+    #                                 model_g=Generator_Binary(topology=TOPOLOGY_TOROIDAL,
+    #                                                         num_hidden=NUM_GENERATOR_FEATURES),
     #                                 target=CONFIG_TARGET_MEDIUM)
 
 

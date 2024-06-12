@@ -443,7 +443,7 @@ def generate_new_training_batches(model_g: torch.nn.Module,
 
         with torch.no_grad():
             initial_config = get_initial_config(generated_config, init_config_initial_type)
-            target         = adv_training_simulate_config(config=initial_config,
+            target = adv_training_simulate_config(config=initial_config,
                                                           topology=topology,
                                                           steps=NUM_SIM_STEPS,
                                                           target_type=target_type,

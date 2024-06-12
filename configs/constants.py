@@ -25,7 +25,7 @@ DATASET_NAME = "gol_dataset"
 ### SIMULATION PARAMETERS ###############################################################
 
 # Size of the grid
-GRID_SIZE = 64
+GRID_SIZE = 32
 
 # Max number of steps to run the simulation
 NUM_MAX_SIM_STEPS = 1000
@@ -51,7 +51,7 @@ NUM_ITERATIONS = 200
 NUM_TRAINING_STEPS = 4
 
 # Batch size during training
-ADV_BATCH_SIZE = 64
+ADV_BATCH_SIZE = 128
 
 # Number of batches to generate at each epoch
 NUM_BATCHES = 128

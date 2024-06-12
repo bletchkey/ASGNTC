@@ -78,6 +78,7 @@ def adv_training_simulate_config(config: torch.Tensor,
                                                                                              _simulation_function,
                                                                                              kernel,
                                                                                              device)
+        return stable_config
     else:
         # Simulate the configuration for the given number of steps
         sim_configs = []
@@ -87,7 +88,7 @@ def adv_training_simulate_config(config: torch.Tensor,
 
         target = __calculate_specific_target(sim_configs, target_type, device)
 
-    return target if target_type != CONFIG_TARGET_STABLE else stable_config
+    return target
 
 
 def simulate_config(config: torch.Tensor, topology: str, steps: int,

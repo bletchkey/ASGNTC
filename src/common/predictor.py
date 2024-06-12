@@ -5,7 +5,7 @@ from torch import nn
 from configs.constants import *
 from src.common.predictors.unet             import UNet
 from src.common.predictors.resnet           import ResNet
-from src.common.predictors.convlstm         import ConvLSTMPred
+from src.common.predictors.spatiotemporal   import SpatioTemporal
 
 
 def Predictor_Baseline(topology):
@@ -31,8 +31,18 @@ def Predictor_UNet():
     return model
 
 
-def Predictor_ConvLSTM(topology, num_hidden):
-    model = ConvLSTMPred(topology, num_hidden)
+def Predictor_LifeMotion(topology, num_hidden):
+
+    num_input  = NUM_CHANNELS_GRID
+    num_layers = 2
+    framesteps = 10
+
+    model = SpatioTemporal(topology,
+                           num_input,
+                           num_hidden,
+                           num_layers,
+                           framesteps)
     logging.debug(model)
 
     return model
+

@@ -65,11 +65,13 @@ class BinaryGenerator(nn.Module):
 
         self.conv3  = nn.Sequential(
             *(
-                [ToroidalConv2d(nn.Conv2d(num_hidden, 2, kernel_size=3, stride=1, padding=0))]
+                [ToroidalConv2d(nn.Conv2d(num_hidden, num_hidden, kernel_size=3, stride=1, padding=0))]
                 if self.topology == TOPOLOGY_TOROIDAL
-                else [nn.Conv2d(num_hidden, 2, kernel_size=3, stride=1, padding=1)]
+                else [nn.Conv2d(num_hidden, num_hidden, kernel_size=3, stride=1, padding=1)]
             )
         )
+
+        self.conv4 = nn.Conv2d(num_hidden, 2, kernel_size=1, stride=1, padding=0)
 
         self._initialize_weights()
 
@@ -84,7 +86,8 @@ class BinaryGenerator(nn.Module):
         batch_size = x.size(0)
         x = F.relu(self.conv1(x))
         x = F.relu(self.conv2(x))
-        logits = self.conv3(x)  # (batch_size, 2, grid_size, grid_size)
+        x = F.relu(self.conv3(x))
+        logits = self.conv4(x)  # (batch_size, 2, grid_size, grid_size)
 
         # Apply Gumbel-Softmax to each grid cell
         logits = logits.permute(0, 2, 3, 1).contiguous()  # (batch_size, grid_size, grid_size, 2)
