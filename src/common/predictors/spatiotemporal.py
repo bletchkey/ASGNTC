@@ -2,8 +2,30 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+
+from src.common.utils.simulation_functions import *
+from src.gol_adv_sys.utils.helpers         import get_initial_config
+
 from src.common.utils.toroidal import ToroidalConv2d
 from configs.constants import *
+
+
+def get_framesteps(generated, n_framesteps, topology, device):
+    """
+    Get the framesteps from the generated initial configuration
+
+    """
+    initial = get_initial_config(generated, INIT_CONFIG_INTIAL_THRESHOLD)
+
+    sim_configs = basic_simulation_config(initial,
+                                          topology,
+                                          n_framesteps,
+                                          device)
+
+    # stack the configurations
+    sim_configs = torch.stack(sim_configs, dim=1)
+
+    return sim_configs
 
 
 class SpatioTemporalLSTMCell(nn.Module):
@@ -83,7 +105,9 @@ class SpatioTemporal(nn.Module):
         self.conv_last     = nn.Conv2d(num_hidden, num_input, kernel_size=3, padding=0)
 
     def forward(self, x):
-        batch_size, steps, channels, height, width = x.size()
+        steps = get_framesteps(x, self.framesteps, self.topology, x.device)
+
+        batch_size, channels, height, width = x.size()
         hidden_states = self.init_hidden(x)
         predictions = []
 

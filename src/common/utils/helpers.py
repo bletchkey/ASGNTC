@@ -98,7 +98,6 @@ def export_figures_to_pdf(pdf_path, figs):
     """
     if not isinstance(figs, list):
         figs = [figs]
-
     try:
         with PdfPages(pdf_path) as pdf:
             for fig in figs:

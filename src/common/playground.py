@@ -7,6 +7,7 @@ import torch
 from matplotlib.gridspec import GridSpec
 from torch.utils.data import ConcatDataset, DataLoader
 from collections import defaultdict
+from matplotlib.patches import Rectangle
 
 from src.common.utils.helpers              import export_figures_to_pdf
 from src.common.utils.simulation_functions import simulate_config, basic_simulation_config
@@ -229,8 +230,10 @@ class Playground():
 
 
     def plot_targets(self, record: dict):
-        fig = plt.figure(figsize=(10, 12))
-        fig.suptitle("Targets", fontsize=18, fontweight='bold')
+        fig = plt.figure(figsize=(12, 16))
+
+        # Create a GridSpec layout
+        gs = GridSpec(5, 2, height_ratios=[1, 0.3 ,1, 1, 0.2])  # Set the height ratios
 
         # Define plot positions and titles
         titles = [
@@ -248,26 +251,40 @@ class Playground():
         imshow_kwargs = {'cmap': 'gray', 'vmin': 0, 'vmax': 1}
 
         # Create subplots for images
-        for i in range(6):
-            ax = plt.subplot2grid((4, 2), (i // 2, i % 2), fig=fig)
+        for i in range(2):
+            ax = fig.add_subplot(gs[i // 2, i % 2])
             img = record[configs[i]].detach().cpu().numpy().squeeze()
             ax.imshow(img, **imshow_kwargs)
-            ax.set_title(titles[i], fontsize=18, fontweight='bold')
+            ax.set_title(titles[i], fontsize=12, fontweight='bold', pad=5)
+            ax.axis('off')
+
+        for i in range(2,6):
+            ax = fig.add_subplot(gs[(i+2) // 2, (i+2) % 2])
+            img = record[configs[i]].detach().cpu().numpy().squeeze()
+            ax.imshow(img, **imshow_kwargs)
+            ax.set_title(titles[i], fontsize=12, fontweight='bold', pad=5)
             ax.axis('off')
 
         # Merge cells for record details
-        ax = plt.subplot2grid((4, 2), (3, 0), colspan=2, fig=fig)
-        ax.text(0.5, 0.3, f"Transient phase: {record[META_TRANSIENT_PHASE]}", ha='center', va='center', fontsize=18, fontweight='bold')
-        ax.text(0.5, 0.1, f"Period: {record[META_PERIOD]}", ha='center', va='center', fontsize=18, fontweight='bold')
+        ax = fig.add_subplot(gs[1, :])
+
+        details_text = (
+            f"Transient phase: {record[META_TRANSIENT_PHASE]}\n"
+            f"Period: {record[META_PERIOD]}"
+        )
+        ax.text(0.5, 0.5, details_text, ha='center', va='center', fontsize=12, fontweight='bold', bbox=dict(facecolor='white', alpha=0.5))
         ax.axis('off')
 
-        plt.subplots_adjust(left=0.05, right=0.95, top=0.9, bottom=0.1, hspace=0.2, wspace=0.1)
+        ax = fig.add_subplot(gs[4, :])
+        ax.axis('off')
+
+        # Adjust space between subplots
+        plt.subplots_adjust(left=0.05, right=0.95, top=0.92, bottom=0.08, hspace=1.0, wspace=0.3)
         plt.tight_layout(pad=0.2)
 
         # Save the figure
         pdf_path = OUTPUTS_DIR / f"targets_{record[META_ID]}.pdf"
-        fig.savefig(pdf_path)
-        plt.close(fig)
+        export_figures_to_pdf(pdf_path, fig)
 
 
     def get_record_from_id(self, id:int) -> dict:

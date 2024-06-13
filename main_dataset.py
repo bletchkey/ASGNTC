@@ -212,7 +212,7 @@ def plot_dataset_stats():
     period_infos          = dataset_manager.get_infos_period_per_n_initial_cells_combined()
 
     tp_avg = transient_phase_infos["avg"]
-    p_avg = period_infos["avg"]
+    p_avg  = period_infos["avg"]
 
     cells_tp      = sorted(tp_avg.keys())
     tp_avg_values = [tp_avg[n] for n in cells_tp]
@@ -226,9 +226,8 @@ def plot_dataset_stats():
     n_tp = len(tp_avg_values)
     n_p  = len(p_avg_values)
 
-    n_tp_ecdf_values = np.arange(1, n_tp+1) / n_tp
-    n_p_ecdf_values  = np.arange(1, n_p+1) / n_p
-
+    n_tp_ecdf_values = (np.arange(1, n_tp+1)-0.5) / n_tp
+    n_p_ecdf_values  = (np.arange(1, n_p+1)-0.5) / n_p
 
     # Create subplots
     fig, axs = plt.subplots(2, 2, figsize=(12, 12))

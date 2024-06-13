@@ -73,10 +73,12 @@ def train_adversarial():
     #                                 target=CONFIG_TARGET_MEDIUM)
 
 
-    train_adv = TrainingAdversarial(model_p=Predictor_Baseline(topology=TOPOLOGY_TOROIDAL),
+    train_adv = TrainingAdversarial(model_p=Predictor_ResNet(topology=TOPOLOGY_TOROIDAL,
+                                                             num_resBlocks=2,
+                                                             num_hidden=NUM_PREDICTOR_FEATURES),
                                     model_g=Generator_Binary(topology=TOPOLOGY_TOROIDAL,
                                                              num_hidden=NUM_GENERATOR_FEATURES),
-                                    target=CONFIG_TARGET_STABLE)
+                                    target=CONFIG_TARGET_MEDIUM)
 
 
     # train_adv = TrainingAdversarial(model_p=Predictor_LifeMotion(topology=TOPOLOGY_TOROIDAL,
