@@ -25,7 +25,7 @@ DATASET_NAME = "gol_dataset"
 ### SIMULATION PARAMETERS ###############################################################
 
 # Size of the grid
-GRID_SIZE = 64
+GRID_SIZE = 32
 
 # Max number of steps to run the simulation
 NUM_MAX_SIM_STEPS = 1000
@@ -48,7 +48,7 @@ TARGET_HARD_HALF_STEP   = 100
 NUM_ITERATIONS = 200
 
 # Number of steps for training with a certain dataset in an epoch
-NUM_TRAINING_STEPS = 4
+NUM_TRAINING_STEPS = 1
 
 # Batch size during training
 ADV_BATCH_SIZE = 64
@@ -76,7 +76,7 @@ NUM_BATCHES_GEN_EVAL = NUM_CONFIGS_GEN_EVAL // ADV_BATCH_SIZE
 DIRICHLET_ALPHA = 0.3
 
 # Number of steps to run the simulation for the generated configurations
-NUM_SIM_STEPS = 1000
+NUM_SIM_STEPS_DEFAULT = 1000
 
 
 ### PREDICTOR TRAINING PARAMETERS ###################################################

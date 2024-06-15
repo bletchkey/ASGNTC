@@ -12,7 +12,7 @@ import torch
 
 from configs.setup     import setup_base_directory, setup_logging
 from configs.constants import *
-from configs.paths     import CONFIG_DIR, OUTPUTS_DIR, TRAINED_MODELS_DIR
+from configs.paths     import CONFIG_DIR, OUTPUTS_DIR, TRAINED_MODELS_DIR, TRAININGS_DIR
 
 from src.gol_adv_sys.training_adv import TrainingAdversarial
 
@@ -56,7 +56,7 @@ def plot_generator_stats(stats):
 
 
 def evaluate_generator():
-    path  = TRAINED_MODELS_DIR / "adversarial" / "DCGAN_Medium"
+    path  =  TRAININGS_DIR / "adversarial" / "2024-06-13_08-07-25"
     stats = get_generator_eval_stats(path)
 
     plot_generator_stats(stats)
@@ -73,13 +73,11 @@ def train_adversarial():
     #                                 target=CONFIG_TARGET_MEDIUM)
 
 
-    train_adv = TrainingAdversarial(model_p=Predictor_ResNet(topology=TOPOLOGY_TOROIDAL,
-                                                             num_resBlocks=2,
-                                                             num_hidden=NUM_PREDICTOR_FEATURES),
+    train_adv = TrainingAdversarial(model_p=Predictor_Baseline(topology=TOPOLOGY_TOROIDAL),
                                     model_g=Generator_Binary(topology=TOPOLOGY_TOROIDAL,
                                                              num_hidden=NUM_GENERATOR_FEATURES),
-                                    target=CONFIG_TARGET_MEDIUM)
-
+                                    target=CONFIG_TARGET_HARD,
+                                    num_sim_steps=200)
 
     # train_adv = TrainingAdversarial(model_p=Predictor_LifeMotion(topology=TOPOLOGY_TOROIDAL,
     #                                                              num_hidden=NUM_PREDICTOR_FEATURES),
@@ -98,6 +96,7 @@ def main():
 
     train_adversarial()
     # evaluate_generator()
+
 
     return 0
 

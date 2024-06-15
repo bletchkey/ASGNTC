@@ -82,9 +82,21 @@ class TrainingAdversarial(TrainingBase):
     """
 
     def __init__(self,
-                 model_p=None,
-                 model_g=None,
-                 target:str=None) -> None:
+                 model_p,
+                 model_g,
+                 target:str,
+                 num_sim_steps:int = NUM_SIM_STEPS_DEFAULT) -> None:
+
+        if target in [CONFIG_TARGET_EASY, CONFIG_TARGET_MEDIUM, CONFIG_TARGET_HARD, CONFIG_TARGET_STABLE]:
+            self.config_type_pred_target = target
+        else:
+            raise ValueError("The target type selected is not valid.")
+
+        if num_sim_steps > 0:
+            self.num_sim_steps = num_sim_steps
+        else:
+            raise ValueError("The number of simulation steps must be greater than 0.")
+
         self.__date = datetime.datetime.now()
 
         self.__initialize_seed()
@@ -92,13 +104,6 @@ class TrainingAdversarial(TrainingBase):
         self.folders        = FolderManager(TRAINING_TYPE_ADVERSARIAL, self.__date)
 
         self.device_manager = DeviceManager()
-
-        self.config_type_pred_target = None
-
-        if target in [CONFIG_TARGET_EASY, CONFIG_TARGET_MEDIUM, CONFIG_TARGET_HARD, CONFIG_TARGET_STABLE]:
-            self.config_type_pred_target = target
-        else:
-            raise ValueError("The target type selected is not valid.")
 
         self.n_times_trained_p = 0
         self.n_times_trained_g = 0
@@ -134,7 +139,7 @@ class TrainingAdversarial(TrainingBase):
                                       type= GENERATOR,
                                       device=self.device_manager.primary_device)
 
-        self.p_num_epochs     = 5
+        self.p_num_epochs     = 1
         self.train_dataloader = None
 
         self.init_config_initial_type = None
@@ -390,9 +395,8 @@ class TrainingAdversarial(TrainingBase):
         logging.debug(f"Training generator")
         self.generator.model.train()
 
-        # TODO: Check the right amount of batches to train the generator
         n = len(self.train_dataloader) * self.p_num_epochs
-        # n = len(self.train_dataloader)
+
         for batch_count in range(1, n+1):
 
             self.generator.optimizer.zero_grad()
@@ -429,6 +433,7 @@ class TrainingAdversarial(TrainingBase):
         return  generate_new_batches(self.generator.model,
                                      n_batches,
                                      self.simulation_topology,
+                                     self.num_sim_steps,
                                      self.init_config_initial_type,
                                      self.device_manager.default_device)
 
@@ -449,6 +454,7 @@ class TrainingAdversarial(TrainingBase):
                                               n_batches,
                                               self.simulation_topology,
                                               self.config_type_pred_target,
+                                              self.num_sim_steps,
                                               self.init_config_initial_type,
                                               device)
 
@@ -577,6 +583,7 @@ class TrainingAdversarial(TrainingBase):
                            self.init_config_initial_type,
                            self.fixed_input_noise,
                            self.config_type_pred_target,
+                           self.num_sim_steps,
                            predictor_device,
                            generator_device)
 
@@ -593,7 +600,7 @@ class TrainingAdversarial(TrainingBase):
 
         """
 
-        save_progress_plot(data, self.current_iteration, self.folders.results_folder)
+        save_progress_plot(data, self.current_iteration, self.num_sim_steps, self.folders.results_folder)
 
 
     def __save_progress_graph(self) -> None:
@@ -616,7 +623,7 @@ class TrainingAdversarial(TrainingBase):
 
             sim_results = simulate_config(config=initial_config,
                                           topology=self.simulation_topology,
-                                          steps=NUM_SIM_STEPS,
+                                          steps=self.num_sim_steps,
                                           device=self.generator.device)
 
             p_score = prediction_score(predicted_config, target)
@@ -830,7 +837,7 @@ class TrainingAdversarial(TrainingBase):
             f"\n----------SIMULATION----------\n"
             f"Grid size             : {GRID_SIZE}\n"
             f"{topology_info}\n"
-            f"Simulation steps      : {NUM_SIM_STEPS}\n"
+            f"Simulation steps      : {self.num_sim_steps}\n"
             f"{init_config_initial_type_info}\n"
             f"Target                : {self.config_type_pred_target.upper()}\n"
             f"\n-----------PREDICTOR----------\n"

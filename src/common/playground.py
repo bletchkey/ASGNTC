@@ -1,5 +1,9 @@
 import typing
+from pathlib import Path
 import datetime
+import re
+import os
+import traceback
 import numpy as np
 import logging
 import matplotlib.pyplot as plt
@@ -12,6 +16,10 @@ from matplotlib.patches import Rectangle
 from src.common.utils.helpers              import export_figures_to_pdf
 from src.common.utils.simulation_functions import simulate_config, basic_simulation_config
 from src.gol_pred_sys.utils.helpers        import get_config_from_batch
+
+from src.gol_adv_sys.utils.helpers         import get_generated_config, \
+                                                  get_initial_config
+
 
 from configs.constants import *
 from configs.paths     import DATASET_DIR, TRAINED_MODELS_DIR, OUTPUTS_DIR

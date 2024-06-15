@@ -420,7 +420,9 @@ def __calculate_quartiles(tensor):
     if len(tensor.shape) != 4:
         raise ValueError(f"Input tensor must be 4D, but got {len(tensor.shape)}D")
 
-    flat_tensor = tensor.view(128, -1)
+    n = tensor.size(3)
+    flat_tensor = tensor.view(n*n, -1)
+
     maximum, _ = torch.max(flat_tensor, dim=1)
     minimum, _ = torch.min(flat_tensor, dim=1)
 

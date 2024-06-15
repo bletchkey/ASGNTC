@@ -134,14 +134,56 @@ def plot_targets():
     pg.plot_targets(data)
 
 
+def test_r_pentomino_5x5_toroidal():
+    pg = Playground()
+
+    grid_size = [4, 5, 8, 16, 32, 64, 128, 256, 512]
+    for size in grid_size:
+
+        init_config = torch.zeros(1, 1, size, size, dtype=torch.float32)
+        #center r-pentomino
+        init_config[0, 0, size//2, size//2] = 1
+        init_config[0, 0, size//2+1, size//2] = 1
+        init_config[0, 0, size//2-1, size//2] = 1
+        init_config[0, 0, size//2, size//2-1] = 1
+        init_config[0, 0, size//2-1, size//2+1] = 1
+
+        # # print every number in init_config.squeeze().detach().cpu().numpy()
+        # for i in range(size):
+        #     for j in range(size):
+        #         print(int(init_config.squeeze().detach().cpu().numpy()[i][j]), end=" ")
+
+        #     print()
+
+        results = pg.simulate(init_config, steps=3000, topology=TOPOLOGY_FLAT)
+
+        period            = results['period'].item()
+        transient_phase   = results['transient_phase'].item()
+        n_cells_initial   = results['n_cells_initial'].item()
+        n_cells_final     = results['n_cells_final'].item()
+        n_cells_simulated = results['n_cells_simulated'].item()
+        steps             = results['steps']
+
+        print(f"Grid size: {size}")
+        print(f"Period: {period}")
+        print(f"Transient phase: {transient_phase}")
+        print(f"Number of initial cells: {n_cells_initial}")
+        print(f"Number of final cells: {n_cells_final}")
+        print(f"Number of simulated cells: {n_cells_simulated}")
+        print(f"Number of steps: {steps}")
+
+        print(f"---------------------------------")
+
+
 def main():
 
     setup_base_directory()
     setup_logging(path= CONFIG_DIR / "logging_playground.json")
 
     # plot_record_structure()
-    plot_targets()
+    # plot_targets()
     # simulate_configs()
+    test_r_pentomino_5x5_toroidal()
 
     return 0
 

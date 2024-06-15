@@ -20,6 +20,7 @@ def test_models(model_g: torch.nn.Module,
                 init_config_initial_type: str,
                 fixed_input_noise: torch.Tensor,
                 target_config: str,
+                num_sim_steps: int,
                 predictor_device: torch.device,
                 generator_device: torch.device) -> dict:
     """
@@ -60,7 +61,7 @@ def test_models(model_g: torch.nn.Module,
 
         sim_results = simulate_config(config=data["initial"],
                                       topology=topology,
-                                      steps=NUM_SIM_STEPS,
+                                      steps=num_sim_steps,
                                       device=generator_device)
 
         data["noise"]     = fixed_input_noise
@@ -85,7 +86,10 @@ def test_models(model_g: torch.nn.Module,
     return data
 
 
-def save_progress_plot(plot_data: dict, iteration: int, results_path: str) -> None:
+def save_progress_plot(plot_data: dict,
+                       iteration: int,
+                       num_sim_steps: int,
+                       results_path: str) -> None:
     """
     Function to save the progress plot
 
@@ -145,7 +149,7 @@ def save_progress_plot(plot_data: dict, iteration: int, results_path: str) -> No
             elif key == "initial":
                 axs[i, j].set_title(titles[j] + f" - {plot_data['metadata']['n_cells_initial'][indices[i]].item()} cells", fontsize=12, fontweight='bold')
             elif key == "simulated":
-                axs[i, j].set_title(titles[j] + f" - {NUM_SIM_STEPS} steps - {plot_data['metadata']['n_cells_simulated'][indices[i]].item()} cells", fontsize=12, fontweight='bold')
+                axs[i, j].set_title(titles[j] + f" - {num_sim_steps} steps - {plot_data['metadata']['n_cells_simulated'][indices[i]].item()} cells", fontsize=12, fontweight='bold')
             elif key == "final":
                 axs[i, j].set_title(titles[j] + f" - {plot_data['metadata']['n_cells_final'][indices[i]].item()} cells", fontsize=12, fontweight='bold')
             elif key == "target":
@@ -316,6 +320,7 @@ def get_config_from_training_batch(batch: torch.Tensor, type: str, device: torch
 def get_data_tensor(data_tensor: torch.Tensor,
                     model_g: torch.nn.Module,
                     topology: str,
+                    num_sim_steps: int,
                     init_config_initial_type: str,
                     device: torch.device) -> torch.Tensor:
     """
@@ -337,7 +342,12 @@ def get_data_tensor(data_tensor: torch.Tensor,
 
     """
 
-    new_configs = generate_new_batches(model_g, NUM_BATCHES, topology, init_config_initial_type, device)
+    new_configs = generate_new_batches(model_g,
+                                       NUM_BATCHES,
+                                       topology,
+                                       init_config_initial_type,
+                                       num_sim_steps,
+                                       device)
 
     # Calculate the average complexity of the stable targets
 
@@ -367,6 +377,7 @@ def get_data_tensor(data_tensor: torch.Tensor,
 def generate_new_batches(model_g: torch.nn.Module,
                          n_batches: int,
                          topology: str,
+                         num_sim_steps: int,
                          init_config_initial_type: str,
                          device: torch.device) -> torch.Tensor:
 
@@ -393,7 +404,7 @@ def generate_new_batches(model_g: torch.nn.Module,
         with torch.no_grad():
             initial_config = get_initial_config(generated_config, init_config_initial_type)
             sim_results    = simulate_config(config=initial_config, topology=topology,
-                                             steps=NUM_SIM_STEPS, device=device)
+                                             steps=num_sim_steps, device=device)
 
 
         targets = sim_results["all_targets"]
@@ -428,6 +439,7 @@ def generate_new_training_batches(model_g: torch.nn.Module,
                                   n_batches: int,
                                   topology: str,
                                   target_type: str,
+                                  num_sim_steps: int,
                                   init_config_initial_type: str,
                                   device: torch.device) -> Tuple[torch.Tensor, torch.Tensor]:
 
@@ -445,7 +457,7 @@ def generate_new_training_batches(model_g: torch.nn.Module,
             initial_config = get_initial_config(generated_config, init_config_initial_type)
             target = adv_training_simulate_config(config=initial_config,
                                                           topology=topology,
-                                                          steps=NUM_SIM_STEPS,
+                                                          steps=num_sim_steps,
                                                           target_type=target_type,
                                                           device=device)
 
@@ -593,6 +605,7 @@ def test_models_DCGAN(model_g: torch.nn.Module,
                       topology: str,
                       fixed_noise: torch.Tensor,
                       target_config: str,
+                      num_sim_steps: int,
                       init_config_initial_type: str,
                       device: torch.device) -> dict:
     """
@@ -630,7 +643,7 @@ def test_models_DCGAN(model_g: torch.nn.Module,
         data["generated"]      = generated_config_fixed
         data["initial"]   = get_initial_config(generated_config_fixed, init_config_initial_type)
         sim_results       = simulate_config(config=data["initial"], topology=topology,
-                                            steps=NUM_SIM_STEPS, device=device)
+                                            steps=num_sim_steps, device=device)
 
         data["final"]     = sim_results["final"]
         data["simulated"] = sim_results["simulated"]
@@ -653,7 +666,10 @@ def test_models_DCGAN(model_g: torch.nn.Module,
     return data
 
 
-def save_progress_plot_DCGAN(plot_data: dict, iteration: int, results_path: str) -> None:
+def save_progress_plot_DCGAN(plot_data: dict,
+                             iteration: int,
+                             num_sim_steps: int,
+                             results_path: str) -> None:
     """
     Function to save the progress plot
 
@@ -715,7 +731,7 @@ def save_progress_plot_DCGAN(plot_data: dict, iteration: int, results_path: str)
             elif key == "initial":
                 axs[i, j].set_title(titles[j] + f" - {plot_data['metadata']['n_cells_initial'][indices[i]].item()} cells")
             elif key == "simulated":
-                axs[i, j].set_title(titles[j] + f" - {NUM_SIM_STEPS} steps - {plot_data['metadata']['n_cells_simulated'][indices[i]].item()} cells")
+                axs[i, j].set_title(titles[j] + f" - {num_sim_steps} steps - {plot_data['metadata']['n_cells_simulated'][indices[i]].item()} cells")
             elif key == "final":
                 axs[i, j].set_title(titles[j] + f" - {plot_data['metadata']['n_cells_final'][indices[i]].item()} cells")
             elif key == "target":
