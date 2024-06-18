@@ -23,7 +23,7 @@ from src.common.utils.helpers       import export_figures_to_pdf, retrieve_log_d
                                            get_model_data_from_checkpoint, get_latest_checkpoint_path
 
 from src.common.predictor           import Predictor_Baseline, Predictor_ResNet,\
-                                           Predictor_UNet, Predictor_ConvLSTM
+                                           Predictor_UNet
 
 
 def __plot_trainings(ax, train_data, val_data, title, xlabel, ylabel, yscale='linear', ylim=None, legend_loc='upper right'):
@@ -518,7 +518,7 @@ def main():
     # plot_baseline_pred_score_analysis()
     # plot_baseline_vs_unet()
 
-    train(Predictor_ResNet(TOPOLOGY_TOROIDAL, 5, NUM_PREDICTOR_FEATURES), CONFIG_TARGET_MEDIUM)
+    train(Predictor_ResNet(TOPOLOGY_TOROIDAL, 10, 2*NUM_PREDICTOR_FEATURES), CONFIG_TARGET_MEDIUM)
 
     return 0
 

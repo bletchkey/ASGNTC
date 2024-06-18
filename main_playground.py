@@ -175,6 +175,53 @@ def test_r_pentomino_5x5_toroidal():
         print(f"---------------------------------")
 
 
+def period_analysis():
+
+    pg = Playground()
+
+    grid_size = 32
+
+    n_configs = 256
+    initial_configs = torch.zeros(n_configs, 1, grid_size, grid_size)
+
+    # Random initial configurations
+    for i in range(n_configs):
+        initial_configs[i, 0, :, :] = torch.randint(0, 2, (grid_size, grid_size), dtype=torch.float32)
+
+    dataloader = torch.utils.data.DataLoader(initial_configs, batch_size=64, shuffle=True)
+
+    for topology in [TOPOLOGY_TOROIDAL, TOPOLOGY_FLAT]:
+        print(f"Topology: {topology}\n")
+        for i, batch in enumerate(dataloader):
+            results = pg.simulate(batch, steps=1000, topology=topology)
+
+            period            = results['period']
+            transient_phase   = results['transient_phase']
+
+            print(f"Batch {i}")
+            print(f"Period: {period}")
+            print(f"Tansient phase: {transient_phase}")
+
+            print(f"\nAverages")
+            print(f"Period: {period.mean()}")
+            print(f"Tansient phase: {transient_phase.mean()}")
+
+
+def get_id_from_period(period):
+
+    dm = DatasetManager()
+
+    ids = []
+    for i in [TRAIN, VALIDATION, TEST]:
+        m_i = dm.get_metadata(i)
+
+        for j in m_i:
+            if j[META_PERIOD] == period:
+                ids.append(j[META_ID])
+
+
+    return ids
+
 def main():
 
     setup_base_directory()
@@ -183,7 +230,34 @@ def main():
     # plot_record_structure()
     # plot_targets()
     # simulate_configs()
-    test_r_pentomino_5x5_toroidal()
+    # test_r_pentomino_5x5_toroidal()
+
+    #period_analysis()
+
+    # res = get_id_from_period(64)
+
+    # print(res)
+
+    pg = Playground()
+
+    id = 95511
+    # res = pg.get_record_from_id(id)
+
+    # pg.plot_record_sim(res)
+
+    dm = DatasetManager()
+
+    combined_dataset = dm.get_combined_dataset()
+
+    for data, metadata in combined_dataset:
+            if metadata[META_ID] == id:
+                config_initial = data[0]
+                break
+
+    print(config_initial)
+
+    # results = pg.simulate(config_initial, steps=2000, topology=TOPOLOGY_TOROIDAL)
+    # pg.plot_record_sim(results)
 
     return 0
 

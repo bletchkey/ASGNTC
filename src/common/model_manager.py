@@ -20,9 +20,12 @@ class ModelManager:
 
     """
 
-    def __init__(self, model: nn.Module, optimizer: optim.Optimizer,
+    def __init__(self,
+                 model: nn.Module,
+                 optimizer: optim.Optimizer,
                  criterion: Union[nn.Module, Callable],
-                 type: str, device) -> None:
+                 type: str,
+                 device) -> None:
 
         self.__model     = model
         self.__optimizer = optimizer

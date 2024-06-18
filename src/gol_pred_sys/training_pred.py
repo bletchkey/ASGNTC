@@ -78,7 +78,7 @@ class TrainingPredictor(TrainingBase):
                                                     weight_decay=P_SGD_WEIGHT_DECAY),
                                       criterion=WeightedMSELoss(),
                                       type=PREDICTOR,
-                                      device_manager=self.device_manager)
+                                      device=self.device_manager.primary_device)
 
         self.lr_scheduler = optim.lr_scheduler.ReduceLROnPlateau(
                                 self.predictor.optimizer, mode="min", factor=0.1,

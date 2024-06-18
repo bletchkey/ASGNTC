@@ -15,6 +15,7 @@ import time
 from pathlib import Path
 from typing  import Tuple
 import logging
+import matplotlib.pyplot as plt
 
 import torch
 import torch.nn as nn
@@ -26,7 +27,7 @@ from torch.utils.data import DataLoader, TensorDataset,\
 
 import datetime
 
-from configs.paths import TRAINED_MODELS_DIR
+from configs.paths import TRAINED_MODELS_DIR, OUTPUTS_DIR
 from configs.constants import *
 
 from src.common.folder_manager import FolderManager
@@ -41,7 +42,9 @@ from src.common.generators.gen       import Gen
 
 from src.common.utils.scores               import prediction_score
 from src.common.utils.simulation_functions import simulate_config
-from src.common.utils.helpers              import get_elapsed_time_str, get_latest_checkpoint_path
+from src.common.utils.helpers              import get_elapsed_time_str, \
+                                                  get_latest_checkpoint_path, \
+                                                  export_figures_to_pdf
 
 from src.gol_adv_sys.utils.helpers import generate_new_batches, \
                                           generate_new_training_batches, \
@@ -616,7 +619,9 @@ class TrainingAdversarial(TrainingBase):
             self.generator.model.eval()
             self.predictor.model.eval()
 
-            generated_config, target = self.__get_new_training_batches(1, self.generator.device)
+            n_configs = ADV_BATCH_SIZE * 16 # 1024 if ADV_BATCH_SIZE = 64
+            n_batches = n_configs // ADV_BATCH_SIZE
+            generated_config, target = self.__get_new_training_batches(n_batches, self.generator.device)
 
             initial_config   = get_initial_config(generated_config, self.init_config_initial_type)
             predicted_config = self.predictor.model(generated_config.detach().to(self.predictor.device))
@@ -624,7 +629,36 @@ class TrainingAdversarial(TrainingBase):
             sim_results = simulate_config(config=initial_config,
                                           topology=self.simulation_topology,
                                           steps=self.num_sim_steps,
+
                                           device=self.generator.device)
+
+            k = np.random.choice(n_configs-1, 5, replace=False)
+            if True:
+                fig, axs = plt.subplots(5, 4, figsize=(8, 10))
+                for i in range(5):
+                    imshow_kwargs = {'cmap': 'gray', 'vmin': 0, 'vmax': 1}
+
+                    titles = ["initial", "simulated", "final", "metadata"]
+
+                    axs[i,0].imshow(sim_results["initial"][k[i]].cpu().numpy().squeeze(), **imshow_kwargs)
+                    axs[i,0].set_title(titles[0]+f"conf - {k[i]}")
+                    axs[i,0].axis('off')
+
+                    axs[i,1].imshow(sim_results["simulated"][k[i]].cpu().numpy().squeeze(), **imshow_kwargs)
+                    axs[i,1].set_title(titles[1]+f"conf - {k[i]}")
+                    axs[i,1].axis('off')
+
+                    axs[i,2].imshow(sim_results["final"][k[i]].cpu().numpy().squeeze(), **imshow_kwargs)
+                    axs[i,2].set_title(titles[2]+f"conf - {k[i]}")
+                    axs[i,2].axis('off')
+
+                    axs[i,3].text(0.5, 0.5, f"Period: {sim_results['period'][i].item()}", fontsize=12, ha='center', va='center')
+                    axs[i,3].text(0.5, 0.3, f"Transient phase: {sim_results['transient_phase'][i].item()}", fontsize=12, ha='center', va='center')
+                    axs[i,3].axis('off')
+
+                # Save and close
+                pdf_path = self.folders.base_folder / f"iter{self.current_iteration+1}_check_config.pdf"
+                export_figures_to_pdf(pdf_path, fig)
 
             p_score = prediction_score(predicted_config, target)
 

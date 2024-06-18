@@ -70,7 +70,8 @@ def train_adversarial():
 
     #                                 model_g=Generator_Binary(topology=TOPOLOGY_TOROIDAL,
     #                                                         num_hidden=NUM_GENERATOR_FEATURES),
-    #                                 target=CONFIG_TARGET_MEDIUM)
+    #                                 target=CONFIG_TARGET_MEDIUM,
+    #                                 num_sim_steps=1000)
 
 
     train_adv = TrainingAdversarial(model_p=Predictor_Baseline(topology=TOPOLOGY_TOROIDAL),
@@ -78,12 +79,6 @@ def train_adversarial():
                                                              num_hidden=NUM_GENERATOR_FEATURES),
                                     target=CONFIG_TARGET_HARD,
                                     num_sim_steps=200)
-
-    # train_adv = TrainingAdversarial(model_p=Predictor_LifeMotion(topology=TOPOLOGY_TOROIDAL,
-    #                                                              num_hidden=NUM_PREDICTOR_FEATURES),
-    #                                 model_g=Generator_Binary(topology=TOPOLOGY_TOROIDAL,
-    #                                                         num_hidden=NUM_GENERATOR_FEATURES),
-    #                                 target=CONFIG_TARGET_MEDIUM)
 
 
     train_adv.run()

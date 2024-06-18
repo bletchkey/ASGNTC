@@ -216,7 +216,7 @@ def save_progress_graph(stats: dict,
     axs[0, 1].set_ylabel("score (%)", fontsize=10)
     axs[0, 1].set_ylim([0, 100])
     axs[0, 1].margins(y=0.05)
-    axs[0, 1].legend(loc='upper left')
+    # axs[0, 1].legend(loc='upper left')
     axs[0, 1].grid(True)
 
     # Plot the period
@@ -224,7 +224,7 @@ def save_progress_graph(stats: dict,
     axs[1, 0].set_title("Periods", fontsize=12, fontweight='bold')
     axs[1, 0].set_xlabel("iterations", fontsize=10)
     axs[1, 0].set_ylabel("period length", fontsize=10)
-    axs[1, 0].legend(loc='upper left')
+    # axs[1, 0].legend(loc='upper left')
     axs[1, 0].grid(True)
 
     # Plot the transient phase
@@ -232,7 +232,7 @@ def save_progress_graph(stats: dict,
     axs[1, 1].set_title("Transient phases", fontsize=12, fontweight='bold')
     axs[1, 1].set_xlabel("iterations", fontsize=10)
     axs[1, 1].set_ylabel("transient phase length", fontsize=10)
-    axs[1, 1].legend(loc='upper left')
+    # axs[1, 1].legend(loc='upper left')
     axs[1, 1].grid(True)
 
     # Adjust layout
@@ -492,8 +492,8 @@ def get_generated_config(model_g: torch.nn.Module,
 
         return generated_config
 
-    input_config     = get_dirichlet_input_noise(ADV_BATCH_SIZE, device)
-    generated_config = model_g(input_config)
+    input_noise  = get_dirichlet_input_noise(ADV_BATCH_SIZE, device)
+    generated_config = model_g(input_noise)
 
     return generated_config
 

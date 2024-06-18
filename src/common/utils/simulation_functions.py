@@ -107,6 +107,8 @@ def simulate_config(config: torch.Tensor, topology: str, steps: int,
               final configuration, targets, and the number of living cells.
 
     """
+    initial = config.clone()
+
     # count living cells in the initial configuration
     n_cells_initial = torch.sum(config, dim=[2, 3], dtype=torch.float32)
 
@@ -153,6 +155,7 @@ def simulate_config(config: torch.Tensor, topology: str, steps: int,
     n_cells_final     = torch.sum(final_config, dim=[2, 3], dtype=torch.float32)
 
     results = {
+        "initial"          : initial,
         "simulated"        : simulated,
         "final"            : final["config"],
         "all_targets"      : all_targets,
