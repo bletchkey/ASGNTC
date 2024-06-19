@@ -518,7 +518,7 @@ def main():
     # plot_baseline_pred_score_analysis()
     # plot_baseline_vs_unet()
 
-    train(Predictor_ResNet(TOPOLOGY_TOROIDAL, 10, 2*NUM_PREDICTOR_FEATURES), CONFIG_TARGET_MEDIUM)
+    train(Predictor_ResNet(TOPOLOGY_TOROIDAL, 10, NUM_PREDICTOR_FEATURES), CONFIG_TARGET_MEDIUM)
 
     return 0
 

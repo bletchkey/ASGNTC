@@ -53,16 +53,20 @@ class ResBlock(nn.Module):
     def __init__(self, num_hidden, topology):
         super().__init__()
 
-        conv_layer = ToroidalConv2d(nn.Conv2d(num_hidden, num_hidden, kernel_size=3, stride=1, padding=0)) \
+        conv_layer1 = ToroidalConv2d(nn.Conv2d(num_hidden, num_hidden, kernel_size=3, stride=1, padding=0)) \
             if topology == TOPOLOGY_TOROIDAL else nn.Conv2d(num_hidden, num_hidden, kernel_size=3, stride=1, padding=1)
+
+        conv_layer2 = ToroidalConv2d(nn.Conv2d(num_hidden, num_hidden, kernel_size=3, stride=1, padding=0)) \
+            if topology == TOPOLOGY_TOROIDAL else nn.Conv2d(num_hidden, num_hidden, kernel_size=3, stride=1, padding=1)
+
 
         self.block = nn.Sequential(
             nn.BatchNorm2d(num_hidden),
             nn.ReLU(),
-            conv_layer,
+            conv_layer1,
             nn.BatchNorm2d(num_hidden),
             nn.ReLU(),
-            conv_layer,
+            conv_layer2,
         )
 
     def forward(self, x):

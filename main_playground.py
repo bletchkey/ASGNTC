@@ -222,6 +222,81 @@ def get_id_from_period(period):
 
     return ids
 
+
+def config_man_to_glider():
+    pg = Playground()
+
+    size = 32
+
+    init_config = torch.zeros(1, 1, size, size, dtype=torch.float32)
+
+    # core
+    init_config[0, 0, size//2, size//2]   = 1
+    init_config[0, 0, size//2, size//2-1] = 1
+    init_config[0, 0, size//2, size//2+1] = 1
+    init_config[0, 0, size//2+1, size//2] = 1
+    init_config[0, 0, size//2+2, size//2] = 1
+    init_config[0, 0, size//2-1, size//2] = 1
+
+    # legs
+    init_config[0, 0, size//2+3, size//2-1] = 1
+    init_config[0, 0, size//2+4, size//2-1] = 1
+    init_config[0, 0, size//2+3, size//2+1] = 1
+    init_config[0, 0, size//2+4, size//2+1] = 1
+
+    # arms
+    init_config[0, 0, size//2+1, size//2-2] = 1
+    init_config[0, 0, size//2, size//2-3]   = 1
+    init_config[0, 0, size//2+1, size//2+2] = 1
+    init_config[0, 0, size//2+2, size//2+3] = 1
+
+    # head
+    init_config[0, 0, size//2-2, size//2-1] = 1
+    init_config[0, 0, size//2-2, size//2+1] = 1
+    init_config[0, 0, size//2-3, size//2-1] = 1
+    init_config[0, 0, size//2-3, size//2+1] = 1
+    init_config[0, 0, size//2-4, size//2-1] = 1
+    init_config[0, 0, size//2-4, size//2]   = 1
+    init_config[0, 0, size//2-4, size//2+1] = 1
+
+    results = pg.gol_basic_simulation(init_config, steps=1000, topology=TOPOLOGY_TOROIDAL)
+
+    fig, axs = plt.subplots(4, 4, figsize=(15, 15))
+    for i in range(16):
+        ax = axs[i//4, i%4]
+        ax.imshow(results[i].detach().cpu().numpy().squeeze(), cmap='gray')
+        ax.axis('off')
+
+    plt.tight_layout()
+    export_figures_to_pdf(OUTPUTS_DIR / "man_to_glider.pdf", fig)
+
+    results = pg.simulate(init_config, steps=3000, topology=TOPOLOGY_TOROIDAL)
+    pg.plot_record_sim(results)
+
+
+def get_config_from_period():
+
+    pg = Playground()
+    dm = DatasetManager()
+
+    res = get_id_from_period(64)
+
+    id = res[0] # 95511
+
+    config_res = pg.get_record_from_id(id)
+
+    pg.plot_record_sim(config_res)
+
+    combined_dataset = dm.get_combined_dataset()
+
+    for data, metadata in combined_dataset:
+            if metadata[META_ID] == id:
+                config_initial = data[0]
+                break
+
+    results = pg.simulate(config_initial, steps=2000, topology=TOPOLOGY_TOROIDAL)
+    pg.plot_record_sim(results)
+
 def main():
 
     setup_base_directory()
@@ -234,30 +309,7 @@ def main():
 
     #period_analysis()
 
-    # res = get_id_from_period(64)
-
-    # print(res)
-
-    pg = Playground()
-
-    id = 95511
-    # res = pg.get_record_from_id(id)
-
-    # pg.plot_record_sim(res)
-
-    dm = DatasetManager()
-
-    combined_dataset = dm.get_combined_dataset()
-
-    for data, metadata in combined_dataset:
-            if metadata[META_ID] == id:
-                config_initial = data[0]
-                break
-
-    print(config_initial)
-
-    # results = pg.simulate(config_initial, steps=2000, topology=TOPOLOGY_TOROIDAL)
-    # pg.plot_record_sim(results)
+    config_man_to_glider()
 
     return 0
 
