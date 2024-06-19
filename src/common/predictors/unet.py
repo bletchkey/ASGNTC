@@ -26,7 +26,7 @@ class UNet(nn.Module):
         self.dec_conv2 = ToroidalConv2d(nn.Conv2d(NUM_PREDICTOR_FEATURES*2, NUM_PREDICTOR_FEATURES, kernel_size=3, padding=0))
 
         # Output Convolution
-        self.output_conv = nn.Conv2d(N_PREDICTOR_FEATURES, NUM_CHANNELS_GRID, kernel_size=1, padding = 0)
+        self.output_conv = nn.Conv2d(NUM_PREDICTOR_FEATURES, NUM_CHANNELS_GRID, kernel_size=1, padding = 0)
 
         # Activation Function
         self.relu = nn.ReLU()
