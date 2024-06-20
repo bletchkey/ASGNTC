@@ -99,3 +99,47 @@ class AdversarialGoLLoss(nn.Module):
     def __weight(self, target):
         return 1 + (self.alpha * target)
 
+
+class SparseAdversarialGoLLoss(nn.Module):
+    """
+    Custom loss function for the adversarial training of the Generator and Predictor.
+
+    Args:
+        model (str):   Model type
+        alpha (float): Weighting factor to be applied to the loss
+
+    Returns:
+        torch.Tensor: Custom loss for the Generator/Predictor
+
+    """
+
+    def __init__(self, model_type:str, alpha: float = 9.0):
+        super(SparseAdversarialGoLLoss, self).__init__()
+        self.alpha      = alpha
+        self.model_type = model_type
+
+
+    def forward(self,
+                prediction: torch.Tensor,
+                target: torch.Tensor) -> torch.Tensor:
+
+        desired_sparsity = 10
+        loss = 0
+
+        sparsity_penalty = torch.abs(torch.sum(prediction) - desired_sparsity)
+
+        weigthed_mse = (target - prediction) ** 2 * self.__weight(target)
+
+        if self.model_type == PREDICTOR:
+            loss = torch.mean(weigthed_mse) + 0.1 * sparsity_penalty
+
+        elif self.model_type == GENERATOR:
+            loss = -1 * torch.mean(weigthed_mse) + 0.1 * sparsity_penalty
+        else:
+            raise ValueError(f"Invalid model type: {self.model}")
+
+        return loss
+
+    def __weight(self, target):
+        return 1 + (self.alpha * target)
+

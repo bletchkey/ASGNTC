@@ -19,7 +19,8 @@ from src.gol_adv_sys.training_adv import TrainingAdversarial
 from src.common.predictor         import Predictor_Baseline, Predictor_ResNet,\
                                          Predictor_UNet, Predictor_LifeMotion
 
-from src.common.generator         import Generator_Gen, Generator_Baseline, Generator_Binary
+from src.common.generator         import Generator_Gen, Generator_Baseline,\
+                                         Generator_Binary, Generator_SparseBinary
 from src.gol_adv_sys.utils.eval   import get_generator_eval_stats
 from src.common.utils.helpers     import export_figures_to_pdf
 
@@ -78,7 +79,7 @@ def train_adversarial():
                                     model_g=Generator_Binary(topology=TOPOLOGY_TOROIDAL,
                                                              num_hidden=NUM_GENERATOR_FEATURES),
                                     target=CONFIG_TARGET_HARD,
-                                    num_sim_steps=200)
+                                    num_sim_steps=100)
 
 
     train_adv.run()
@@ -91,7 +92,6 @@ def main():
 
     train_adversarial()
     # evaluate_generator()
-
 
     return 0
 

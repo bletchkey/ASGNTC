@@ -5,6 +5,7 @@ import torch.nn.functional as F
 from configs.constants import *
 from src.common.utils.toroidal import ToroidalConv2d
 
+
 def sample_gumbel(shape, device, eps=1e-20):
     """Sample from Gumbel(0, 1)"""
     U = torch.rand(shape, device = device)

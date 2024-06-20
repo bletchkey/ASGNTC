@@ -35,10 +35,11 @@ from src.common.device_manager import DeviceManager
 from src.common.training_base  import TrainingBase
 from src.common.model_manager  import ModelManager
 
-from src.common.utils.losses   import WeightedMSELoss, AdversarialGoLLoss
+from src.common.utils.losses   import WeightedMSELoss, AdversarialGoLLoss, SparseAdversarialGoLLoss
 
-from src.common.generators.binarygen import BinaryGenerator
-from src.common.generators.gen       import Gen
+from src.common.generators.binarygen       import BinaryGenerator
+from src.common.generators.sparsebinarygen import SparseBinaryGenerator
+from src.common.generators.gen             import Gen
 
 from src.common.utils.scores               import prediction_score
 from src.common.utils.simulation_functions import simulate_config
@@ -59,7 +60,6 @@ from src.gol_adv_sys.utils.helpers import generate_new_batches, \
 class TrainingAdversarial(TrainingBase):
     """
     Class designed to handle the training of the generator and predictor models in an adversarial training approach.
-    It can also train only the predictor model on the dataset.
 
     Attributes:
         seed (int): The seed used for random number generation.
@@ -67,6 +67,7 @@ class TrainingAdversarial(TrainingBase):
         device_manager (DeviceManager): An instance of DeviceManager to manage device selection.
         simulation_topology (str): The topology of the simulation grid.
         config_type_pred_target (str): The type of configuration to predict.
+        num_sim_steps (int): The number of simulation steps to simulate the configurations, this influences the target.
         init_config_initial_type (str): The type of initilization for the initial configuration to use.
         current_iteration (int): The current iteration of the training session.
         step_times_secs (list): A list of lists containing the time in seconds for each step in each iteration.
@@ -77,10 +78,12 @@ class TrainingAdversarial(TrainingBase):
         n_times_trained_g (int): The number of times the generator model has been trained.
         generator (ModelManager): An instance of ModelManager for the generator model.
         predictor (ModelManager): An instance of ModelManager for the predictor model.
-        data_loader (torch.utils.data.DataLoader): The dataloader for the training session.
+        p_num_epochs (int): The number of epochs of training on the train dataloader for the predictor model each iteration.
+        train_dataloader (DataLoader): The dataloader for the training session.
         fixed_input_noise (torch.Tensor): The fixed noise given as input to the generator model.
         properties_g (dict): A dictionary containing properties of the generator model.
         path_log_file (str): The path to the log file for the training session.
+        progress_stats (dict): A dictionary containing the progress statistics of the training session.
 
     """
 
@@ -149,10 +152,12 @@ class TrainingAdversarial(TrainingBase):
 
         if isinstance(self.generator.model, BinaryGenerator):
             self.init_config_initial_type = INIT_CONFIG_INTIAL_THRESHOLD
+        if isinstance(self.generator.model, SparseBinaryGenerator):
+            self.init_config_initial_type = INIT_CONFIG_INTIAL_THRESHOLD
         elif isinstance(self.generator.model, Gen):
             self.init_config_initial_type = INIT_CONFIG_INITIAL_SIGN
         else:
-            self.init_config_initial_type = INIT_CONFIG_INITIAL_SIGN
+            self.init_config_initial_type = INIT_CONFIG_INTIAL_THRESHOLD
 
 
         self.fixed_input_noise = get_dirichlet_input_noise(ADV_BATCH_SIZE, device=self.generator.device)
